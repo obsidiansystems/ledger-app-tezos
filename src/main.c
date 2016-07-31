@@ -21,28 +21,12 @@
 
 #include "os_io_seproxyhal.h"
 #include "string.h"
-unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
-unsigned char usb_enable_request; // request to turn on USB
-unsigned char uiDone; // notification to come back to the APDU event loop
-unsigned int
-    currentUiElement; // currently displayed UI element in a set of elements
-unsigned char
-    element_displayed; // notification of something displayed in a touch handler
-
-// UI currently displayed
-enum UI_STATE { UI_IDLE, UI_ADDRESS, UI_APPROVAL };
-
-enum UI_STATE uiState;
-
-void io_usb_enable(unsigned char enabled);
-void os_boot(void);
-
-unsigned int io_seproxyhal_touch_exit(bagl_element_t *e);
-unsigned int io_seproxyhal_touch_sign_ok(bagl_element_t *e);
-unsigned int io_seproxyhal_touch_sign_cancel(bagl_element_t *e);
-unsigned int io_seproxyhal_touch_address_ok(bagl_element_t *e);
-unsigned int io_seproxyhal_touch_address_cancel(bagl_element_t *e);
+unsigned int io_seproxyhal_touch_exit(const bagl_element_t *e);
+unsigned int io_seproxyhal_touch_sign_ok(const bagl_element_t *e);
+unsigned int io_seproxyhal_touch_sign_cancel(const bagl_element_t *e);
+unsigned int io_seproxyhal_touch_address_ok(const bagl_element_t *e);
+unsigned int io_seproxyhal_touch_address_cancel(const bagl_element_t *e);
 
 #define MAX_BIP32_PATH 10
 
@@ -60,6 +44,11 @@ unsigned int io_seproxyhal_touch_address_cancel(bagl_element_t *e);
 #define OFFSET_LC 4
 #define OFFSET_CDATA 5
 
+unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
+
+ux_state_t ux;
+
+
 typedef struct operationContext_t {
     uint8_t pathLength;
     uint32_t bip32Path[MAX_BIP32_PATH];
@@ -70,8 +59,8 @@ typedef struct operationContext_t {
 char keyPath[200];
 operationContext_t operationContext;
 
-// blank the screen
-static const bagl_element_t const bagl_ui_erase_all[] = {
+
+bagl_element_t const ui_address_blue[] = {
     {{BAGL_RECTANGLE, 0x00, 0, 60, 320, 420, 0, 0, BAGL_FILL, 0xf9f9f9,
       0xf9f9f9, 0, 0},
      NULL,
@@ -81,9 +70,7 @@ static const bagl_element_t const bagl_ui_erase_all[] = {
      NULL,
      NULL,
      NULL},
-};
 
-bagl_element_t const bagl_ui_address[] = {
     // type                                 id    x    y    w    h    s  r  fill
     // fg        bg        font icon   text, out, over, touch
     {{BAGL_RECTANGLE, 0x00, 0, 0, 320, 60, 0, 0, BAGL_FILL, 0x1d2028, 0x1d2028,
@@ -114,7 +101,7 @@ bagl_element_t const bagl_ui_address[] = {
      0,
      0x37ae99,
      0xF9F9F9,
-     (bagl_element_callback_t)io_seproxyhal_touch_address_cancel,
+     io_seproxyhal_touch_address_cancel,
      NULL,
      NULL},
     {{BAGL_BUTTON | BAGL_FLAG_TOUCHABLE, 0x00, 165, 385, 120, 40, 0, 6,
@@ -126,7 +113,7 @@ bagl_element_t const bagl_ui_address[] = {
      0,
      0x37ae99,
      0xF9F9F9,
-     (bagl_element_callback_t)io_seproxyhal_touch_address_ok,
+     io_seproxyhal_touch_address_ok,
      NULL,
      NULL},
 
@@ -149,8 +136,21 @@ bagl_element_t const bagl_ui_address[] = {
      NULL,
      NULL}};
 
+unsigned int ui_address_blue_button(unsigned int button_mask, unsigned int button_mask_counter) {
+	return 0;
+}
+
 // UI to approve or deny the signature proposal
-static const bagl_element_t const bagl_ui_approval[] = {
+static const bagl_element_t const ui_approval_blue[] = {
+    {{BAGL_RECTANGLE, 0x00, 0, 60, 320, 420, 0, 0, BAGL_FILL, 0xf9f9f9,
+      0xf9f9f9, 0, 0},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
 
     // type                                 id    x    y    w    h    s  r  fill
     // fg        bg        font icon   text, out, over, touch
@@ -182,7 +182,7 @@ static const bagl_element_t const bagl_ui_approval[] = {
      0,
      0x37ae99,
      0xF9F9F9,
-     (bagl_element_callback_t)io_seproxyhal_touch_sign_cancel,
+     io_seproxyhal_touch_sign_cancel,
      NULL,
      NULL},
     {{BAGL_BUTTON | BAGL_FLAG_TOUCHABLE, 0x00, 165, 385, 120, 40, 0, 6,
@@ -194,7 +194,7 @@ static const bagl_element_t const bagl_ui_approval[] = {
      0,
      0x37ae99,
      0xF9F9F9,
-     (bagl_element_callback_t)io_seproxyhal_touch_sign_ok,
+     io_seproxyhal_touch_sign_ok,
      NULL,
      NULL},
 
@@ -218,8 +218,21 @@ static const bagl_element_t const bagl_ui_approval[] = {
      NULL},
 };
 
+unsigned int ui_approval_blue_button(unsigned int button_mask, unsigned int button_mask_counter) {
+	return 0;
+}
+
 // UI displayed when no signature proposal has been received
-static const bagl_element_t const bagl_ui_idle[] = {
+static const bagl_element_t const ui_idle_blue[] = {
+    {{BAGL_RECTANGLE, 0x00, 0, 60, 320, 420, 0, 0, BAGL_FILL, 0xf9f9f9,
+      0xf9f9f9, 0, 0},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
 
     {{BAGL_RECTANGLE, 0x00, 0, 0, 320, 60, 0, 0, BAGL_FILL, 0x1d2028, 0x1d2028,
       0, 0},
@@ -250,11 +263,60 @@ static const bagl_element_t const bagl_ui_idle[] = {
      0,
      0x37ae99,
      0xF9F9F9,
-     (bagl_element_callback_t)io_seproxyhal_touch_exit,
+     io_seproxyhal_touch_exit,
      NULL,
      NULL}
 
 };
+
+unsigned int ui_idle_blue_button(unsigned int button_mask, unsigned int button_mask_counter) {
+	return 0;
+}
+
+
+const bagl_element_t ui_idle_nanos[] = {
+  // type                               userid    x    y   w    h  str rad fill      fg        bg      fid iid  txt   touchparams...       ]
+  {{BAGL_RECTANGLE                      , 0x00,   0,   0, 128,  32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF, 0, 0}, NULL, 0, 0, 0, NULL, NULL, NULL},
+  
+  {{BAGL_LABELINE                       , 0x00,   0,  12, 128,  32, 0, 0, 0        , 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_EXTRABOLD_11px|BAGL_FONT_ALIGNMENT_CENTER, 0  }, "SSH Agent", 0, 0, 0, NULL, NULL, NULL },
+  //{{BAGL_LABELINE                       , 0x02,   0,  26, 128,  32, 0, 0, 0        , 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_REGULAR_11px|BAGL_FONT_ALIGNMENT_CENTER, 0  }, "Waiting for requests...", 0, 0, 0, NULL, NULL, NULL },
+
+  {{BAGL_ICON                           , 0x00,   3,  12,   7,   7, 0, 0, 0        , 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_CROSS  }, NULL, 0, 0, 0, NULL, NULL, NULL },
+};
+unsigned int ui_idle_nanos_button(unsigned int button_mask, unsigned int button_mask_counter);
+
+const bagl_element_t ui_address_nanos[] = {
+  // type                               userid    x    y   w    h  str rad fill      fg        bg      fid iid  txt   touchparams...       ]
+  {{BAGL_RECTANGLE                      , 0x00,   0,   0, 128,  32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF, 0, 0}, NULL, 0, 0, 0, NULL, NULL, NULL},
+  
+  {{BAGL_LABELINE                       , 0x01,   0,  12, 128,  32, 0, 0, 0        , 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_EXTRABOLD_11px|BAGL_FONT_ALIGNMENT_CENTER, 0  }, "SSH Agent", 0, 0, 0, NULL, NULL, NULL },
+  {{BAGL_LABELINE                       , 0x02,   0,  26, 128,  32, 0, 0, 0        , 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_REGULAR_11px|BAGL_FONT_ALIGNMENT_CENTER, 0  }, "Provide public key?", 0, 0, 0, NULL, NULL, NULL },
+
+  {{BAGL_ICON                           , 0x00,   3,  12,   7,   7, 0, 0, 0        , 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_CROSS  }, NULL, 0, 0, 0, NULL, NULL, NULL },
+  {{BAGL_ICON                           , 0x00, 117,  13,   8,   6, 0, 0, 0        , 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_CHECK  }, NULL, 0, 0, 0, NULL, NULL, NULL },
+};
+unsigned int ui_address_nanos_button(unsigned int button_mask, unsigned int button_mask_counter);
+
+const bagl_element_t ui_approval_nanos[] = {
+  // type                               userid    x    y   w    h  str rad fill      fg        bg      fid iid  txt   touchparams...       ]
+  {{BAGL_RECTANGLE                      , 0x00,   0,   0, 128,  32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF, 0, 0}, NULL, 0, 0, 0, NULL, NULL, NULL},
+  
+  {{BAGL_LABELINE                       , 0x01,   0,  12, 128,  32, 0, 0, 0        , 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_EXTRABOLD_11px|BAGL_FONT_ALIGNMENT_CENTER, 0  }, "SSH Agent", 0, 0, 0, NULL, NULL, NULL },
+  {{BAGL_LABELINE                       , 0x02,   0,  26, 128,  32, 0, 0, 0        , 0xFFFFFF, 0x000000, BAGL_FONT_OPEN_SANS_REGULAR_11px|BAGL_FONT_ALIGNMENT_CENTER, 0  }, "Authenticate?", 0, 0, 0, NULL, NULL, NULL },
+
+  {{BAGL_ICON                           , 0x00,   3,  12,   7,   7, 0, 0, 0        , 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_CROSS  }, NULL, 0, 0, 0, NULL, NULL, NULL },
+  {{BAGL_ICON                           , 0x00, 117,  13,   8,   6, 0, 0, 0        , 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_CHECK  }, NULL, 0, 0, 0, NULL, NULL, NULL },
+};
+unsigned int ui_approval_nanos_button(unsigned int button_mask, unsigned int button_mask_counter);
+
+void ui_idle(void) {
+    if (os_seph_features() & SEPROXYHAL_TAG_SESSION_START_EVENT_FEATURE_SCREEN_BIG) {
+        UX_DISPLAY(ui_idle_blue, NULL);
+    }
+    else {
+        UX_DISPLAY(ui_idle_nanos, NULL);   
+    }
+}
 
 uint32_t path_item_to_string(char *dest, uint32_t number) {
     uint32_t offset = 0;
@@ -312,14 +374,22 @@ int app_cx_ecfp_init_private_key(cx_curve_t curve, unsigned char WIDE *rawkey,
     }
     return key_len;
 }
-
-unsigned int io_seproxyhal_touch_exit(bagl_element_t *e) {
+unsigned int io_seproxyhal_touch_exit(const bagl_element_t *e) {
     // Go back to the dashboard
     os_sched_exit(0);
     return 0; // do not redraw the widget
 }
 
-unsigned int io_seproxyhal_touch_sign_ok(bagl_element_t *e) {
+unsigned int ui_idle_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
+    switch(button_mask) {
+        case BUTTON_EVT_RELEASED|BUTTON_LEFT: // EXIT
+		    io_seproxyhal_touch_exit(NULL);
+            break;
+    }
+    return 0;
+}
+
+unsigned int io_seproxyhal_touch_sign_ok(const bagl_element_t *e) {
     uint8_t privateKeyData[32];
     uint8_t hash[32];
     cx_ecfp_private_key_t privateKey;
@@ -337,32 +407,40 @@ unsigned int io_seproxyhal_touch_sign_ok(bagl_element_t *e) {
     os_memset(&privateKey, 0, sizeof(privateKey));
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;
-    uiDone = 1;
     // Send back the response, do not restart the event loop
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
     // Display back the original UX
-    uiState = UI_IDLE;
-    currentUiElement = 0;
-    io_seproxyhal_display(&bagl_ui_erase_all[0]);
+    ui_idle();
     return 0; // do not redraw the widget
 }
 
-unsigned int io_seproxyhal_touch_sign_cancel(bagl_element_t *e) {
-    uiDone = 1;
+unsigned int io_seproxyhal_touch_sign_cancel(const bagl_element_t *e) {
     G_io_apdu_buffer[0] = 0x69;
     G_io_apdu_buffer[1] = 0x85;
     // Send back the response, do not restart the event loop
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
     // Display back the original UX
-    uiState = UI_IDLE;
-    currentUiElement = 0;
-    io_seproxyhal_display(&bagl_ui_erase_all[0]);
+    ui_idle();
     return 0; // do not redraw the widget
 }
 
-unsigned int io_seproxyhal_touch_address_ok(bagl_element_t *e) {
+
+unsigned int ui_approval_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
+    switch(button_mask) {
+        case BUTTON_EVT_RELEASED|BUTTON_LEFT: // CANCEL
+			io_seproxyhal_touch_sign_cancel(NULL);
+            break;
+
+        case BUTTON_EVT_RELEASED|BUTTON_RIGHT: { // OK
+			io_seproxyhal_touch_sign_ok(NULL);
+            break;
+        }
+    }    
+    return 0;
+}
+
+unsigned int io_seproxyhal_touch_address_ok(const bagl_element_t *e) {
     uint32_t tx = 0;
-    uiDone = 1;
     G_io_apdu_buffer[tx++] = 65;
     os_memmove(G_io_apdu_buffer + tx, operationContext.publicKey.W, 65);
     tx += 65;
@@ -371,26 +449,33 @@ unsigned int io_seproxyhal_touch_address_ok(bagl_element_t *e) {
     // Send back the response, do not restart the event loop
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
     // Display back the original UX
-    uiState = UI_IDLE;
-    currentUiElement = 0;
-    io_seproxyhal_display(&bagl_ui_erase_all[0]);
+    ui_idle();
     return 0; // do not redraw the widget
 }
 
-unsigned int io_seproxyhal_touch_address_cancel(bagl_element_t *e) {
-    uiDone = 1;
+unsigned int io_seproxyhal_touch_address_cancel(const bagl_element_t *e) {
     G_io_apdu_buffer[0] = 0x69;
     G_io_apdu_buffer[1] = 0x85;
     // Send back the response, do not restart the event loop
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
     // Display back the original UX
-    uiState = UI_IDLE;
-    currentUiElement = 0;
-    io_seproxyhal_display(&bagl_ui_erase_all[0]);
+    ui_idle();
     return 0; // do not redraw the widget
 }
 
-void reset(void) {
+
+unsigned int ui_address_nanos_button(unsigned int button_mask, unsigned int button_mask_counter) {
+    switch(button_mask) {
+        case BUTTON_EVT_RELEASED|BUTTON_LEFT: // CANCEL
+			io_seproxyhal_touch_address_cancel(NULL);
+            break;
+
+        case BUTTON_EVT_RELEASED|BUTTON_RIGHT: { // OK
+            io_seproxyhal_touch_address_ok(NULL);
+            break;
+        }
+    }
+    return 0;
 }
 
 unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
@@ -439,6 +524,7 @@ void sample_main(void) {
                 tx = 0; // ensure no race in catch_other if io_exchange throws
                         // an error
                 rx = io_exchange(CHANNEL_APDU | flags, rx);
+                flags = 0;
 
                 // no apdu received, well, reset the session, and reset the
                 // bootloader configuration
@@ -486,25 +572,13 @@ void sample_main(void) {
                     os_memset(&privateKey, 0, sizeof(privateKey));
                     os_memset(privateKeyData, 0, sizeof(privateKeyData));
                     path_to_string(keyPath);
-                    uiState = UI_ADDRESS;
-                    currentUiElement = 0;
-                    uiDone = 0;
-                    io_seproxyhal_display(&bagl_ui_erase_all[0]);
-                    // Pump SPI events until the UI has been displayed, then
-                    // go
-                    // back to the original event loop
-                    while (!uiDone) {
-                        unsigned int rx_len;
-                        rx_len = io_seproxyhal_spi_recv(
-                            G_io_seproxyhal_spi_buffer,
-                            sizeof(G_io_seproxyhal_spi_buffer), 0);
-                        if (io_seproxyhal_handle_event()) {
-                            io_seproxyhal_general_status();
-                            continue;
-                        }
-                        io_event(CHANNEL_SPI);
-                    }
-                    continue;
+				    if (os_seph_features() & SEPROXYHAL_TAG_SESSION_START_EVENT_FEATURE_SCREEN_BIG) {
+				        UX_DISPLAY(ui_address_blue, NULL);
+				    }
+				    else {
+				        UX_DISPLAY(ui_address_nanos, NULL);   
+				    }
+                    flags |= IO_ASYNCH_REPLY;
                 }
 
                 break;
@@ -548,31 +622,19 @@ void sample_main(void) {
                     }
 
                     path_to_string(keyPath);
-                    uiState = UI_APPROVAL;
-                    currentUiElement = 0;
-                    uiDone = 0;
-                    io_seproxyhal_display(&bagl_ui_erase_all[0]);
-                    // Pump SPI events until the UI has been displayed, then
-                    // go
-                    // back to the original event loop
-                    while (!uiDone) {
-                        unsigned int rx_len;
-                        rx_len = io_seproxyhal_spi_recv(
-                            G_io_seproxyhal_spi_buffer,
-                            sizeof(G_io_seproxyhal_spi_buffer), 0);
-                        if (io_seproxyhal_handle_event()) {
-                            io_seproxyhal_general_status();
-                            continue;
-                        }
-                        io_event(CHANNEL_SPI);
-                    }
-                    continue;
+				    if (os_seph_features() & SEPROXYHAL_TAG_SESSION_START_EVENT_FEATURE_SCREEN_BIG) {
+				        UX_DISPLAY(ui_approval_blue, NULL);
+				    }
+				    else {
+				        UX_DISPLAY(ui_approval_nanos, NULL);   
+				    }
+                    flags |= IO_ASYNCH_REPLY;
                 }
 
                 break;
 
                 case 0xFF: // return to dashboard
-                    goto return_to_dashboard;
+                    os_sched_exit(0);
 
                 default:
                     THROW(0x6D00);
@@ -599,50 +661,25 @@ void sample_main(void) {
         }
         END_TRY;
     }
-
-return_to_dashboard:
-    return;
 }
 
 void io_seproxyhal_display(const bagl_element_t *element) {
-    element_displayed = 1;
     return io_seproxyhal_display_default((bagl_element_t *)element);
 }
 
 unsigned char io_event(unsigned char channel) {
     // nothing done with the event, throw an error on the transport layer if
     // needed
-    unsigned int offset = 0;
 
     // can't have more than one tag in the reply, not supported yet.
     switch (G_io_seproxyhal_spi_buffer[0]) {
-    case SEPROXYHAL_TAG_FINGER_EVENT: {
-        bagl_element_t *elements = NULL;
-        unsigned int elementsSize = 0;
-        if (uiState == UI_IDLE) {
-            elements = (bagl_element_t *)bagl_ui_idle;
-            elementsSize = sizeof(bagl_ui_idle) / sizeof(bagl_element_t);
-        } else if (uiState == UI_ADDRESS) {
-            elements = (bagl_element_t *)bagl_ui_address;
-            elementsSize = sizeof(bagl_ui_address) / sizeof(bagl_element_t);
-        } else if (uiState == UI_APPROVAL) {
-            elements = (bagl_element_t *)bagl_ui_approval;
-            elementsSize = sizeof(bagl_ui_approval) / sizeof(bagl_element_t);
-        }
-        if (elements != NULL) {
-            io_seproxyhal_touch(elements, elementsSize,
-                                (G_io_seproxyhal_spi_buffer[4] << 8) |
-                                    (G_io_seproxyhal_spi_buffer[5] & 0xFF),
-                                (G_io_seproxyhal_spi_buffer[6] << 8) |
-                                    (G_io_seproxyhal_spi_buffer[7] & 0xFF),
-                                G_io_seproxyhal_spi_buffer[3]);
-            if (!element_displayed) {
-                goto general_status;
-            }
-        } else {
-            goto general_status;
-        }
-    } break;
+    case SEPROXYHAL_TAG_FINGER_EVENT:
+		UX_FINGER_EVENT(G_io_seproxyhal_spi_buffer);
+		break;
+	
+    case SEPROXYHAL_TAG_BUTTON_PUSH_EVENT:
+        UX_BUTTON_PUSH_EVENT(G_io_seproxyhal_spi_buffer);
+        break;
 
 #ifdef HAVE_BLE
     // Make automatically discoverable again when disconnected
@@ -663,65 +700,49 @@ unsigned char io_event(unsigned char channel) {
             G_io_seproxyhal_spi_buffer[3] = 3; // ble on & advertise
             io_seproxyhal_spi_send(G_io_seproxyhal_spi_buffer, 5);
         }
-        goto general_status;
+        break;
 #endif
 
     case SEPROXYHAL_TAG_DISPLAY_PROCESSED_EVENT:
-        if (uiState == UI_IDLE) {
-            if (currentUiElement <
-                (sizeof(bagl_ui_idle) / sizeof(bagl_element_t))) {
-                io_seproxyhal_display(&bagl_ui_idle[currentUiElement++]);
-                break;
-            }
-        } else if (uiState == UI_ADDRESS) {
-            if (currentUiElement <
-                (sizeof(bagl_ui_address) / sizeof(bagl_element_t))) {
-                io_seproxyhal_display(&bagl_ui_address[currentUiElement++]);
-                break;
-            }
-        } else if (uiState == UI_APPROVAL) {
-            if (currentUiElement <
-                (sizeof(bagl_ui_approval) / sizeof(bagl_element_t))) {
-                io_seproxyhal_display(&bagl_ui_approval[currentUiElement++]);
-                break;
-            }
-        } else {
-            screen_printf("Unknown UI state\n");
+        if (UX_DISPLAYED()) {
+            // TODO perform actions after all screen elements have been displayed
         }
-        if (usb_enable_request) {
-            io_usb_enable(1);
-            usb_enable_request = 0;
+        else {
+            UX_DISPLAY_PROCESSED_EVENT();
         }
-        goto general_status;
+        break;
 
     // unknown events are acknowledged
     default:
-    general_status:
-        // send a general status last command
-        offset = 0;
-        G_io_seproxyhal_spi_buffer[offset++] = SEPROXYHAL_TAG_GENERAL_STATUS;
-        G_io_seproxyhal_spi_buffer[offset++] = 0;
-        G_io_seproxyhal_spi_buffer[offset++] = 2;
-        G_io_seproxyhal_spi_buffer[offset++] =
-            SEPROXYHAL_TAG_GENERAL_STATUS_LAST_COMMAND >> 8;
-        G_io_seproxyhal_spi_buffer[offset++] =
-            SEPROXYHAL_TAG_GENERAL_STATUS_LAST_COMMAND;
-        io_seproxyhal_spi_send(G_io_seproxyhal_spi_buffer, offset);
-        element_displayed = 0;
         break;
+    }
+
+    // close the event if not done previously (by a display or whatever)
+    if (!io_seproxyhal_spi_is_status_sent()) {
+        io_seproxyhal_general_status();
     }
     // command has been processed, DO NOT reset the current APDU transport
     return 1;
+}
+
+void app_exit(void) {
+
+    BEGIN_TRY_L(exit) {
+        TRY_L(exit) {
+            os_sched_exit(-1);
+        }
+        FINALLY_L(exit) {
+
+        }
+    }
+    END_TRY_L(exit);
 }
 
 __attribute__((section(".boot"))) int main(void) {
     // exit critical section
     __asm volatile("cpsie i");
 
-    usb_enable_request = 0;
-    element_displayed = 0;
-    uiState = UI_IDLE;
-    currentUiElement = 0;
+    UX_INIT();
 
     // ensure exception will work as planned
     os_boot();
@@ -730,19 +751,9 @@ __attribute__((section(".boot"))) int main(void) {
         TRY {
             io_seproxyhal_init();
 
-#ifdef HAVE_BLE
-            // send BLE power on (default parameters)
-            G_io_seproxyhal_spi_buffer[0] = SEPROXYHAL_TAG_BLE_RADIO_POWER;
-            G_io_seproxyhal_spi_buffer[1] = 0;
-            G_io_seproxyhal_spi_buffer[2] = 1;
-            G_io_seproxyhal_spi_buffer[3] = 3;
-            io_seproxyhal_spi_send(G_io_seproxyhal_spi_buffer, 4);
-            usb_enable_request = 1;
-            io_seproxyhal_display(&bagl_ui_erase_all[0]);
-#endif
+            USB_power(1);
 
-            usb_enable_request = 1;
-            io_seproxyhal_display(&bagl_ui_erase_all[0]);
+            ui_idle();
 
             sample_main();
         }
@@ -752,4 +763,6 @@ __attribute__((section(".boot"))) int main(void) {
         }
     }
     END_TRY;
+
+    app_exit();
 }
