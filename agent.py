@@ -29,6 +29,7 @@ import thread
 import logging
 
 SIG_HEADER = "ecdsa-sha2-nistp256"
+SIG_HEADER_EDDSA = "ssh-ed25519"
 
 SOCK_PREFIX = 'blue-ssh-agent'
 TIMEOUT = 0.5
@@ -41,7 +42,7 @@ SSH2_AGENT_SIGN_RESPONSE = 14
 
 SSH_AGENT_FAILURE = 5
 
-def handleRequestIdentities(message, key, path):
+def handleRequestIdentities(message, key, eddsa, path):
 	logging.debug("Request identities")
 	response = chr(SSH2_AGENT_IDENTITIES_ANSWER)
 	response += struct.pack(">I", 1)
@@ -49,7 +50,7 @@ def handleRequestIdentities(message, key, path):
 	response += struct.pack(">I", len(path)) + path
 	return response
 
-def handleSignRequest(message, key, path):
+def handleSignRequest(message, key, eddsa, path):
 	logging.debug("Sign request")
 	blobSize = struct.unpack(">I", message[0:4])[0]
 	blob = message[4 : 4 + blobSize]
@@ -76,10 +77,12 @@ def handleSignRequest(message, key, path):
 			p1 = 0x00
 		else:
 			p1 = 0x01
+		if eddsa:
+			p2 = 0x02
+		else:
+			p2 = 0x01
 		offset += chunkSize
-		if offset == len(challenge):
-			p1 |= 0x80
-		apdu = "8004".decode('hex') + chr(p1) + chr(00) + chr(len(data)) + data
+		apdu = "8004".decode('hex') + chr(p1) + chr(p2) + chr(len(data)) + data
 		signature = dongle.exchange(bytes(apdu))
 	dongle.close()
 	# Parse r and s
@@ -101,7 +104,7 @@ def handleSignRequest(message, key, path):
 	response += struct.pack(">I", len(encodedSignature)) + encodedSignature
 	return response
 
-def clientHandlerInternal(connection, key, comment):
+def clientHandlerInternal(connection, key, eddsa, comment):
 	logging.debug("Handling new client")
 	while True:		
 		try:
@@ -124,9 +127,9 @@ def clientHandlerInternal(connection, key, comment):
 		logging.debug("<= " + message.encode('hex'))
 		messageType = ord(message[0])
 		if messageType == SSH2_AGENTC_REQUEST_IDENTITIES:
-			response = handleRequestIdentities(message[1:], key, comment)
+			response = handleRequestIdentities(message[1:], key, eddsa, comment)
 		elif messageType == SSH2_AGENTC_SIGN_REQUEST:
-			response = handleSignRequest(message[1:], key, comment)
+			response = handleSignRequest(message[1:], key, eddsa, comment)
 		else:
 			logging.debug("Unhandled message")
 			response = chr(SSH_AGENT_FAILURE)
@@ -134,9 +137,9 @@ def clientHandlerInternal(connection, key, comment):
 		logging.debug("=> " + agentResponse.encode('hex'))
 		connection.send(agentResponse)	
 
-def clientHandler(connection, key, comment):		
+def clientHandler(connection, key, eddsa, comment):		
 	try:
-		clientHandlerInternal(connection, key, comment)
+		clientHandlerInternal(connection, key, eddsa, comment)
 	except Exception:
 		logging.debug("Internal error handling client", exc_info=True)
 		response = chr(SSH_AGENT_FAILURE)
@@ -160,6 +163,7 @@ def parse_bip32_path(path):
 parser = argparse.ArgumentParser()
 parser.add_argument('--path', help="BIP 32 path to use")
 parser.add_argument('--key', help="SSH encoded key to use")
+parser.add_argument("--ed25519", help="Use Ed25519 curve", action='store_true')
 parser.add_argument('--debug', help="Display debugging information", action='store_true')
 args = parser.parse_args()
 
@@ -188,10 +192,9 @@ try:
 	while True:
 		logging.debug("Server waiting ...")
 		connection, addr = server.accept()
-		print addr
 		logging.debug("New client connected")
 		connection.settimeout(TIMEOUT)
-		thread.start_new_thread(clientHandler, (connection, keyBlob, args.path))
+		thread.start_new_thread(clientHandler, (connection, keyBlob, args.ed25519, args.path))
 except KeyboardInterrupt:
 	pass
 finally:
