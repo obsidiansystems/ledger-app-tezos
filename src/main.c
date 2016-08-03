@@ -45,6 +45,7 @@ unsigned int io_seproxyhal_touch_ecdh_cancel(const bagl_element_t *e);
 #define P1_LAST_MARKER 0x80
 #define P2_PRIME256 0x01
 #define P2_CURVE25519 0x02
+#define P2_PUBLIC_KEY_MARKER 0x80
 
 #define OFFSET_CLA 0
 #define OFFSET_INS 1
@@ -66,6 +67,8 @@ ux_state_t ux;
 unsigned int ux_step;
 unsigned int ux_step_count;
 
+#define MAX_MSG 255
+
 typedef struct operationContext_t {
     uint8_t pathLength;
     uint32_t bip32Path[MAX_BIP32_PATH];
@@ -75,12 +78,16 @@ typedef struct operationContext_t {
     uint8_t depth;
     bool readingElement;
     bool direct;
+    bool fullMessageHash;
+    bool getPublicKey;
     uint8_t hashData[32];
     uint8_t lengthBuffer[4];
     uint8_t lengthOffset;
     uint32_t elementLength;
     uint8_t userName[MAX_USER_NAME + 1];
-    uint32_t userOffset;    
+    uint32_t userOffset; 
+    uint8_t message[MAX_MSG];
+    uint32_t messageLength;
 } operationContext_t;
 
 char keyPath[200];
@@ -619,7 +626,9 @@ unsigned int io_seproxyhal_touch_sign_ok(const bagl_element_t *e) {
     cx_ecfp_private_key_t privateKey;
     uint32_t tx = 0;
     if (!operationContext.direct) {
-        cx_hash(&operationContext.hash.header, CX_LAST, hash, 0, hash);
+        if (!operationContext.fullMessageHash) {
+          cx_hash(&operationContext.hash.header, CX_LAST, hash, 0, hash);
+        }
     }
     else {
         os_memmove(hash, operationContext.hashData, 32);
@@ -637,14 +646,37 @@ unsigned int io_seproxyhal_touch_sign_ok(const bagl_element_t *e) {
                                  &privateKey);
     os_memset(privateKeyData, 0, sizeof(privateKeyData));
     if (operationContext.curve == CX_CURVE_Ed25519) {
-        // TODO : remove when NULL public key is fixed
-        cx_ecfp_generate_pair(operationContext.curve, &operationContext.publicKey, &privateKey, 1);
-        tx = cx_eddsa_sign(&privateKey, &operationContext.publicKey, CX_LAST, CX_SHA512, hash,
+        if (!operationContext.fullMessageHash) {
+          tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, hash,
                        sizeof(hash), G_io_apdu_buffer);
+        }
+        else {
+          tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, operationContext.message,
+                       operationContext.messageLength, G_io_apdu_buffer);          
+        }
     }
     else {
         tx = cx_ecdsa_sign(&privateKey, CX_RND_RFC6979 | CX_LAST, CX_SHA256, hash,
                        sizeof(hash), G_io_apdu_buffer);
+    }
+    if (operationContext.getPublicKey) {
+#if CX_APILEVEL >= 5
+      if (operationContext.curve == CX_CURVE_Ed25519) {
+          cx_ecfp_init_public_key(operationContext.curve, NULL, 0, &operationContext.publicKey);
+          cx_eddsa_get_public_key(&privateKey, &operationContext.publicKey);
+      }
+      else {
+        cx_ecfp_generate_pair(operationContext.curve,
+          &operationContext.publicKey,
+          &privateKey, 1);
+      }
+#else                    
+        cx_ecfp_generate_pair(operationContext.curve,
+          &operationContext.publicKey,
+          &privateKey, 1);
+#endif                    
+       os_memmove(G_io_apdu_buffer + tx, operationContext.publicKey.W, 65);
+       tx += 65;
     }
     os_memset(&privateKey, 0, sizeof(privateKey));
     os_memset(&privateKeyData, 0, sizeof(privateKeyData));
@@ -891,9 +923,21 @@ void sample_main(void) {
 #endif    
                     cx_ecfp_init_private_key(curve, privateKeyData,
                                               32, &privateKey);
+#if CX_APILEVEL >= 5
+                    if (curve == CX_CURVE_Ed25519) {
+                      cx_ecfp_init_public_key(curve, NULL, 0, &operationContext.publicKey);
+                      cx_eddsa_get_public_key(&privateKey, &operationContext.publicKey);
+                    }
+                    else {
+                      cx_ecfp_generate_pair(curve,
+                                          &operationContext.publicKey,
+                                          &privateKey, 1);
+                    }
+#else                    
                     cx_ecfp_generate_pair(curve,
                                           &operationContext.publicKey,
                                           &privateKey, 1);
+#endif                    
                     os_memset(&privateKey, 0, sizeof(privateKey));
                     os_memset(privateKeyData, 0, sizeof(privateKeyData));
                     path_to_string(keyPath);
@@ -913,6 +957,8 @@ void sample_main(void) {
                     uint8_t p2 = G_io_apdu_buffer[OFFSET_P2];
                     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
                     uint32_t dataLength = G_io_apdu_buffer[OFFSET_LC];
+                    bool getPublicKey = ((p2 & P2_PUBLIC_KEY_MARKER) != 0);
+                    p2 &= ~P2_PUBLIC_KEY_MARKER;
 
                     if ((p2 != P2_PRIME256) && (p2 != P2_CURVE25519)) {
                         THROW(0x6B00);
@@ -935,12 +981,17 @@ void sample_main(void) {
                             dataBuffer += 4;
                             dataLength -= 4;
                         }
-                        cx_sha256_init(&operationContext.hash);
+                        operationContext.fullMessageHash = (p2 == P2_CURVE25519);
+                        operationContext.getPublicKey = getPublicKey;
+                        operationContext.messageLength = 0;
+                        if (!operationContext.fullMessageHash) {
+                          cx_sha256_init(&operationContext.hash);
+                        }
                         operationContext.depth = 0;
                         operationContext.readingElement = false;                  
                         operationContext.lengthOffset = 0;      
                         operationContext.userOffset = 0;
-                        operationContext.direct = false;
+                        operationContext.direct = false;                        
                     } else if (p1 != P1_NEXT) {
                         THROW(0x6B00);
                     }
@@ -952,7 +1003,16 @@ void sample_main(void) {
                         if (!operationContext.readingElement) {
                             uint8_t available = (dataLength > (4 -  operationContext.lengthOffset) ? (4 - operationContext.lengthOffset) : dataLength);                            
                             os_memmove(operationContext.lengthBuffer + operationContext.lengthOffset, dataBuffer, available);
-                            cx_hash(&operationContext.hash.header, 0, dataBuffer, available, NULL);
+                            if (!operationContext.fullMessageHash) {
+                              cx_hash(&operationContext.hash.header, 0, dataBuffer, available, NULL);
+                            }
+                            else {
+                              if ((operationContext.messageLength + available) > MAX_MSG) {
+                                THROW(0x6a80);
+                              }
+                              os_memmove(operationContext.message + operationContext.messageLength, dataBuffer, available);
+                              operationContext.messageLength += available;
+                            }
                             dataBuffer += available;
                             dataLength -= available;
                             operationContext.lengthOffset += available;
@@ -968,7 +1028,16 @@ void sample_main(void) {
                         }
                         if (operationContext.readingElement) {
                             uint32_t available = (dataLength > operationContext.elementLength ? operationContext.elementLength : dataLength);
-                            cx_hash(&operationContext.hash.header, 0, dataBuffer, available, NULL);
+                            if (!operationContext.fullMessageHash) {
+                              cx_hash(&operationContext.hash.header, 0, dataBuffer, available, NULL);
+                            }
+                            else {
+                              if ((operationContext.messageLength + available) > MAX_MSG) {
+                                THROW(0x6a80);
+                              }
+                              os_memmove(operationContext.message + operationContext.messageLength, dataBuffer, available);
+                              operationContext.messageLength += available;
+                            }                            
                             if ((operationContext.depth == DEPTH_USER) && (operationContext.userOffset < MAX_USER_NAME)) {
                                 uint32_t userAvailable = ((operationContext.userOffset + dataLength) > MAX_USER_NAME ? (MAX_USER_NAME - operationContext.userOffset) : dataLength);
                                 os_memmove(operationContext.userName, dataBuffer, userAvailable);
@@ -1040,6 +1109,8 @@ void sample_main(void) {
                         }
                         cx_sha256_init(&operationContext.hash);
                         operationContext.direct = false;
+                        operationContext.getPublicKey = false;
+                        operationContext.fullMessageHash = false;
                     } else if (p1 != P1_NEXT) {
                         THROW(0x6B00);
                     }
@@ -1093,6 +1164,7 @@ void sample_main(void) {
                         THROW(0x6700);
                     }
                     operationContext.direct = true;
+                    operationContext.getPublicKey = false;
                     os_memmove(operationContext.hashData, dataBuffer, 32);
 
                     operationContext.curve = (p2 == P2_PRIME256 ? CX_CURVE_256R1 : CX_CURVE_Ed25519);
