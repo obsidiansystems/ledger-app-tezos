@@ -125,20 +125,11 @@ log = $(if $(strip $(VERBOSE)),$1,@$1)
 
 default: prepare bin/$(PROG)
 
-SIGN_U2F=u2f_nanos_oto
-SIGN_BASENAME=st31_gpg
-
-sign:
-	#python ../../../hsm/safenet/server/python/signMcuDirect.py --url https://hsmprod.hardwarewallet.com/hsm/process --u2f u2f_nanos_oto --mcuhash 25cdd059c641c57618093b4423a613a3c95e2b8306918ae8cc571a126393fa95 --perso perso_11
-	python ../../../hsm/safenet/server/python/encryptApp.py --url https://hsmprod.hardwarewallet.com/hsm/process --u2f $(SIGN_U2F) --perso perso_11 --icon `python $(BOLOS_SDK)/icon.py 16 16 icon.gif hexbitmaponly` --appName $(APPNAME) --fileName bin/$(PROG).hex --target bin/$(SIGN_BASENAME) $(APP_LOAD_PARAMS) |grep -ni "hsm token" | cut -f3 -d' ' | xxd -r -p > bin/$(SIGN_BASENAME)_key
-	# keep the hash for display
-	bash ../intelhex_sha256 bin/$(PROG).hex > bin/$(SIGN_BASENAME).sha256
-
 load: 
 	python -m ledgerblue.loadApp --targetId $(TARGET_ID) --fileName bin/$(PROG).hex --appName $(APPNAME) --icon `python $(BOLOS_SDK)/icon.py 16 16 icon.gif hexbitmaponly` $(APP_LOAD_PARAMS) 
 
 load_release:
-	python -m ledgerblue.loadApp --targetId $(TARGET_ID) --fileName bin/$(PROG).hex --appName $(APPNAME) --icon `python $(BOLOS_SDK)/icon.py 16 16 icon.gif hexbitmaponly` $(APP_LOAD_PARAMS) --signature 30440220636d51d0eda9754f34cb24ee65c8566275fc8bc44c6c07b3145645d350b5732702203228ff7628e5d918ddbeadf7cb0f2fa841e6815a07a161def34c4423c96d4537
+	python -m ledgerblue.loadApp --targetId $(TARGET_ID) --fileName bin/$(PROG).hex --appName $(APPNAME) --icon `python $(BOLOS_SDK)/icon.py 16 16 icon.gif hexbitmaponly` $(APP_LOAD_PARAMS) --signature 304402200c67c48ab210566f576c4ed95c6b151df106aad4b7c60e88b387c72945cd0b8e0220442c8b3f2968f109c7fc65611c1dce99f41243013273c75f74dbaeb80f56bfc6 
 
 delete:
 	python -m ledgerblue.deleteApp --targetId $(TARGET_ID) --appName $(APPNAME)
