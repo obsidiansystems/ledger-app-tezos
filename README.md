@@ -1,8 +1,12 @@
 # blue-app-ssh-agent
 
-A simple SSH agent for Ledger Blue, supporting prime256v1 keys.
+A simple PGP and SSH agent for Ledger Blue, supporting prime256v1 and ed25519 keys.
 
-To use it : run getPublicKey.py to get the public key in SSH format, to be added to your authorized keys on the target
+This agent is compatible with the third party SSH/PGP host client from Roman Zeyde available at https://github.com/romanz/trezor-agent - it is recommended to use it for extra functionalities
+
+You can also use the SSH functionalities with the following instructions using Python 2 :
+
+Run getPublicKey.py to get the public key in SSH format, to be added to your authorized keys on the target
 
 ```
 python getPublicKey.py
