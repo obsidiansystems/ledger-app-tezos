@@ -875,7 +875,7 @@ unsigned int io_seproxyhal_touch_sign_ok(const bagl_element_t *e) {
                            hash, sizeof(hash), G_io_apdu_buffer);
     }
     if (operationContext.getPublicKey) {
-#if CX_APILEVEL >= 5
+#if ((CX_APILEVEL >= 5) && (CX_APILEVEL < 7))
         if (operationContext.curve == CX_CURVE_Ed25519) {
             cx_ecfp_init_public_key(operationContext.curve, NULL, 0,
                                     &operationContext.publicKey);
@@ -1139,7 +1139,7 @@ void sample_main(void) {
 #endif
                     cx_ecfp_init_private_key(curve, privateKeyData, 32,
                                              &privateKey);
-#if CX_APILEVEL >= 5
+#if ((CX_APILEVEL >= 5) && (CX_APILEVEL < 7))
                     if (curve == CX_CURVE_Ed25519) {
                         cx_ecfp_init_public_key(curve, NULL, 0,
                                                 &operationContext.publicKey);
@@ -1549,12 +1549,7 @@ unsigned char io_event(unsigned char channel) {
 #endif
 
     case SEPROXYHAL_TAG_DISPLAY_PROCESSED_EVENT:
-        if (UX_DISPLAYED()) {
-            // TODO perform actions after all screen elements have been
-            // displayed
-        } else {
-            UX_DISPLAY_PROCESSED_EVENT();
-        }
+        UX_DISPLAYED_EVENT({});
         break;
 
     case SEPROXYHAL_TAG_TICKER_EVENT:
