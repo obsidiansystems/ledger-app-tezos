@@ -863,16 +863,36 @@ unsigned int io_seproxyhal_touch_sign_ok(const bagl_element_t *e) {
     os_memset(privateKeyData, 0, sizeof(privateKeyData));
     if (operationContext.curve == CX_CURVE_Ed25519) {
         if (!operationContext.fullMessageHash) {
+#if CX_APILEVEL >= 8
+            tx = cx_eddsa_sign(&privateKey, CX_LAST, CX_SHA512, hash,
+                               sizeof(hash), NULL, 0, G_io_apdu_buffer, NULL);
+#else
             tx = cx_eddsa_sign(&privateKey, NULL, CX_LAST, CX_SHA512, hash,
                                sizeof(hash), G_io_apdu_buffer);
+#endif            
         } else {
+#if CX_APILEVEL >= 8            
+            tx = cx_eddsa_sign(
+                &privateKey, CX_LAST, CX_SHA512, operationContext.message,
+                operationContext.messageLength, NULL, 0, G_io_apdu_buffer, NULL);
+#else        
             tx = cx_eddsa_sign(
                 &privateKey, NULL, CX_LAST, CX_SHA512, operationContext.message,
                 operationContext.messageLength, G_io_apdu_buffer);
+#endif            
         }
     } else {
+#if CX_APILEVEL >= 8        
+        unsigned int info = 0;
+        tx = cx_ecdsa_sign(&privateKey, CX_RND_RFC6979 | CX_LAST, CX_SHA256,
+                           hash, sizeof(hash), G_io_apdu_buffer, &info);
+        if (info & CX_ECCINFO_PARITY_ODD) {
+            G_io_apdu_buffer[0] |= 0x01;
+        }
+#else        
         tx = cx_ecdsa_sign(&privateKey, CX_RND_RFC6979 | CX_LAST, CX_SHA256,
                            hash, sizeof(hash), G_io_apdu_buffer);
+#endif        
     }
     if (operationContext.getPublicKey) {
 #if ((CX_APILEVEL >= 5) && (CX_APILEVEL < 7))
