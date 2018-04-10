@@ -21,7 +21,7 @@ endif
 include $(BOLOS_SDK)/Makefile.defines
 
 APPNAME = "SSH/PGP Agent"
-APP_LOAD_PARAMS=--appFlags 0 --curve ed25519 --curve prime256r1 --path "44'/535348'" --path "13'" --path "17'" $(COMMON_LOAD_PARAMS) 
+APP_LOAD_PARAMS=--appFlags 0 --curve ed25519 --curve prime256r1 --path "44'/535348'" --path "13'" --path "17'" $(COMMON_LOAD_PARAMS)
 APPVERSION_M=0
 APPVERSION_N=0
 APPVERSION_P=4
@@ -38,7 +38,7 @@ all: default
 ############
 
 DEFINES   += OS_IO_SEPROXYHAL IO_SEPROXYHAL_BUFFER_SIZE_B=128
-DEFINES   += HAVE_BAGL HAVE_PRINTF 
+DEFINES   += HAVE_BAGL HAVE_PRINTF
 DEFINES   += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=6 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
 DEFINES   += VERSION=\"$(APPVERSION)\"
 
@@ -47,7 +47,7 @@ DEFINES   += VERSION=\"$(APPVERSION)\"
 ##############
 GCCPATH   := $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/bin/
 CLANGPATH := $(BOLOS_ENV)/clang-arm-fropi/bin/
-CC       := $(CLANGPATH)clang 
+CC       := $(CLANGPATH)clang
 
 #CFLAGS   += -O0
 CFLAGS   += -O3 -Os
@@ -56,7 +56,7 @@ AS     := $(GCCPATH)arm-none-eabi-gcc
 
 LD       := $(GCCPATH)arm-none-eabi-gcc
 LDFLAGS  += -O3 -Os
-LDLIBS   += -lm -lgcc -lc 
+LDLIBS   += -lm -lgcc -lc
 
 # import rules to compile glyphs(/pone)
 include $(BOLOS_SDK)/Makefile.glyphs
@@ -77,4 +77,3 @@ include $(BOLOS_SDK)/Makefile.rules
 
 #add dependency on custom makefile filename
 dep/%.d: %.c Makefile
-
