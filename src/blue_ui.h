@@ -278,30 +278,31 @@ static const bagl_element_t const ui_approval_pgp_ecdh_blue[] = {
      NULL,
      NULL},
 
-    {{BAGL_BUTTON | BAGL_FLAG_TOUCHABLE, 0x00, 35, 385, 120, 40, 0, 6,
-      BAGL_FILL, 0xcccccc, 0xF9F9F9,
-      BAGL_FONT_OPEN_SANS_LIGHT_14px | BAGL_FONT_ALIGNMENT_CENTER |
-          BAGL_FONT_ALIGNMENT_MIDDLE,
-      0},
-     "CANCEL",
-     0,
-     0x37ae99,
-     0xF9F9F9,
-     io_seproxyhal_touch_ecdh_cancel,
-     NULL,
-     NULL},
-    {{BAGL_BUTTON | BAGL_FLAG_TOUCHABLE, 0x00, 165, 385, 120, 40, 0, 6,
-      BAGL_FILL, 0x41ccb4, 0xF9F9F9,
-      BAGL_FONT_OPEN_SANS_LIGHT_14px | BAGL_FONT_ALIGNMENT_CENTER |
-          BAGL_FONT_ALIGNMENT_MIDDLE,
-      0},
-     "CONFIRM",
-     0,
-     0x37ae99,
-     0xF9F9F9,
-     io_seproxyhal_touch_ecdh_ok,
-     NULL,
-     NULL},
+    /* {{BAGL_BUTTON | BAGL_FLAG_TOUCHABLE, 0x00, 35, 385, 120, 40, 0, 6, */
+    /*   BAGL_FILL, 0xcccccc, 0xF9F9F9, */
+    /*   BAGL_FONT_OPEN_SANS_LIGHT_14px | BAGL_FONT_ALIGNMENT_CENTER | */
+    /*       BAGL_FONT_ALIGNMENT_MIDDLE, */
+    /*   0}, */
+    /*  "CANCEL", */
+    /*  0, */
+    /*  0x37ae99, */
+    /*  0xF9F9F9, */
+    /*  io_seproxyhal_touch_ecdh_cancel, */
+    /*  NULL, */
+    /*  NULL}, */
+
+    /* {{BAGL_BUTTON | BAGL_FLAG_TOUCHABLE, 0x00, 165, 385, 120, 40, 0, 6, */
+    /*   BAGL_FILL, 0x41ccb4, 0xF9F9F9, */
+    /*   BAGL_FONT_OPEN_SANS_LIGHT_14px | BAGL_FONT_ALIGNMENT_CENTER | */
+    /*       BAGL_FONT_ALIGNMENT_MIDDLE, */
+    /*   0}, */
+    /*  "CONFIRM", */
+    /*  0, */
+    /*  0x37ae99, */
+    /*  0xF9F9F9, */
+    /*  io_seproxyhal_touch_ecdh_ok, */
+    /*  NULL, */
+    /*  NULL}, */
 
     {{BAGL_LABEL, 0x00, 0, 87, 320, 32, 0, 0, 0, 0x000000, 0xF9F9F9,
       BAGL_FONT_OPEN_SANS_LIGHT_14px | BAGL_FONT_ALIGNMENT_CENTER, 0},
