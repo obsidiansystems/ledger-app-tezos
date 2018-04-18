@@ -179,10 +179,16 @@ const bagl_element_t* io_seproxyhal_touch_sign_ok(const bagl_element_t *e) {
 
     os_memset(privateKeyData, 0, sizeof(privateKeyData));
 
-    tx = cx_eddsa_sign(&privateKey, 0, CX_SHA512,
+    tx = cx_eddsa_sign(&privateKey,
+                       0,
+                       CX_SHA512,
                        operationContext.data,
                        operationContext.datalen,
-                       NULL, 0, G_io_apdu_buffer, NULL);
+                       NULL,
+                       0,
+                       G_io_apdu_buffer,
+                       64,
+                       NULL);
 
     os_memset(&privateKey, 0, sizeof(privateKey));
 
@@ -243,7 +249,9 @@ unsigned int ui_approval_pgp_nanos_button(unsigned int button_mask,
 
 const bagl_element_t* io_seproxyhal_touch_address_ok(const bagl_element_t *e) {
     int tx = 0;
-    cx_edward_compress_point(TEZOS_CURVE, operationContext.publicKey.W);
+    cx_edward_compress_point(TEZOS_CURVE,
+                             operationContext.publicKey.W,
+                             operationContext.publicKey.W_len);
     G_io_apdu_buffer[tx++] = 33;
     os_memmove(G_io_apdu_buffer + tx, operationContext.publicKey.W, 33);
     tx += 33;
