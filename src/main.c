@@ -167,6 +167,7 @@ const bagl_element_t* io_seproxyhal_touch_sign_ok(const bagl_element_t *e) {
     uint8_t privateKeyData[32];
     cx_ecfp_private_key_t privateKey;
     int tx = 0;
+    unsigned int info;
 
     os_perso_derive_node_bip32(operationContext.curve,
                                operationContext.bip32Path,
@@ -183,28 +184,35 @@ const bagl_element_t* io_seproxyhal_touch_sign_ok(const bagl_element_t *e) {
 
     switch(operationContext.curve) {
     case CX_CURVE_Ed25519: {
-        tx = cx_eddsa_sign(&privateKey,
+        tx += cx_eddsa_sign(&privateKey,
                            0,
                            CX_SHA512,
                            operationContext.data,
                            operationContext.datalen,
                            NULL,
                            0,
-                           G_io_apdu_buffer,
+                           &G_io_apdu_buffer[tx],
                            64,
                            NULL);
     }
         break;
-    default: {
-        tx = cx_ecdsa_sign(&privateKey,
-                           0,
+    case CX_CURVE_SECP256K1: {
+        int prevtx = tx;
+        tx += cx_ecdsa_sign(&privateKey,
+                           CX_LAST | CX_RND_TRNG,
                            CX_NONE,
                            operationContext.data,
                            operationContext.datalen,
-                           G_io_apdu_buffer,
-                           64,
-                           0);
+                           &G_io_apdu_buffer[tx],
+                           100,
+                           &info);
+        if (info & CX_ECCINFO_PARITY_ODD) {
+            G_io_apdu_buffer[prevtx] |= 0x01;
+        }
     }
+        break;
+    default:
+        THROW(0x6B00);
     }
 
     os_memset(&privateKey, 0, sizeof(privateKey));
@@ -470,6 +478,17 @@ void sample_main(void) {
                         os_memset(operationContext.data, 0, TEZOS_BUFSIZE);
                         operationContext.datalen = 0;
                         dataLength -= read_bip32_path(&operationContext, dataBuffer);
+                        switch(G_io_apdu_buffer[OFFSET_P2]) {
+                        case 0:
+                            operationContext.curve = CX_CURVE_Ed25519;
+                            break;
+                        case 1:
+                            operationContext.curve = CX_CURVE_SECP256K1;
+                            break;
+                        case 2:
+                            operationContext.curve = CX_CURVE_SECP256R1;
+                            break;
+                        }
                         THROW(0x9000);
                     }
 
@@ -479,17 +498,6 @@ void sample_main(void) {
                     if(G_io_apdu_buffer[OFFSET_P2] > 2)
                         THROW(0x6B00);
 
-                    switch(G_io_apdu_buffer[OFFSET_P2]) {
-                    case 0:
-                        operationContext.curve = CX_CURVE_Ed25519;
-                        break;
-                    case 1:
-                        operationContext.curve = CX_CURVE_SECP256K1;
-                        break;
-                    case 2:
-                        operationContext.curve = CX_CURVE_SECP256R1;
-                        break;
-                    }
 
                     if (operationContext.datalen + dataLength > TEZOS_BUFSIZE)
                         /* TODO: find a good error code */
