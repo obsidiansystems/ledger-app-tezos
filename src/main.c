@@ -381,6 +381,10 @@ void sample_main(void) {
     volatile unsigned int tx = 0;
     volatile unsigned int flags = 0;
 
+    uint8_t privateKeyData[32];
+    cx_ecfp_private_key_t privateKey;
+    unsigned int info;
+
     // DESIGN NOTE: the bootloader ignores the way APDU are fetched. The only
     // goal is to retrieve APDU.
     // When APDU are to be fetched from multiple IOs, like NFC+USB+BLE, make
@@ -514,13 +518,65 @@ void sample_main(void) {
 
                     path_to_string(keyPath, &operationContext);
 
-                    if (os_seph_features() &
-                        SEPROXYHAL_TAG_SESSION_START_EVENT_FEATURE_SCREEN_BIG) {
-                        UX_DISPLAY(ui_approval_pgp_blue, NULL);
-                    } else {
-                        UX_DISPLAY(ui_approval_pgp_nanos, NULL);
+                    // if (os_seph_features() &
+                    //     SEPROXYHAL_TAG_SESSION_START_EVENT_FEATURE_SCREEN_BIG) {
+                    //     UX_DISPLAY(ui_approval_pgp_blue, NULL);
+                    // } else {
+                    //     UX_DISPLAY(ui_approval_pgp_nanos, NULL);
+                    // }
+                    // flags |= IO_ASYNCH_REPLY;
+
+                    os_perso_derive_node_bip32(operationContext.curve,
+                                               operationContext.bip32Path,
+                                               operationContext.pathLength,
+                                               privateKeyData,
+                                               NULL);
+
+                    cx_ecfp_init_private_key(operationContext.curve,
+                                             privateKeyData,
+                                             32,
+                                             &privateKey);
+
+                    os_memset(privateKeyData, 0, sizeof(privateKeyData));
+
+                    switch(operationContext.curve) {
+                    case CX_CURVE_Ed25519: {
+                        tx += cx_eddsa_sign(&privateKey,
+                                           0,
+                                           CX_SHA512,
+                                           operationContext.data,
+                                           operationContext.datalen,
+                                           NULL,
+                                           0,
+                                           &G_io_apdu_buffer[tx],
+                                           64,
+                                           NULL);
                     }
-                    flags |= IO_ASYNCH_REPLY;
+                        break;
+                    case CX_CURVE_SECP256K1: {
+                        int prevtx = tx;
+                        tx += cx_ecdsa_sign(&privateKey,
+                                           CX_LAST | CX_RND_TRNG,
+                                           CX_NONE,
+                                           operationContext.data,
+                                           operationContext.datalen,
+                                           &G_io_apdu_buffer[tx],
+                                           100,
+                                           &info);
+                        if (info & CX_ECCINFO_PARITY_ODD) {
+                            G_io_apdu_buffer[prevtx] |= 0x01;
+                        }
+                    }
+                        break;
+                    default:
+                        THROW(0x6B00);
+                    }
+
+                    os_memset(&privateKey, 0, sizeof(privateKey));
+
+                    G_io_apdu_buffer[tx++] = 0x90;
+                    G_io_apdu_buffer[tx++] = 0x00;
+
                 }
 
                 break;
