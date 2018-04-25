@@ -19,14 +19,11 @@
 #include "cx.h"
 #include <stdbool.h>
 
-#include "os_io_seproxyhal.h"
 #include "string.h"
 
-const bagl_element_t* io_seproxyhal_touch_exit(const bagl_element_t *e);
-const bagl_element_t* io_seproxyhal_touch_sign_ok(const bagl_element_t *e);
-const bagl_element_t* io_seproxyhal_touch_sign_cancel(const bagl_element_t *e);
-const bagl_element_t* io_seproxyhal_touch_address_ok(const bagl_element_t *e);
-const bagl_element_t* io_seproxyhal_touch_address_cancel(const bagl_element_t *e);
+#include "main.h"
+#include "ui.h"
+#include "prompt_screens.h"
 
 #define MAX_BIP32_PATH 10
 
@@ -46,13 +43,16 @@ const bagl_element_t* io_seproxyhal_touch_address_cancel(const bagl_element_t *e
 #define OFFSET_LC 4
 #define OFFSET_CDATA 5
 
+bool signing_enabled = false;
+
+void sign_ok(void *);
+void sign_cancel(void *);
+void address_ok(void *);
+void address_cancel(void *);
+
+int perform_signature(int tx);
+
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
-
-ux_state_t ux;
-
-// display stepped screens
-unsigned int ux_step;
-unsigned int ux_step_count;
 
 #define TEZOS_BUFSIZE 1024
 
@@ -74,33 +74,6 @@ typedef struct operationContext_t {
 
 char keyPath[200];
 operationContext_t operationContext;
-
-#include "blue_ui.h"
-#include "nanos_ui.h"
-
-void ui_idle(void) {
-    if (os_seph_features() &
-        SEPROXYHAL_TAG_SESSION_START_EVENT_FEATURE_SCREEN_BIG) {
-        UX_DISPLAY(ui_idle_blue, NULL);
-    } else {
-        UX_DISPLAY(ui_idle_nanos, NULL);
-    }
-}
-
-unsigned int ui_approval_ssh_prepro(const bagl_element_t *element) {
-    if (element->component.userid > 0) {
-        switch (element->component.userid) {
-        case 1:
-            io_seproxyhal_setup_ticker(2000);
-            break;
-        case 2:
-            io_seproxyhal_setup_ticker(3000);
-            break;
-        }
-        return (ux_step == element->component.userid - 1);
-    }
-    return 1;
-}
 
 uint32_t path_item_to_string(char *dest, uint32_t number) {
     uint32_t offset = 0;
@@ -147,26 +120,18 @@ int path_to_string(char *buf, const operationContext_t *ctx) {
     return offset;
 }
 
-const bagl_element_t* io_seproxyhal_touch_exit(const bagl_element_t *e) {
-    // Go back to the dashboard
-    os_sched_exit(0);
-    return 0; // do not redraw the widget
+void sign_ok(void *ignore) {
+    signing_enabled = true; // Allow signing from now on.
+
+    int tx = perform_signature(0);
+
+    // Send back the response, do not restart the event loop
+    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
 }
 
-unsigned int ui_idle_nanos_button(unsigned int button_mask,
-                                  unsigned int button_mask_counter) {
-    switch (button_mask) {
-    case BUTTON_EVT_RELEASED | BUTTON_LEFT: // EXIT
-        io_seproxyhal_touch_exit(NULL);
-        break;
-    }
-    return 0;
-}
-
-const bagl_element_t* io_seproxyhal_touch_sign_ok(const bagl_element_t *e) {
+int perform_signature(int tx) {
     uint8_t privateKeyData[32];
     cx_ecfp_private_key_t privateKey;
-    int tx = 0;
     unsigned int info;
 
     os_perso_derive_node_bip32(operationContext.curve,
@@ -220,59 +185,18 @@ const bagl_element_t* io_seproxyhal_touch_sign_ok(const bagl_element_t *e) {
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;
 
-    // Send back the response, do not restart the event loop
-    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
-
-    // Display back the original UX
-    ui_idle();
-
-    return 0; // do not redraw the widget
+    return tx;
 }
 
-const bagl_element_t* io_seproxyhal_touch_sign_cancel(const bagl_element_t *e) {
+void sign_cancel(void *ignore) {
     G_io_apdu_buffer[0] = 0x69;
     G_io_apdu_buffer[1] = 0x85;
 
     // Send back the response, do not restart the event loop
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
-
-    // Display back the original UX
-    ui_idle();
-
-    return 0; // do not redraw the widget
 }
 
-unsigned int ui_approval_ssh_nanos_button(unsigned int button_mask,
-                                          unsigned int button_mask_counter) {
-    switch (button_mask) {
-    case BUTTON_EVT_RELEASED | BUTTON_LEFT: // CANCEL
-        io_seproxyhal_touch_sign_cancel(NULL);
-        break;
-
-    case BUTTON_EVT_RELEASED | BUTTON_RIGHT: { // OK
-        io_seproxyhal_touch_sign_ok(NULL);
-        break;
-    }
-    }
-    return 0;
-}
-
-unsigned int ui_approval_pgp_nanos_button(unsigned int button_mask,
-                                          unsigned int button_mask_counter) {
-    switch (button_mask) {
-    case BUTTON_EVT_RELEASED | BUTTON_LEFT: // CANCEL
-        io_seproxyhal_touch_sign_cancel(NULL);
-        break;
-
-    case BUTTON_EVT_RELEASED | BUTTON_RIGHT: { // OK
-        io_seproxyhal_touch_sign_ok(NULL);
-        break;
-    }
-    }
-    return 0;
-}
-
-const bagl_element_t* io_seproxyhal_touch_address_ok(const bagl_element_t *e) {
+void address_ok(void *ignore) {
     int tx = 0;
     switch(operationContext.curve) {
     case CX_CURVE_Ed25519: {
@@ -299,34 +223,13 @@ const bagl_element_t* io_seproxyhal_touch_address_ok(const bagl_element_t *e) {
 
     // Send back the response, do not restart the event loop
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
-    // Display back the original UX
-    ui_idle();
-    return 0; // do not redraw the widget
 }
 
-const bagl_element_t* io_seproxyhal_touch_address_cancel(const bagl_element_t *e) {
+void address_cancel(void *ignore) {
     G_io_apdu_buffer[0] = 0x69;
     G_io_apdu_buffer[1] = 0x85;
     // Send back the response, do not restart the event loop
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
-    // Display back the original UX
-    ui_idle();
-    return 0; // do not redraw the widget
-}
-
-unsigned int ui_address_nanos_button(unsigned int button_mask,
-                                     unsigned int button_mask_counter) {
-    switch (button_mask) {
-    case BUTTON_EVT_RELEASED | BUTTON_LEFT: // CANCEL
-        io_seproxyhal_touch_address_cancel(NULL);
-        break;
-
-    case BUTTON_EVT_RELEASED | BUTTON_RIGHT: { // OK
-        io_seproxyhal_touch_address_ok(NULL);
-        break;
-    }
-    }
-    return 0;
 }
 
 unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
@@ -380,10 +283,6 @@ void sample_main(void) {
     volatile unsigned int rx = 0;
     volatile unsigned int tx = 0;
     volatile unsigned int flags = 0;
-
-    uint8_t privateKeyData[32];
-    cx_ecfp_private_key_t privateKey;
-    unsigned int info;
 
     // DESIGN NOTE: the bootloader ignores the way APDU are fetched. The only
     // goal is to retrieve APDU.
@@ -458,12 +357,8 @@ void sample_main(void) {
 
                     path_to_string(keyPath, &operationContext);
 
-                    if (os_seph_features() &
-                        SEPROXYHAL_TAG_SESSION_START_EVENT_FEATURE_SCREEN_BIG) {
-                        UX_DISPLAY(ui_address_blue, NULL);
-                    } else {
-                        UX_DISPLAY(ui_address_nanos, NULL);
-                    }
+                    prompt(ui_address_nanos, sizeof(ui_address_nanos) / sizeof(ui_address_nanos[0]),
+                           address_ok, address_cancel, NULL);
 
                     flags |= IO_ASYNCH_REPLY;
                 }
@@ -518,65 +413,14 @@ void sample_main(void) {
 
                     path_to_string(keyPath, &operationContext);
 
-                    // if (os_seph_features() &
-                    //     SEPROXYHAL_TAG_SESSION_START_EVENT_FEATURE_SCREEN_BIG) {
-                    //     UX_DISPLAY(ui_approval_pgp_blue, NULL);
-                    // } else {
-                    //     UX_DISPLAY(ui_approval_pgp_nanos, NULL);
-                    // }
-                    // flags |= IO_ASYNCH_REPLY;
-
-                    os_perso_derive_node_bip32(operationContext.curve,
-                                               operationContext.bip32Path,
-                                               operationContext.pathLength,
-                                               privateKeyData,
-                                               NULL);
-
-                    cx_ecfp_init_private_key(operationContext.curve,
-                                             privateKeyData,
-                                             32,
-                                             &privateKey);
-
-                    os_memset(privateKeyData, 0, sizeof(privateKeyData));
-
-                    switch(operationContext.curve) {
-                    case CX_CURVE_Ed25519: {
-                        tx += cx_eddsa_sign(&privateKey,
-                                           0,
-                                           CX_SHA512,
-                                           operationContext.data,
-                                           operationContext.datalen,
-                                           NULL,
-                                           0,
-                                           &G_io_apdu_buffer[tx],
-                                           64,
-                                           NULL);
+                    if (signing_enabled) {
+                        tx = perform_signature(tx);
+                    } else {
+                        prompt(ui_approval_pgp_nanos,
+                               sizeof(ui_approval_pgp_nanos)/sizeof(ui_approval_pgp_nanos[0]),
+                               sign_ok, sign_cancel, NULL);
+                        flags |= IO_ASYNCH_REPLY;
                     }
-                        break;
-                    case CX_CURVE_SECP256K1: {
-                        int prevtx = tx;
-                        tx += cx_ecdsa_sign(&privateKey,
-                                           CX_LAST | CX_RND_TRNG,
-                                           CX_NONE,
-                                           operationContext.data,
-                                           operationContext.datalen,
-                                           &G_io_apdu_buffer[tx],
-                                           100,
-                                           &info);
-                        if (info & CX_ECCINFO_PARITY_ODD) {
-                            G_io_apdu_buffer[prevtx] |= 0x01;
-                        }
-                    }
-                        break;
-                    default:
-                        THROW(0x6B00);
-                    }
-
-                    os_memset(&privateKey, 0, sizeof(privateKey));
-
-                    G_io_apdu_buffer[tx++] = 0x90;
-                    G_io_apdu_buffer[tx++] = 0x00;
-
                 }
 
                 break;
@@ -611,70 +455,6 @@ void sample_main(void) {
     }
 }
 
-void io_seproxyhal_display(const bagl_element_t *element) {
-    return io_seproxyhal_display_default((bagl_element_t *)element);
-}
-
-unsigned char io_event(unsigned char channel) {
-    // nothing done with the event, throw an error on the transport layer if
-    // needed
-
-    // can't have more than one tag in the reply, not supported yet.
-    switch (G_io_seproxyhal_spi_buffer[0]) {
-    case SEPROXYHAL_TAG_FINGER_EVENT:
-        UX_FINGER_EVENT(G_io_seproxyhal_spi_buffer);
-        break;
-
-    case SEPROXYHAL_TAG_BUTTON_PUSH_EVENT:
-        UX_BUTTON_PUSH_EVENT(G_io_seproxyhal_spi_buffer);
-        break;
-
-#ifdef HAVE_BLE
-    // Make automatically discoverable again when disconnected
-
-    case SEPROXYHAL_TAG_BLE_CONNECTION_EVENT:
-        if (G_io_seproxyhal_spi_buffer[3] == 0) {
-            // TODO : cleaner reset sequence
-            // first disable BLE before turning it off
-            G_io_seproxyhal_spi_buffer[0] = SEPROXYHAL_TAG_BLE_RADIO_POWER;
-            G_io_seproxyhal_spi_buffer[1] = 0;
-            G_io_seproxyhal_spi_buffer[2] = 1;
-            G_io_seproxyhal_spi_buffer[3] = 0;
-            io_seproxyhal_spi_send(G_io_seproxyhal_spi_buffer, 4);
-            // send BLE power on (default parameters)
-            G_io_seproxyhal_spi_buffer[0] = SEPROXYHAL_TAG_BLE_RADIO_POWER;
-            G_io_seproxyhal_spi_buffer[1] = 0;
-            G_io_seproxyhal_spi_buffer[2] = 1;
-            G_io_seproxyhal_spi_buffer[3] = 3; // ble on & advertise
-            io_seproxyhal_spi_send(G_io_seproxyhal_spi_buffer, 5);
-        }
-        break;
-#endif
-
-    case SEPROXYHAL_TAG_DISPLAY_PROCESSED_EVENT:
-        UX_DISPLAYED_EVENT({});
-        break;
-
-    case SEPROXYHAL_TAG_TICKER_EVENT:
-        // prepare next screen
-        ux_step = (ux_step + 1) % ux_step_count;
-        // redisplay screen
-        UX_REDISPLAY();
-        break;
-
-    // unknown events are acknowledged
-    default:
-        break;
-    }
-
-    // close the event if not done previously (by a display or whatever)
-    if (!io_seproxyhal_spi_is_status_sent()) {
-        io_seproxyhal_general_status();
-    }
-    // command has been processed, DO NOT reset the current APDU transport
-    return 1;
-}
-
 void app_exit(void) {
     BEGIN_TRY_L(exit) {
         TRY_L(exit) {
@@ -690,7 +470,7 @@ __attribute__((section(".boot"))) int main(void) {
     // exit critical section
     __asm volatile("cpsie i");
 
-    UX_INIT();
+    ui_init();
 
     // ensure exception will work as planned
     os_boot();
@@ -701,7 +481,7 @@ __attribute__((section(".boot"))) int main(void) {
 
             USB_power(1);
 
-            ui_idle();
+            ui_initial_screen();
 
             sample_main();
         }
@@ -713,4 +493,8 @@ __attribute__((section(".boot"))) int main(void) {
     END_TRY;
 
     app_exit();
+}
+
+void ui_exit(void) {
+    os_sched_exit(0);
 }
