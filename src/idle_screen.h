@@ -1,4 +1,5 @@
-const bagl_element_t ui_idle_nanos[] = {
+// Include in only one .c file
+const bagl_element_t ui_idle_screen[] = {
     // type                               userid    x    y   w    h  str rad
     // fill      fg        bg      fid iid  txt   touchparams...       ]
     {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,

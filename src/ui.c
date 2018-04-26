@@ -11,28 +11,19 @@ ux_state_t ux;
 static void *cb_context;
 static callback_t ok_callback;
 static callback_t cxl_callback;
-static bool idle;
-static bool s_error;
 
-static unsigned ui_idle_nanos_button(unsigned, unsigned);
 static unsigned button_handler(unsigned button_mask, unsigned button_mask_counter);
 static void do_nothing(void *context);
-
-static void error(void) {
-    s_error = true;
-}
-
-void check_idle() {
-    if (idle && ok_callback != do_nothing) error();
-    if (!idle && ok_callback == do_nothing) error();
-}
+static void exit_app(void *context);
 
 void ui_init(void) {
     UX_INIT();
-    idle = false;
     ok_callback = NULL;
     cxl_callback = NULL;
-    s_error = false;
+}
+
+void ui_display_error(void) {
+    UI_PROMPT(ui_error_screen, exit_app, exit_app);
 }
 
 static void do_nothing(void *context) {
@@ -43,26 +34,16 @@ static void exit_app(void *context) {
 }
 
 static void ui_idle(void) {
-    check_idle();
     ok_callback = do_nothing;
     cxl_callback = exit_app;
-    if (!s_error) {
-        UX_DISPLAY(ui_idle_nanos, NULL);
-    }
-    idle = true;
-    check_idle();
+    UI_PROMPT(ui_idle_screen, do_nothing, exit_app);
 }
 
 void ui_initial_screen(void) {
     ui_idle();
 }
 
-unsigned ui_idle_nanos_button(unsigned button_mask, unsigned button_mask_counter) {
-    return button_handler(button_mask, button_mask_counter);
-}
-
 unsigned button_handler(unsigned button_mask, unsigned button_mask_counter) {
-    check_idle();
     switch (button_mask) {
         case BUTTON_EVT_RELEASED | BUTTON_LEFT:
             cxl_callback(cb_context);
@@ -74,19 +55,14 @@ unsigned button_handler(unsigned button_mask, unsigned button_mask_counter) {
             return 0;
     }
     ui_idle(); // display original screen
-    if (s_error) {
-        UX_DISPLAY(ui_error, NULL);
-    }
     return 0; // do not redraw the widget
 }
 
-void prompt(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback_t cxl_c, void *cxt) {
-    check_idle();
+void ui_prompt(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback_t cxl_c, void *cxt) {
+    // Copied from definition of UX_DISPLAY in header file
     ok_callback = ok_c;
     cxl_callback = cxl_c;
     cb_context = cxt;
-    idle = false;
-    check_idle();
     ux.elements = elems;
     ux.elements_count = sz;
     ux.button_push_handler = button_handler;
