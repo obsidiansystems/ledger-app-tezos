@@ -43,14 +43,14 @@
 #define OFFSET_LC 4
 #define OFFSET_CDATA 5
 
-bool signing_enabled = false;
+static bool signing_enabled;
 
-void sign_ok(void *);
-void sign_cancel(void *);
-void address_ok(void *);
-void address_cancel(void *);
+static void sign_ok(void *);
+static void sign_cancel(void *);
+static void address_ok(void *);
+static void address_cancel(void *);
 
-int perform_signature(int tx);
+static int perform_signature(int tx);
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
@@ -75,7 +75,7 @@ typedef struct operationContext_t {
 char keyPath[200];
 operationContext_t operationContext;
 
-uint32_t path_item_to_string(char *dest, uint32_t number) {
+static uint32_t path_item_to_string(char *dest, uint32_t number) {
     uint32_t offset = 0;
     uint32_t startOffset = 0, destOffset = 0;
     uint8_t i;
@@ -105,7 +105,7 @@ uint32_t path_item_to_string(char *dest, uint32_t number) {
     return destOffset;
 }
 
-int path_to_string(char *buf, const operationContext_t *ctx) {
+static int path_to_string(char *buf, const operationContext_t *ctx) {
     int i;
     int offset = 0;
     for (i = 0; i < ctx->pathLength; i++) {
@@ -357,8 +357,7 @@ void sample_main(void) {
 
                     path_to_string(keyPath, &operationContext);
 
-                    prompt(ui_address_nanos, sizeof(ui_address_nanos) / sizeof(ui_address_nanos[0]),
-                           address_ok, address_cancel, NULL);
+                    UI_PROMPT(ui_address_screen, address_ok, address_cancel);
 
                     flags |= IO_ASYNCH_REPLY;
                 }
@@ -416,9 +415,7 @@ void sample_main(void) {
                     if (signing_enabled) {
                         tx = perform_signature(tx);
                     } else {
-                        prompt(ui_approval_pgp_nanos,
-                               sizeof(ui_approval_pgp_nanos)/sizeof(ui_approval_pgp_nanos[0]),
-                               sign_ok, sign_cancel, NULL);
+                        UI_PROMPT(ui_sign_screen, sign_ok, sign_cancel);
                         flags |= IO_ASYNCH_REPLY;
                     }
                 }
@@ -474,6 +471,8 @@ __attribute__((section(".boot"))) int main(void) {
 
     // ensure exception will work as planned
     os_boot();
+
+    signing_enabled = false;
 
     BEGIN_TRY {
         TRY {

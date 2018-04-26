@@ -1,4 +1,5 @@
-const bagl_element_t ui_error[] = {
+// Include in only one .c file
+const bagl_element_t ui_error_screen[] = {
     // type                               userid    x    y   w    h  str rad
     // fill      fg        bg      fid iid  txt   touchparams...       ]
     {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
@@ -69,7 +70,3 @@ const bagl_element_t ui_error[] = {
      NULL,
      NULL},
 };
-unsigned ui_error_button(unsigned a, unsigned b) {
-    os_sched_exit(-1);
-    return 0; // Not reached
-}
