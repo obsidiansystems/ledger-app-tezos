@@ -23,6 +23,8 @@
 
 #include "main.h"
 #include "ui.h"
+#include "protocol.h"
+
 #include "prompt_screens.h"
 
 #define MAX_BIP32_PATH 10
@@ -43,6 +45,7 @@
 #define OFFSET_LC 4
 #define OFFSET_CDATA 5
 
+static bool baking_enabled;
 static bool signing_enabled;
 
 static void sign_ok(void *);
@@ -122,6 +125,14 @@ static int path_to_string(char *buf, const operationContext_t *ctx) {
 
 void sign_ok(void *ignore) {
     signing_enabled = true; // Allow signing from now on.
+    int tx = perform_signature(0);
+
+    // Send back the response, do not restart the event loop
+    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+}
+
+void bake_ok(void *ignore) {
+    baking_enabled = true; // Allow baking from now on.
 
     int tx = perform_signature(0);
 
@@ -412,11 +423,20 @@ void sample_main(void) {
 
                     path_to_string(keyPath, &operationContext);
 
-                    if (signing_enabled) {
-                        tx = perform_signature(tx);
+                    if (is_block(operationContext.data, operationContext.datalen)) {
+                        if (baking_enabled) {
+                            tx = perform_signature(tx);
+                        } else {
+                            UI_PROMPT(ui_bake_screen, bake_ok, sign_cancel);
+                            flags |= IO_ASYNCH_REPLY;
+                        }
                     } else {
-                        UI_PROMPT(ui_sign_screen, sign_ok, sign_cancel);
-                        flags |= IO_ASYNCH_REPLY;
+                        if (signing_enabled) {
+                            tx = perform_signature(tx);
+                        } else {
+                            UI_PROMPT(ui_sign_screen, sign_ok, sign_cancel);
+                            flags |= IO_ASYNCH_REPLY;
+                        }
                     }
                 }
 
@@ -472,6 +492,7 @@ __attribute__((section(".boot"))) int main(void) {
     // ensure exception will work as planned
     os_boot();
 
+    baking_enabled = false;
     signing_enabled = false;
 
     BEGIN_TRY {
