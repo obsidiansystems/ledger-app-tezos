@@ -27,6 +27,8 @@
 
 #include "prompt_screens.h"
 
+#include "blake2.h"
+
 #define MAX_BIP32_PATH 10
 
 #define CLA 0x80
@@ -47,6 +49,7 @@
 
 static bool baking_enabled;
 static bool signing_enabled;
+static bool address_enabled;
 
 static void sign_ok(void *);
 static void sign_cancel(void *);
@@ -54,10 +57,12 @@ static void address_ok(void *);
 static void address_cancel(void *);
 
 static int perform_signature(int tx);
+static int provide_address(int tx);
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 #define TEZOS_BUFSIZE 1024
+#define HASH_SIZE 32
 
 typedef struct operationContext_t {
     uint8_t pathLength;
@@ -73,6 +78,7 @@ typedef struct operationContext_t {
     cx_curve_t curve;
     uint8_t data[TEZOS_BUFSIZE];
     uint32_t datalen;
+    uint8_t hash[HASH_SIZE];
 } operationContext_t;
 
 char keyPath[200];
@@ -158,13 +164,16 @@ int perform_signature(int tx) {
 
     os_memset(privateKeyData, 0, sizeof(privateKeyData));
 
+    blake2b(operationContext.hash, HASH_SIZE, operationContext.data, operationContext.datalen,
+            NULL, 0);
+
     switch(operationContext.curve) {
     case CX_CURVE_Ed25519: {
         tx += cx_eddsa_sign(&privateKey,
                            0,
                            CX_SHA512,
-                           operationContext.data,
-                           operationContext.datalen,
+                           operationContext.hash,
+                           HASH_SIZE,
                            NULL,
                            0,
                            &G_io_apdu_buffer[tx],
@@ -177,8 +186,8 @@ int perform_signature(int tx) {
         tx += cx_ecdsa_sign(&privateKey,
                            CX_LAST | CX_RND_TRNG,
                            CX_NONE,
-                           operationContext.data,
-                           operationContext.datalen,
+                           operationContext.hash,
+                           HASH_SIZE,
                            &G_io_apdu_buffer[tx],
                            100,
                            &info);
@@ -208,7 +217,15 @@ void sign_cancel(void *ignore) {
 }
 
 void address_ok(void *ignore) {
-    int tx = 0;
+    address_enabled = true;
+
+    int tx = provide_address(0);
+
+    // Send back the response, do not restart the event loop
+    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+}
+
+int provide_address(int tx) {
     switch(operationContext.curve) {
     case CX_CURVE_Ed25519: {
         cx_edward_compress_point(operationContext.curve,
@@ -231,9 +248,7 @@ void address_ok(void *ignore) {
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;
 
-
-    // Send back the response, do not restart the event loop
-    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+    return tx;
 }
 
 void address_cancel(void *ignore) {
@@ -368,9 +383,12 @@ void sample_main(void) {
 
                     path_to_string(keyPath, &operationContext);
 
-                    UI_PROMPT(ui_address_screen, address_ok, address_cancel);
-
-                    flags |= IO_ASYNCH_REPLY;
+                    if (address_enabled) {
+                        tx = provide_address(tx);
+                    } else {
+                        UI_PROMPT(ui_address_screen, address_ok, address_cancel);
+                        flags |= IO_ASYNCH_REPLY;
+                    }
                 }
 
                 break;
@@ -494,6 +512,7 @@ __attribute__((section(".boot"))) int main(void) {
 
     baking_enabled = false;
     signing_enabled = false;
+    address_enabled = false;
 
     BEGIN_TRY {
         TRY {

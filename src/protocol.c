@@ -1,6 +1,8 @@
 #include "protocol.h"
 
 #include <stdint.h>
+#include <string.h>
+
 #include "os.h"
 
 struct block {
@@ -24,16 +26,32 @@ bool is_block(const uint8_t *data, size_t length) {
     return blk != NULL && blk->proto == SUPPORTED_PROTO_VERSION;
 }
 
+static int32_t ntohl(int32_t in) {
+    char bytes[4];
+    char out_bytes[4];
+    int32_t res;
+
+    memcpy(bytes, &in, 4);
+    out_bytes[0] = bytes[3];
+    out_bytes[1] = bytes[2];
+    out_bytes[2] = bytes[1];
+    out_bytes[3] = bytes[0];
+    memcpy(&res, out_bytes, 4);
+
+    return res;
+}
+
 bool is_valid_block(const uint8_t *data, size_t length) {
     const struct block *blk = as_block(data, length);
     if (blk == NULL) return false;
     if (blk->proto != SUPPORTED_PROTO_VERSION) {
         return false;
     }
-    if (blk->level < N_highest_level) {
+    int32_t level = ntohl(blk->level);
+    if (level < N_highest_level) {
         return false;
     }
     // nvm_write is not declared with correct use of const
-    nvm_write(&N_highest_level, (void*)&blk->level, sizeof(N_highest_level));
+    nvm_write(&N_highest_level, (void*)&level, sizeof(N_highest_level));
     return true;
 }
