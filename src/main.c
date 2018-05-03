@@ -49,6 +49,7 @@
 
 static bool baking_enabled;
 static bool address_enabled;
+static int highest_level;
 
 static void sign_ok(void *);
 static void sign_cancel(void *);
@@ -137,6 +138,9 @@ void sign_ok(void *ignore) {
 
 void bake_ok(void *ignore) {
     baking_enabled = true; // Allow baking from now on.
+    if (get_magic_byte(operationContext.data, operationContext.datalen) == MAGIC_BYTE_BLOCK) {
+        highest_level = get_block_level(operationContext.data, operationContext.datalen);
+    }
 
     int tx = perform_signature(0);
 
@@ -445,16 +449,33 @@ void sample_main(void) {
 
                     path_to_string(keyPath, &operationContext);
 
-                    if (is_baking(operationContext.data, operationContext.datalen)) {
+                    switch (get_magic_byte(operationContext.data, operationContext.datalen)) {
+                    case MAGIC_BYTE_BLOCK:
+                        {
+                            int level = get_block_level(operationContext.data, operationContext.datalen);
+                            if (level <= highest_level) {
+                                UI_PROMPT(ui_bake_bad_screen, bake_ok, sign_cancel);
+                                flags |= IO_ASYNCH_REPLY;
+                                break;
+                            } else {
+                                highest_level = level;
+                                // FALL THROUGH
+                            }
+                        }
+                    case MAGIC_BYTE_BAKING_OP:
                         if (baking_enabled) {
                             tx = perform_signature(tx);
                         } else {
                             UI_PROMPT(ui_bake_screen, bake_ok, sign_cancel);
                             flags |= IO_ASYNCH_REPLY;
                         }
-                    } else {
+                        break;
+                    case MAGIC_BYTE_UNSAFE_OP:
                         UI_PROMPT(ui_sign_screen, sign_ok, sign_cancel);
                         flags |= IO_ASYNCH_REPLY;
+                        break;
+                    default:
+                        THROW(0x6C00);
                     }
                 }
 
@@ -512,6 +533,7 @@ __attribute__((section(".boot"))) int main(void) {
 
     baking_enabled = false;
     address_enabled = false;
+    highest_level = -1;
 
     BEGIN_TRY {
         TRY {

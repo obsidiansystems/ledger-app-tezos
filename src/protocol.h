@@ -18,4 +18,4 @@ static inline bool is_baking(const uint8_t *data, size_t length) {
     return byte == MAGIC_BYTE_BLOCK || byte == MAGIC_BYTE_BAKING_OP;
 }
 
-bool is_block(const uint8_t *data, size_t length);
+int32_t get_block_level(const uint8_t *data, size_t length);
