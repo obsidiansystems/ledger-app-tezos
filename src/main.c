@@ -151,6 +151,11 @@ int perform_signature(int tx) {
     cx_ecfp_private_key_t privateKey;
     unsigned int info;
 
+    if (operationContext.curve != CX_CURVE_Ed25519) {
+        blake2b(operationContext.hash, HASH_SIZE, operationContext.data, operationContext.datalen,
+                NULL, 0);
+    }
+
     os_perso_derive_node_bip32(operationContext.curve,
                                operationContext.bip32Path,
                                operationContext.pathLength,
@@ -164,16 +169,13 @@ int perform_signature(int tx) {
 
     os_memset(privateKeyData, 0, sizeof(privateKeyData));
 
-    blake2b(operationContext.hash, HASH_SIZE, operationContext.data, operationContext.datalen,
-            NULL, 0);
-
     switch(operationContext.curve) {
     case CX_CURVE_Ed25519: {
         tx += cx_eddsa_sign(&privateKey,
                            0,
                            CX_SHA512,
-                           operationContext.hash,
-                           HASH_SIZE,
+                           operationContext.data,
+                           operationContext.datalen,
                            NULL,
                            0,
                            &G_io_apdu_buffer[tx],
