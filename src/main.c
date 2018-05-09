@@ -453,7 +453,7 @@ void sample_main(void) {
                     case MAGIC_BYTE_BLOCK:
                         {
                             int level = get_block_level(operationContext.data, operationContext.datalen);
-                            if (level <= highest_level) {
+                            if (level < highest_level) {
                                 UI_PROMPT(ui_bake_bad_screen, bake_ok, sign_cancel);
                                 flags |= IO_ASYNCH_REPLY;
                                 break;
