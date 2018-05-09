@@ -307,6 +307,10 @@ unsigned int read_bip32_path(operationContext_t *ctx, const uint8_t *buf) {
     return nbWritten;
 }
 
+static void return_ok() {
+    THROW(0x9000);
+}
+
 void sample_main(void) {
     volatile unsigned int rx = 0;
     volatile unsigned int tx = 0;
@@ -418,7 +422,7 @@ void sample_main(void) {
                             operationContext.curve = CX_CURVE_SECP256R1;
                             break;
                         }
-                        THROW(0x9000);
+                        return_ok();
                     }
 
                     else if (p1 != P1_NEXT)
@@ -438,12 +442,12 @@ void sample_main(void) {
                     operationContext.datalen += dataLength;
 
                     if (!last) {
-                        THROW(0x9000);
+                        return_ok();
                     }
 
                     path_to_string(keyPath, &operationContext);
 
-                    if (is_block(operationContext.data, operationContext.datalen)) {
+                    if (is_baking(operationContext.data, operationContext.datalen)) {
                         if (baking_enabled) {
                             tx = perform_signature(tx);
                         } else {
