@@ -48,7 +48,6 @@
 #define OFFSET_CDATA 5
 
 static bool baking_enabled;
-static bool signing_enabled;
 static bool address_enabled;
 
 static void sign_ok(void *);
@@ -130,7 +129,6 @@ static int path_to_string(char *buf, const operationContext_t *ctx) {
 }
 
 void sign_ok(void *ignore) {
-    signing_enabled = true; // Allow signing from now on.
     int tx = perform_signature(0);
 
     // Send back the response, do not restart the event loop
@@ -455,12 +453,8 @@ void sample_main(void) {
                             flags |= IO_ASYNCH_REPLY;
                         }
                     } else {
-                        if (signing_enabled) {
-                            tx = perform_signature(tx);
-                        } else {
-                            UI_PROMPT(ui_sign_screen, sign_ok, sign_cancel);
-                            flags |= IO_ASYNCH_REPLY;
-                        }
+                        UI_PROMPT(ui_sign_screen, sign_ok, sign_cancel);
+                        flags |= IO_ASYNCH_REPLY;
                     }
                 }
 
@@ -517,7 +511,6 @@ __attribute__((section(".boot"))) int main(void) {
     os_boot();
 
     baking_enabled = false;
-    signing_enabled = false;
     address_enabled = false;
 
     BEGIN_TRY {
