@@ -138,7 +138,8 @@ void sign_ok(void *ignore) {
 
 void bake_ok(void *ignore) {
     baking_enabled = true; // Allow baking from now on.
-    if (get_magic_byte(operationContext.data, operationContext.datalen) == MAGIC_BYTE_BLOCK) {
+    if (get_magic_byte(operationContext.data, operationContext.datalen) != MAGIC_BYTE_BLOCK) {
+        // Illegal blocks have already been eliminated
         highest_level = get_block_level(operationContext.data, operationContext.datalen);
     }
 
@@ -452,6 +453,9 @@ void sample_main(void) {
                     switch (get_magic_byte(operationContext.data, operationContext.datalen)) {
                     case MAGIC_BYTE_BLOCK:
                         {
+                            if (!is_block(operationContext.data, operationContext.datalen)) {
+                                THROW(0x6C00);
+                            }
                             int level = get_block_level(operationContext.data, operationContext.datalen);
                             if (level < highest_level) {
                                 UI_PROMPT(ui_bake_bad_screen, bake_ok, sign_cancel);
@@ -471,6 +475,8 @@ void sample_main(void) {
                         }
                         break;
                     case MAGIC_BYTE_UNSAFE_OP:
+                    case MAGIC_BYTE_UNSAFE_OP2:
+                    case MAGIC_BYTE_UNSAFE_OP3:
                         UI_PROMPT(ui_sign_screen, sign_ok, sign_cancel);
                         flags |= IO_ASYNCH_REPLY;
                         break;
