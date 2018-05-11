@@ -16,6 +16,10 @@ static unsigned button_handler(unsigned button_mask, unsigned button_mask_counte
 static void do_nothing(void *context);
 static void exit_app(void *context);
 
+#ifndef TIMEOUT_SECONDS
+#define TIMEOUT_SECONDS 30
+#endif
+
 void ui_init(void) {
     UX_INIT();
     ok_callback = NULL;
@@ -58,6 +62,11 @@ unsigned button_handler(unsigned button_mask, unsigned button_mask_counter) {
     return 0; // do not redraw the widget
 }
 
+static const bagl_element_t *timer_setup(const bagl_element_t *elem) {
+    io_seproxyhal_setup_ticker(TIMEOUT_SECONDS * 1000);
+    return elem;
+}
+
 void ui_prompt(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback_t cxl_c, void *cxt) {
     // Copied from definition of UX_DISPLAY in header file
     ok_callback = ok_c;
@@ -66,7 +75,11 @@ void ui_prompt(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback
     ux.elements = elems;
     ux.elements_count = sz;
     ux.button_push_handler = button_handler;
-    ux.elements_preprocessor = NULL;
+    if (cxl_callback != exit_app) {
+        ux.elements_preprocessor = timer_setup;
+    } else { // ui_idle
+        ux.elements_preprocessor = NULL;
+    }
     UX_WAKE_UP();
     UX_REDISPLAY();
 }
@@ -87,6 +100,12 @@ unsigned char io_event(unsigned char channel) {
 
     case SEPROXYHAL_TAG_DISPLAY_PROCESSED_EVENT:
         UX_DISPLAYED_EVENT({});
+        break;
+    case SEPROXYHAL_TAG_TICKER_EVENT:
+        if (cxl_callback != exit_app) {
+            cxl_callback(cb_context);
+            ui_idle();
+        }
         break;
 
     // unknown events are acknowledged
