@@ -49,7 +49,16 @@
 
 static bool baking_enabled;
 static bool address_enabled;
-static int highest_level;
+
+int highest_level;
+
+static int get_highest_level() {
+    return highest_level;
+}
+
+static void write_highest_level(int lvl) {
+    highest_level = lvl;
+}
 
 static void sign_ok(void *);
 static void sign_cancel(void *);
@@ -140,7 +149,7 @@ void bake_ok(void *ignore) {
     baking_enabled = true; // Allow baking from now on.
     if (get_magic_byte(operationContext.data, operationContext.datalen) == MAGIC_BYTE_BLOCK) {
         // Illegal blocks have already been eliminated
-        highest_level = get_block_level(operationContext.data, operationContext.datalen);
+        write_highest_level(get_block_level(operationContext.data, operationContext.datalen));
     }
 
     int tx = perform_signature(0);
@@ -457,12 +466,12 @@ void sample_main(void) {
                                 THROW(0x6C00);
                             }
                             int level = get_block_level(operationContext.data, operationContext.datalen);
-                            if (level < highest_level) {
+                            if (level < get_highest_level()) {
                                 UI_PROMPT(ui_bake_bad_screen, bake_ok, sign_cancel);
                                 flags |= IO_ASYNCH_REPLY;
                                 break;
                             } else {
-                                highest_level = level;
+                                write_highest_level(level);
                                 // FALL THROUGH
                             }
                         }
@@ -539,7 +548,6 @@ __attribute__((section(".boot"))) int main(void) {
 
     baking_enabled = false;
     address_enabled = false;
-    highest_level = -1;
 
     BEGIN_TRY {
         TRY {
