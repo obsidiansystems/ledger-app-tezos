@@ -2,7 +2,7 @@
 #include "cx.h"
 #include "nvram.h"
 
-const nvram_data N_data;
+WIDE nvram_data N_data_real;
 
 int get_highest_level() {
     return N_data.highest_level;
