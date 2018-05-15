@@ -24,6 +24,7 @@
 #include "main.h"
 #include "ui.h"
 #include "protocol.h"
+#include "nvram.h"
 
 #include "prompt_screens.h"
 
@@ -49,16 +50,6 @@
 
 static bool baking_enabled;
 static bool address_enabled;
-
-int highest_level;
-
-static int get_highest_level() {
-    return highest_level;
-}
-
-static void write_highest_level(int lvl) {
-    highest_level = lvl;
-}
 
 static void sign_ok(void *);
 static void sign_cancel(void *);
