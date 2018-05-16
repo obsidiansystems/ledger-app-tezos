@@ -168,11 +168,13 @@ int perform_signature(int tx) {
     cx_ecfp_private_key_t privateKey;
     unsigned int info;
 
-    // Hack to work around OCaml bug
+#if 0
+    // Hack to (maybe) work around OCaml bug
     if (operationContext.data[operationContext.datalen - 1] == 0x00 &&
         get_magic_byte(operationContext.data, operationContext.datalen) == MAGIC_BYTE_BLOCK) {
         operationContext.datalen--;
     }
+#endif
 
     if (operationContext.curve != CX_CURVE_Ed25519) {
         blake2b(operationContext.hash, HASH_SIZE, operationContext.data, operationContext.datalen,
