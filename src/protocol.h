@@ -23,3 +23,4 @@ static inline bool is_baking(const uint8_t *data, size_t length) {
 bool is_block(const void *data, size_t length);
 
 int32_t get_block_level(const void *data, size_t length); // Precondition: is_block returns true
+int32_t read_unaligned_big_endian(const void *in);

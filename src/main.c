@@ -36,6 +36,7 @@
 
 #define INS_GET_PUBLIC_KEY 0x02
 #define INS_SIGN 0x04
+#define INS_RESET 0x06
 
 #define P1_FIRST 0x00
 #define P1_NEXT 0x01
@@ -55,6 +56,7 @@ static void sign_ok(void *);
 static void sign_cancel(void *);
 static void address_ok(void *);
 static void address_cancel(void *);
+static void delay_reject();
 
 static int perform_signature(int tx);
 static int provide_address(int tx);
@@ -149,6 +151,22 @@ void bake_ok(void *ignore) {
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
 }
 
+void reset_ok(void *ignore) {
+    int level = read_unaligned_big_endian(operationContext.data);
+    write_highest_level(level);
+    int tx = 0;
+
+    G_io_apdu_buffer[tx++] = 0x90;
+    G_io_apdu_buffer[tx++] = 0x00;
+
+    // Send back the response, do not restart the event loop
+    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+}
+
+void reset_cancel(void *ignore) {
+    delay_reject();
+}
+
 int perform_signature(int tx) {
     uint8_t privateKeyData[32];
     cx_ecfp_private_key_t privateKey;
@@ -214,11 +232,7 @@ int perform_signature(int tx) {
 }
 
 void sign_cancel(void *ignore) {
-    G_io_apdu_buffer[0] = 0x69;
-    G_io_apdu_buffer[1] = 0x85;
-
-    // Send back the response, do not restart the event loop
-    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
+    delay_reject();
 }
 
 void address_ok(void *ignore) {
@@ -257,6 +271,10 @@ int provide_address(int tx) {
 }
 
 void address_cancel(void *ignore) {
+    delay_reject();
+}
+
+void delay_reject() {
     G_io_apdu_buffer[0] = 0x69;
     G_io_apdu_buffer[1] = 0x85;
     // Send back the response, do not restart the event loop
@@ -401,6 +419,17 @@ void sample_main(void) {
                 }
 
                 break;
+                case INS_RESET: {
+                    uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
+                    uint32_t dataLength = G_io_apdu_buffer[OFFSET_LC];
+                    if (dataLength != sizeof(int)) {
+                        THROW(0x6C00);
+                    }
+                    operationContext.datalen = sizeof(int);
+                    memcpy(operationContext.data, dataBuffer, sizeof(int));
+                    UI_PROMPT(ui_bake_reset_screen, reset_ok, reset_cancel);
+                    flags |= IO_ASYNCH_REPLY;
+                }
 
                 case INS_SIGN: {
                     uint8_t p1 = G_io_apdu_buffer[OFFSET_P1];
@@ -458,9 +487,7 @@ void sample_main(void) {
                             }
                             int level = get_block_level(operationContext.data, operationContext.datalen);
                             if (level < get_highest_level()) {
-                                UI_PROMPT(ui_bake_bad_screen, bake_ok, sign_cancel);
-                                flags |= IO_ASYNCH_REPLY;
-                                break;
+                                THROW(0x6C00);
                             } else {
                                 write_highest_level(level);
                                 // FALL THROUGH

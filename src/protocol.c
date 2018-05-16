@@ -22,7 +22,7 @@ bool is_block(const void *data, size_t length) {
     return true;
 }
 
-static int32_t read_unaligned_big_endian(const void *in) {
+int32_t read_unaligned_big_endian(const void *in) {
     const uint8_t *bytes = in;
     uint8_t out_bytes[4];
     int32_t res;
