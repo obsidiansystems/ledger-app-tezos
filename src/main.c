@@ -168,6 +168,12 @@ int perform_signature(int tx) {
     cx_ecfp_private_key_t privateKey;
     unsigned int info;
 
+    // Hack to work around OCaml bug
+    if (operationContext.data[operationContext.datalen - 1] == 0x00 &&
+        get_magic_byte(operationContext.data, operationContext.datalen) == MAGIC_BYTE_BLOCK) {
+        operationContext.datalen--;
+    }
+
     if (operationContext.curve != CX_CURVE_Ed25519) {
         blake2b(operationContext.hash, HASH_SIZE, operationContext.data, operationContext.datalen,
                 NULL, 0);
@@ -425,6 +431,7 @@ void sample_main(void) {
                     memcpy(operationContext.data, dataBuffer, sizeof(int));
                     UI_PROMPT(ui_bake_reset_screen, reset_ok, reset_cancel);
                     flags |= IO_ASYNCH_REPLY;
+                    break;
                 }
 
                 case INS_SIGN: {
