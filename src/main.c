@@ -140,10 +140,6 @@ void sign_ok(void *ignore) {
 
 void bake_ok(void *ignore) {
     baking_enabled = true; // Allow baking from now on.
-    if (get_magic_byte(operationContext.data, operationContext.datalen) == MAGIC_BYTE_BLOCK) {
-        // Illegal blocks have already been eliminated
-        write_highest_level(get_block_level(operationContext.data, operationContext.datalen));
-    }
 
     int tx = perform_signature(0);
 
