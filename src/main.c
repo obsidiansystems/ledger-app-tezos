@@ -491,7 +491,7 @@ void sample_main(void) {
                                 THROW(0x6C00);
                             }
                             int level = get_block_level(operationContext.data, operationContext.datalen);
-                            if (level < get_highest_level()) {
+                            if (level <= get_highest_level()) {
                                 THROW(0x6C00);
                             } else {
                                 write_highest_level(level);
