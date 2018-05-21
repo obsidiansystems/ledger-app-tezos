@@ -127,7 +127,7 @@ const bagl_element_t ui_bake_screen[] = {
      NULL},
     {{BAGL_LABELINE, 0x01, 0, 26, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Bake?",
+     "Bake with new key?",
      0,
      0,
      0,

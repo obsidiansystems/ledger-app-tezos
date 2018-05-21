@@ -30,8 +30,6 @@
 
 #include "blake2.h"
 
-#define MAX_BIP32_PATH 10
-
 #define CLA 0x80
 
 #define INS_GET_PUBLIC_KEY 0x02
@@ -86,6 +84,7 @@ typedef struct operationContext_t {
 char keyPath[200];
 operationContext_t operationContext;
 
+// TODO: This is the worst
 static uint32_t path_item_to_string(char *dest, uint32_t number) {
     uint32_t offset = 0;
     uint32_t startOffset = 0, destOffset = 0;
@@ -139,7 +138,11 @@ void sign_ok(void *ignore) {
 }
 
 void bake_ok(void *ignore) {
-    baking_enabled = true; // Allow baking from now on.
+    bool success = authorize_baking(get_block_level(operationContext.data, operationContext.datalen),
+                                    operationContext.bip32Path, operationContext.pathLength);
+    if (!success) {
+        return delay_reject(); // Bad BIP32 path
+    }
 
     int tx = perform_signature(0);
 
@@ -311,9 +314,9 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
     return 0;
 }
 
-unsigned int read_bip32_path(operationContext_t *ctx, const uint8_t *buf) {
+unsigned int read_bip32_path(const uint8_t *buf) {
     int i, nbWritten = 0;
-    ctx->pathLength = buf[0];
+    operationContext.pathLength = buf[0];
     buf++;
     nbWritten++;
     if ((operationContext.pathLength < 0x01) ||
@@ -321,8 +324,8 @@ unsigned int read_bip32_path(operationContext_t *ctx, const uint8_t *buf) {
         screen_printf("Invalid path\n");
         THROW(0x6a80);
     }
-    for (i = 0; i < ctx->pathLength; i++) {
-        ctx->bip32Path[i] =
+    for (i = 0; i < operationContext.pathLength; i++) {
+        operationContext.bip32Path[i] =
             (buf[0] << 24) | (buf[1] << 16) |
             (buf[2] << 8) | (buf[3]);
         buf += 4;
@@ -370,6 +373,7 @@ void sample_main(void) {
 
                 switch (G_io_apdu_buffer[1]) {
 
+                // TODO: Maybe this should be an array of function pointers :-)
                 case INS_GET_PUBLIC_KEY: {
                     uint8_t privateKeyData[32];
                     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
@@ -393,7 +397,7 @@ void sample_main(void) {
                         break;
                     }
 
-                    read_bip32_path(&operationContext, dataBuffer);
+                    read_bip32_path(dataBuffer);
 
                     os_perso_derive_node_bip32(operationContext.curve,
                                                operationContext.bip32Path,
@@ -447,7 +451,7 @@ void sample_main(void) {
                     if (p1 == P1_FIRST) {
                         os_memset(operationContext.data, 0, TEZOS_BUFSIZE);
                         operationContext.datalen = 0;
-                        dataLength -= read_bip32_path(&operationContext, dataBuffer);
+                        dataLength -= read_bip32_path(dataBuffer);
                         switch(G_io_apdu_buffer[OFFSET_P2]) {
                         case 0:
                             operationContext.curve = CX_CURVE_Ed25519;
@@ -483,29 +487,44 @@ void sample_main(void) {
                     }
 
                     path_to_string(keyPath, &operationContext);
+                    bool good_baking_key = is_baking_authorized_general(operationContext.bip32Path,
+                                                                        operationContext.pathLength);
 
                     switch (get_magic_byte(operationContext.data, operationContext.datalen)) {
+                        // TODO: Refactor this and next case when we have the baking app separate
                     case MAGIC_BYTE_BLOCK:
                         {
                             if (!is_block(operationContext.data, operationContext.datalen)) {
                                 THROW(0x6C00);
                             }
                             int level = get_block_level(operationContext.data, operationContext.datalen);
-                            if (level <= get_highest_level()) {
-                                THROW(0x6C00);
+                            if (!is_baking_authorized(level, operationContext.bip32Path,
+                                                      operationContext.pathLength)) {
+                                // Two cases for right now
+                                if (good_baking_key) {
+                                    // Level backtrack -- silently reject
+                                    THROW(0x6C00);
+                                } else {
+                                    // Key not set up -- require explicit authorization
+                                    UI_PROMPT(ui_bake_screen, bake_ok, sign_cancel);
+                                    flags |= IO_ASYNCH_REPLY;
+                                    break;
+                                }
                             } else {
                                 write_highest_level(level);
-                                // FALL THROUGH
+                                tx = perform_signature(tx);
+                                break;
                             }
                         }
                     case MAGIC_BYTE_BAKING_OP:
-                        if (baking_enabled) {
+                        if (good_baking_key) {
                             tx = perform_signature(tx);
+                            break;
                         } else {
                             UI_PROMPT(ui_bake_screen, bake_ok, sign_cancel);
                             flags |= IO_ASYNCH_REPLY;
+                            break;
                         }
-                        break;
                     case MAGIC_BYTE_UNSAFE_OP:
                     case MAGIC_BYTE_UNSAFE_OP2:
                     case MAGIC_BYTE_UNSAFE_OP3:
