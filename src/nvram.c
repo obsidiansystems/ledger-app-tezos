@@ -23,12 +23,11 @@ bool authorize_baking(int level, uint32_t *bip32_path, uint8_t path_length) {
     return true;
 }
 
-bool is_baking_authorized(int level, uint32_t *bip32_path, uint8_t path_length) {
-    return is_baking_authorized_general(bip32_path, path_length) &&
-        level > N_data.highest_level;
+bool is_level_authorized(int level) {
+    return level > N_data.highest_level;
 }
 
-bool is_baking_authorized_general(uint32_t *bip32_path, uint8_t path_length) {
+bool is_baking_authorized(uint32_t *bip32_path, uint8_t path_length) {
     return path_length != 0 &&
         path_length == N_data.path_length &&
         memcmp(bip32_path, N_data.bip32_path, path_length * sizeof(*bip32_path)) == 0;

@@ -84,15 +84,17 @@ typedef struct operationContext_t {
 char keyPath[200];
 operationContext_t operationContext;
 
+#define HARDENING_BIT (1u << 31)
+
 // TODO: This is the worst
 static uint32_t path_item_to_string(char *dest, uint32_t number) {
     uint32_t offset = 0;
     uint32_t startOffset = 0, destOffset = 0;
     uint8_t i;
     uint8_t tmp[11];
-    bool hardened = ((number & 0x80000000) != 0);
-    number &= 0x7FFFFFFF;
-    uint32_t divIndex = 0x3b9aca00;
+    bool hardened = (number & HARDENING_BIT) != 0;
+    number &= ~HARDENING_BIT;
+    uint32_t divIndex = 1000000000;
     while (divIndex != 0) {
         tmp[offset++] = '0' + ((number / divIndex) % 10);
         divIndex /= 10;
@@ -487,44 +489,27 @@ void sample_main(void) {
                     }
 
                     path_to_string(keyPath, &operationContext);
-                    bool good_baking_key = is_baking_authorized_general(operationContext.bip32Path,
-                                                                        operationContext.pathLength);
 
                     switch (get_magic_byte(operationContext.data, operationContext.datalen)) {
-                        // TODO: Refactor this and next case when we have the baking app separate
                     case MAGIC_BYTE_BLOCK:
-                        {
-                            if (!is_block(operationContext.data, operationContext.datalen)) {
-                                THROW(0x6C00);
-                            }
-                            int level = get_block_level(operationContext.data, operationContext.datalen);
-                            if (!is_baking_authorized(level, operationContext.bip32Path,
-                                                      operationContext.pathLength)) {
-                                // Two cases for right now
-                                if (good_baking_key) {
-                                    // Level backtrack -- silently reject
-                                    THROW(0x6C00);
-                                } else {
-                                    // Key not set up -- require explicit authorization
-                                    UI_PROMPT(ui_bake_screen, bake_ok, sign_cancel);
-                                    flags |= IO_ASYNCH_REPLY;
-                                    break;
-                                }
-                            } else {
-                                write_highest_level(level);
-                                tx = perform_signature(tx);
-                                break;
-                            }
+                        // Extra validation for blocks, but otherwise like normal baking
+                        if (!is_block_valid(operationContext.data, operationContext.datalen)) {
+                            THROW(0x6C00);
                         }
+                        int level = get_block_level(operationContext.data, operationContext.datalen);
+                        if (!is_level_authorized(level)) {
+                            THROW(0x6C00);
+                        }
+                        // FALLTHROUGH -- This is a normal baking operation now
                     case MAGIC_BYTE_BAKING_OP:
-                        if (good_baking_key) {
+                        if (is_baking_authorized(operationContext.bip32Path,
+                                                 operationContext.pathLength)) {
                             tx = perform_signature(tx);
-                            break;
                         } else {
                             UI_PROMPT(ui_bake_screen, bake_ok, sign_cancel);
                             flags |= IO_ASYNCH_REPLY;
-                            break;
                         }
+                        break;
                     case MAGIC_BYTE_UNSAFE_OP:
                     case MAGIC_BYTE_UNSAFE_OP2:
                     case MAGIC_BYTE_UNSAFE_OP3:
