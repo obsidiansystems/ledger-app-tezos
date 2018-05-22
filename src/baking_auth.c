@@ -1,6 +1,7 @@
 #include "os.h"
 #include "cx.h"
 #include "baking_auth.h"
+#include "paths.h"
 
 #include <string.h>
 

@@ -1,5 +1,4 @@
 #include "ui.h"
-#include "main.h"
 
 #include "idle_screen.h"
 #include "error_screen.h"
@@ -34,7 +33,7 @@ static void do_nothing(void *context) {
 }
 
 static void exit_app(void *context) {
-    ui_exit();
+    os_sched_exit(0);
 }
 
 static void ui_idle(void) {

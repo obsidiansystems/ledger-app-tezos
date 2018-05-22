@@ -1,6 +1,8 @@
 #pragma once
 
+#include "os.h"
 #include <stdbool.h>
+#include <stdint.h>
 
 #define MAX_BIP32_PATH 10
 

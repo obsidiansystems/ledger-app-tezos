@@ -15,20 +15,18 @@
 *  limitations under the License.
 ********************************************************************************/
 
+#include "baking_auth.h"
+#include "paths.h"
+#include "blake2.h"
+#include "protocol.h"
+#include "ui.h"
+
 #include "os.h"
 #include "cx.h"
 #include <stdbool.h>
-
-#include "string.h"
-
-#include "main.h"
-#include "ui.h"
-#include "protocol.h"
-#include "baking_auth.h"
+#include <string.h>
 
 #include "prompt_screens.h"
-
-#include "blake2.h"
 
 #define CLA 0x80
 
@@ -47,9 +45,9 @@
 #define OFFSET_LC 4
 #define OFFSET_CDATA 5
 
-static bool baking_enabled;
 static bool address_enabled;
 
+static void bake_ok(void *);
 static void sign_ok(void *);
 static void sign_cancel(void *);
 static void address_ok(void *);
@@ -65,8 +63,8 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 #define HASH_SIZE 32
 
 typedef struct operationContext_t {
-    uint8_t pathLength;
-    uint32_t bip32Path[MAX_BIP32_PATH];
+    uint8_t path_length;
+    uint32_t bip32_path[MAX_BIP32_PATH];
     cx_ecfp_public_key_t publicKey;
     uint8_t depth;
     bool readingElement;
@@ -86,52 +84,6 @@ operationContext_t operationContext;
 
 #define HARDENING_BIT (1u << 31)
 
-// TODO: This is the worst
-static uint32_t path_item_to_string(char *dest, uint32_t number) {
-    uint32_t offset = 0;
-    uint32_t startOffset = 0, destOffset = 0;
-    uint8_t i;
-    uint8_t tmp[11];
-    bool hardened = (number & HARDENING_BIT) != 0;
-    number &= ~HARDENING_BIT;
-    uint32_t divIndex = 1000000000;
-    while (divIndex != 0) {
-        tmp[offset++] = '0' + ((number / divIndex) % 10);
-        divIndex /= 10;
-    }
-    tmp[offset] = '\0';
-    while ((tmp[startOffset] == '0') && (startOffset < offset)) {
-        startOffset++;
-    }
-    if (startOffset == offset) {
-        dest[destOffset++] = '0';
-    } else {
-        for (i = startOffset; i < offset; i++) {
-            dest[destOffset++] = tmp[i];
-        }
-    }
-    if (hardened) {
-        dest[destOffset++] = '\'';
-    }
-    dest[destOffset++] = '\0';
-    return destOffset;
-}
-
-static int path_to_string(char *buf, const operationContext_t *ctx) {
-    int i;
-    int offset = 0;
-    for (i = 0; i < ctx->pathLength; i++) {
-        offset +=
-            path_item_to_string(buf + offset, ctx->bip32Path[i]);
-        offset--;
-        if (i != ctx->pathLength - 1) {
-            buf[offset++] = '/';
-        }
-    }
-    buf[offset++] = '\0';
-    return offset;
-}
-
 void sign_ok(void *ignore) {
     int tx = perform_signature(0);
 
@@ -141,7 +93,7 @@ void sign_ok(void *ignore) {
 
 void bake_ok(void *ignore) {
     bool success = authorize_baking(get_block_level(operationContext.data, operationContext.datalen),
-                                    operationContext.bip32Path, operationContext.pathLength);
+                                    operationContext.bip32_path, operationContext.path_length);
     if (!success) {
         return delay_reject(); // Bad BIP32 path
     }
@@ -179,8 +131,8 @@ int perform_signature(int tx) {
     }
 
     os_perso_derive_node_bip32(operationContext.curve,
-                               operationContext.bip32Path,
-                               operationContext.pathLength,
+                               operationContext.bip32_path,
+                               operationContext.path_length,
                                privateKeyData,
                                NULL);
 
@@ -308,27 +260,6 @@ unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
     return 0;
 }
 
-unsigned int read_bip32_path(const uint8_t *buf) {
-    int i, nbWritten = 0;
-    operationContext.pathLength = buf[0];
-    buf++;
-    nbWritten++;
-    if ((operationContext.pathLength < 0x01) ||
-        (operationContext.pathLength > MAX_BIP32_PATH)) {
-        screen_printf("Invalid path\n");
-        THROW(0x6a80);
-    }
-    for (i = 0; i < operationContext.pathLength; i++) {
-        operationContext.bip32Path[i] =
-            (buf[0] << 24) | (buf[1] << 16) |
-            (buf[2] << 8) | (buf[3]);
-        buf += 4;
-        nbWritten++;
-    }
-
-    return nbWritten;
-}
-
 static void return_ok() {
     THROW(0x9000);
 }
@@ -391,11 +322,11 @@ void sample_main(void) {
                         break;
                     }
 
-                    read_bip32_path(dataBuffer);
+                    operationContext.path_length = read_bip32_path(operationContext.bip32_path, dataBuffer);
 
                     os_perso_derive_node_bip32(operationContext.curve,
-                                               operationContext.bip32Path,
-                                               operationContext.pathLength,
+                                               operationContext.bip32_path,
+                                               operationContext.path_length,
                                                privateKeyData, NULL);
 
                     cx_ecfp_init_private_key(operationContext.curve,
@@ -410,7 +341,7 @@ void sample_main(void) {
                     os_memset(&privateKey, 0, sizeof(privateKey));
                     os_memset(privateKeyData, 0, sizeof(privateKeyData));
 
-                    path_to_string(keyPath, &operationContext);
+                    path_to_string(keyPath, operationContext.path_length, operationContext.bip32_path);
 
                     if (address_enabled) {
                         tx = provide_address(tx);
@@ -445,7 +376,8 @@ void sample_main(void) {
                     if (p1 == P1_FIRST) {
                         os_memset(operationContext.data, 0, TEZOS_BUFSIZE);
                         operationContext.datalen = 0;
-                        dataLength -= read_bip32_path(dataBuffer);
+                        operationContext.path_length = read_bip32_path(operationContext.bip32_path,
+                                                                      dataBuffer);
                         switch(G_io_apdu_buffer[OFFSET_P2]) {
                         case 0:
                             operationContext.curve = CX_CURVE_Ed25519;
@@ -480,7 +412,7 @@ void sample_main(void) {
                         return_ok();
                     }
 
-                    path_to_string(keyPath, &operationContext);
+                    path_to_string(keyPath, operationContext.path_length, operationContext.bip32_path);
 
                     switch (get_magic_byte(operationContext.data, operationContext.datalen)) {
                     case MAGIC_BYTE_BLOCK:
@@ -494,8 +426,8 @@ void sample_main(void) {
                         }
                         // FALLTHROUGH -- This is a normal baking operation now
                     case MAGIC_BYTE_BAKING_OP:
-                        if (is_baking_authorized(operationContext.bip32Path,
-                                                 operationContext.pathLength)) {
+                        if (is_baking_authorized(operationContext.bip32_path,
+                                                 operationContext.path_length)) {
                             tx = perform_signature(tx);
                         } else {
                             UI_PROMPT(ui_bake_screen, bake_ok, sign_cancel);
@@ -565,7 +497,6 @@ __attribute__((section(".boot"))) int main(void) {
     // ensure exception will work as planned
     os_boot();
 
-    baking_enabled = false;
     address_enabled = false;
 
     BEGIN_TRY {
@@ -586,8 +517,4 @@ __attribute__((section(".boot"))) int main(void) {
     END_TRY;
 
     app_exit();
-}
-
-void ui_exit(void) {
-    os_sched_exit(0);
 }
