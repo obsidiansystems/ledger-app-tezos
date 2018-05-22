@@ -1,6 +1,6 @@
 #include "os.h"
 #include "cx.h"
-#include "nvram.h"
+#include "baking_auth.h"
 
 #include <string.h>
 

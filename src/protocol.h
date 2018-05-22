@@ -15,11 +15,6 @@ static inline uint8_t get_magic_byte(const uint8_t *data, size_t length) {
     else return *data;
 }
 
-static inline bool is_baking(const uint8_t *data, size_t length) {
-    uint8_t byte = get_magic_byte(data, length);
-    return byte == MAGIC_BYTE_BLOCK || byte == MAGIC_BYTE_BAKING_OP;
-}
-
 bool is_block_valid(const void *data, size_t length);
 
 int32_t get_block_level(const void *data, size_t length); // Precondition: is_block returns true
