@@ -92,8 +92,7 @@ void sign_ok(void *ignore) {
 }
 
 void bake_ok(void *ignore) {
-    bool success = authorize_baking(get_block_level(operationContext.data, operationContext.datalen),
-                                    operationContext.bip32_path, operationContext.path_length);
+    bool success = authorize_baking(operationContext.bip32_path, operationContext.path_length);
     if (!success) {
         return delay_reject(); // Bad BIP32 path
     }
@@ -124,6 +123,10 @@ int perform_signature(int tx) {
     uint8_t privateKeyData[32];
     cx_ecfp_private_key_t privateKey;
     unsigned int info;
+
+    if (is_block_valid(operationContext.data, operationContext.datalen)) {
+        write_highest_level(get_block_level(operationContext.data, operationContext.datalen));
+    }
 
     if (operationContext.curve != CX_CURVE_Ed25519) {
         blake2b(operationContext.hash, HASH_SIZE, operationContext.data, operationContext.datalen,

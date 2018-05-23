@@ -11,13 +11,13 @@ void write_highest_level(int lvl) {
     nvm_write((void*)&N_data.highest_level, &lvl, sizeof(lvl));
 }
 
-bool authorize_baking(int level, uint32_t *bip32_path, uint8_t path_length) {
+bool authorize_baking(uint32_t *bip32_path, uint8_t path_length) {
     if (path_length > MAX_BIP32_PATH || path_length == 0) {
         return false;
     }
 
     nvram_data new_baking_details;
-    new_baking_details.highest_level = level;
+    new_baking_details.highest_level = N_data.highest_level;
     memcpy(new_baking_details.bip32_path, bip32_path, path_length * sizeof(*bip32_path));
     new_baking_details.path_length = path_length;
     nvm_write((void*)&N_data, &new_baking_details, sizeof(N_data));
