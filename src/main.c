@@ -92,7 +92,8 @@ void sign_ok(void *ignore) {
 }
 
 void bake_ok(void *ignore) {
-    bool success = authorize_baking(operationContext.bip32_path, operationContext.path_length);
+    bool success = authorize_baking(operationContext.data, operationContext.datalen,
+                                    operationContext.bip32_path, operationContext.path_length);
     if (!success) {
         return delay_reject(); // Bad BIP32 path
     }
@@ -124,9 +125,7 @@ int perform_signature(int tx) {
     cx_ecfp_private_key_t privateKey;
     unsigned int info;
 
-    if (is_block_valid(operationContext.data, operationContext.datalen)) {
-        write_highest_level(get_block_level(operationContext.data, operationContext.datalen));
-    }
+    update_high_water_mark(operationContext.data, operationContext.datalen);
 
     if (operationContext.curve != CX_CURVE_Ed25519) {
         blake2b(operationContext.hash, HASH_SIZE, operationContext.data, operationContext.datalen,
@@ -419,17 +418,10 @@ void sample_main(void) {
 
                     switch (get_magic_byte(operationContext.data, operationContext.datalen)) {
                     case MAGIC_BYTE_BLOCK:
-                        // Extra validation for blocks, but otherwise like normal baking
-                        if (!is_block_valid(operationContext.data, operationContext.datalen)) {
-                            THROW(0x6C00);
-                        }
-                        int level = get_block_level(operationContext.data, operationContext.datalen);
-                        if (!is_level_authorized(level)) {
-                            THROW(0x6C00);
-                        }
-                        // FALLTHROUGH -- This is a normal baking operation now
                     case MAGIC_BYTE_BAKING_OP:
-                        if (is_baking_authorized(operationContext.bip32_path,
+                        if (is_baking_authorized(operationContext.data,
+                                                 operationContext.datalen,
+                                                 operationContext.bip32_path,
                                                  operationContext.path_length)) {
                             tx = perform_signature(tx);
                         } else {
