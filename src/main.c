@@ -127,10 +127,8 @@ int perform_signature(int tx) {
 
     update_high_water_mark(operationContext.data, operationContext.datalen);
 
-    if (operationContext.curve != CX_CURVE_Ed25519) {
-        blake2b(operationContext.hash, HASH_SIZE, operationContext.data, operationContext.datalen,
-                NULL, 0);
-    }
+    blake2b(operationContext.hash, HASH_SIZE, operationContext.data, operationContext.datalen,
+            NULL, 0);
 
     os_perso_derive_node_bip32(operationContext.curve,
                                operationContext.bip32_path,
@@ -150,8 +148,8 @@ int perform_signature(int tx) {
         tx += cx_eddsa_sign(&privateKey,
                            0,
                            CX_SHA512,
-                           operationContext.data,
-                           operationContext.datalen,
+                           operationContext.hash,
+                           HASH_SIZE,
                            NULL,
                            0,
                            &G_io_apdu_buffer[tx],
