@@ -110,7 +110,6 @@ void reset_cancel(void *ignore) {
 int perform_signature(int tx) {
     uint8_t privateKeyData[32];
     cx_ecfp_private_key_t privateKey;
-    unsigned int info;
     static uint8_t hash[HASH_SIZE];
 
     update_high_water_mark(operationContext.data, operationContext.datalen);
@@ -146,6 +145,7 @@ int perform_signature(int tx) {
         break;
     case CX_CURVE_SECP256K1: {
         int prevtx = tx;
+        unsigned int info;
         tx += cx_ecdsa_sign(&privateKey,
                            CX_LAST | CX_RND_TRNG,
                            CX_NONE,
