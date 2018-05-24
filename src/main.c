@@ -30,10 +30,6 @@
 
 #define CLA 0x80
 
-#define INS_GET_PUBLIC_KEY 0x02
-#define INS_SIGN 0x04
-#define INS_RESET 0x06
-
 #define P1_FIRST 0x00
 #define P1_NEXT 0x01
 #define P1_LAST_MARKER 0x80
@@ -60,23 +56,14 @@ static int provide_address(int tx);
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 #define TEZOS_BUFSIZE 1024
-#define HASH_SIZE 32
 
 typedef struct operationContext_t {
     uint8_t path_length;
     uint32_t bip32_path[MAX_BIP32_PATH];
     cx_ecfp_public_key_t publicKey;
-    uint8_t depth;
-    bool readingElement;
-    bool getPublicKey;
-    uint8_t lengthBuffer[4];
-    uint8_t lengthOffset;
-    uint32_t elementLength;
-
     cx_curve_t curve;
     uint8_t data[TEZOS_BUFSIZE];
     uint32_t datalen;
-    uint8_t hash[HASH_SIZE];
 } operationContext_t;
 
 char keyPath[200];
@@ -120,15 +107,17 @@ void reset_cancel(void *ignore) {
     delay_reject();
 }
 
+#define HASH_SIZE 32
+
 int perform_signature(int tx) {
     uint8_t privateKeyData[32];
     cx_ecfp_private_key_t privateKey;
     unsigned int info;
+    static uint8_t hash[HASH_SIZE];
 
     update_high_water_mark(operationContext.data, operationContext.datalen);
 
-    blake2b(operationContext.hash, HASH_SIZE, operationContext.data, operationContext.datalen,
-            NULL, 0);
+    blake2b(hash, HASH_SIZE, operationContext.data, operationContext.datalen, NULL, 0);
 
     os_perso_derive_node_bip32(operationContext.curve,
                                operationContext.bip32_path,
@@ -148,7 +137,7 @@ int perform_signature(int tx) {
         tx += cx_eddsa_sign(&privateKey,
                            0,
                            CX_SHA512,
-                           operationContext.hash,
+                           hash,
                            HASH_SIZE,
                            NULL,
                            0,
@@ -162,7 +151,7 @@ int perform_signature(int tx) {
         tx += cx_ecdsa_sign(&privateKey,
                            CX_LAST | CX_RND_TRNG,
                            CX_NONE,
-                           operationContext.hash,
+                           hash,
                            HASH_SIZE,
                            &G_io_apdu_buffer[tx],
                            100,
@@ -264,31 +253,178 @@ static void return_ok() {
     THROW(0x9000);
 }
 
-void sample_main(void) {
-    volatile unsigned int rx = 0;
+// Throw this to indicate prompting
+#define ASYNC_EXCEPTION 0x2000
+// Return new tx
+typedef unsigned int (*apdu_handler)(unsigned int tx);
+unsigned int handle_apdu_get_public_key(unsigned int tx) {
+    uint8_t privateKeyData[32];
+    uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
+    cx_ecfp_private_key_t privateKey;
+
+    if (G_io_apdu_buffer[OFFSET_P1] != 0)
+        THROW(0x6B00);
+
+    if(G_io_apdu_buffer[OFFSET_P2] > 2)
+        THROW(0x6B00);
+
+    switch(G_io_apdu_buffer[OFFSET_P2]) {
+        case 0:
+            operationContext.curve = CX_CURVE_Ed25519;
+            break;
+        case 1:
+            operationContext.curve = CX_CURVE_SECP256K1;
+            break;
+        case 2:
+            operationContext.curve = CX_CURVE_SECP256R1;
+            break;
+    }
+
+    operationContext.path_length = read_bip32_path(operationContext.bip32_path, dataBuffer);
+
+    os_perso_derive_node_bip32(operationContext.curve,
+                               operationContext.bip32_path,
+                               operationContext.path_length,
+                               privateKeyData, NULL);
+
+    cx_ecfp_init_private_key(operationContext.curve,
+                             privateKeyData,
+                             32,
+                             &privateKey);
+
+    cx_ecfp_generate_pair(operationContext.curve,
+                          &operationContext.publicKey,
+                          &privateKey, 1);
+
+    os_memset(&privateKey, 0, sizeof(privateKey));
+    os_memset(privateKeyData, 0, sizeof(privateKeyData));
+
+    if (address_enabled) {
+        return provide_address(tx);
+    } else {
+        UI_PROMPT(ui_address_screen, address_ok, address_cancel);
+        THROW(ASYNC_EXCEPTION);
+    }
+}
+
+unsigned int handle_apdu_reset(unsigned int tx) {
+    uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
+    uint32_t dataLength = G_io_apdu_buffer[OFFSET_LC];
+    if (dataLength != sizeof(int)) {
+        THROW(0x6C00);
+    }
+    operationContext.datalen = sizeof(int);
+    memcpy(operationContext.data, dataBuffer, sizeof(int));
+    UI_PROMPT(ui_bake_reset_screen, reset_ok, reset_cancel);
+    THROW(ASYNC_EXCEPTION);
+}
+
+unsigned int handle_apdu_sign(unsigned int tx) {
+    uint8_t p1 = G_io_apdu_buffer[OFFSET_P1];
+    uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
+    uint32_t dataLength = G_io_apdu_buffer[OFFSET_LC];
+
+    bool last = (p1 & P1_LAST_MARKER) != 0;
+    switch (p1 & ~P1_LAST_MARKER) {
+    case P1_FIRST:
+        os_memset(operationContext.data, 0, TEZOS_BUFSIZE);
+        operationContext.datalen = 0;
+        operationContext.path_length = read_bip32_path(operationContext.bip32_path,
+                                                       dataBuffer);
+        switch(G_io_apdu_buffer[OFFSET_P2]) {
+            case 0:
+                operationContext.curve = CX_CURVE_Ed25519;
+                break;
+            case 1:
+                operationContext.curve = CX_CURVE_SECP256K1;
+                break;
+            case 2:
+                operationContext.curve = CX_CURVE_SECP256R1;
+                break;
+        }
+        return_ok();
+    case P1_NEXT:
+        break;
+    default:
+        THROW(0x6B00);
+    }
+
+    if(G_io_apdu_buffer[OFFSET_P2] > 2) {
+        THROW(0x6B00);
+    }
+
+    if (operationContext.datalen + dataLength > TEZOS_BUFSIZE) {
+        THROW(0x6C00);
+    }
+
+    os_memmove(operationContext.data + operationContext.datalen, dataBuffer, dataLength);
+    operationContext.datalen += dataLength;
+
+    if (!last) {
+        return_ok();
+    }
+
+    switch (get_magic_byte(operationContext.data, operationContext.datalen)) {
+        case MAGIC_BYTE_BLOCK:
+        case MAGIC_BYTE_BAKING_OP:
+            if (is_baking_authorized(operationContext.data,
+                                     operationContext.datalen,
+                                     operationContext.bip32_path,
+                                     operationContext.path_length)) {
+                return perform_signature(tx);
+            } else {
+                UI_PROMPT(ui_bake_screen, bake_ok, sign_cancel);
+                THROW(ASYNC_EXCEPTION);
+            }
+        case MAGIC_BYTE_UNSAFE_OP:
+        case MAGIC_BYTE_UNSAFE_OP2:
+        case MAGIC_BYTE_UNSAFE_OP3:
+            UI_PROMPT(ui_sign_screen, sign_ok, sign_cancel);
+            THROW(ASYNC_EXCEPTION);
+        default:
+            THROW(0x6C00);
+    }
+}
+
+unsigned int handle_apdu_error(unsigned int tx) {
+    THROW(0x6D00);
+}
+
+unsigned int handle_apdu_exit(unsigned int tx) {
+    os_sched_exit(-1);
+    THROW(0x6D00); // avoid warning
+}
+
+#define INS_MASK 0x0F
+#define INS_GET_PUBLIC_KEY 0x02
+#define INS_SIGN 0x04
+#define INS_RESET 0x06
+#define INS_EXIT 0x0F
+
+void main_loop(void) {
     volatile unsigned int tx = 0;
     volatile unsigned int flags = 0;
 
-    // DESIGN NOTE: the bootloader ignores the way APDU are fetched. The only
-    // goal is to retrieve APDU.
-    // When APDU are to be fetched from multiple IOs, like NFC+USB+BLE, make
-    // sure the io_event is called with a
-    // switch event, before the apdu is replied to the bootloader. This avoid
-    // APDU injection faults.
-    for (;;) {
-        volatile unsigned short sw = 0;
+    static apdu_handler handlers[INS_MASK + 1];
+    for (int i = 0; i < 16; i++) {
+        handlers[i] = handle_apdu_error;
+    }
+    handlers[INS_GET_PUBLIC_KEY] = handle_apdu_get_public_key;
+    handlers[INS_RESET] = handle_apdu_reset;
+    handlers[INS_SIGN] = handle_apdu_sign;
+    handlers[INS_EXIT] = handle_apdu_exit;
 
+    while (true) {
         BEGIN_TRY {
             TRY {
-                rx = tx;
-                tx = 0; // ensure no race in catch_other if io_exchange throws
-                        // an error
-                rx = io_exchange(CHANNEL_APDU | flags, rx);
+                int old_tx = tx;
+                tx = 0; // ensure no race in CATCH_OTHER if io_exchange throws an error
+                int rx = io_exchange(CHANNEL_APDU | flags, old_tx);
                 flags = 0;
 
-                // no apdu received, well, reset the session, and reset the
-                // bootloader configuration
                 if (rx == 0) {
+                    // no apdu received, well, reset the session, and reset the
+                    // bootloader configuration
                     THROW(0x6982);
                 }
 
@@ -296,163 +432,19 @@ void sample_main(void) {
                     THROW(0x6E00);
                 }
 
-                switch (G_io_apdu_buffer[1]) {
-
-                // TODO: Maybe this should be an array of function pointers :-)
-                case INS_GET_PUBLIC_KEY: {
-                    uint8_t privateKeyData[32];
-                    uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
-                    cx_ecfp_private_key_t privateKey;
-
-                    if (G_io_apdu_buffer[OFFSET_P1] != 0)
-                        THROW(0x6B00);
-
-                    if(G_io_apdu_buffer[OFFSET_P2] > 2)
-                        THROW(0x6B00);
-
-                    switch(G_io_apdu_buffer[OFFSET_P2]) {
-                    case 0:
-                        operationContext.curve = CX_CURVE_Ed25519;
-                        break;
-                    case 1:
-                        operationContext.curve = CX_CURVE_SECP256K1;
-                        break;
-                    case 2:
-                        operationContext.curve = CX_CURVE_SECP256R1;
-                        break;
-                    }
-
-                    operationContext.path_length = read_bip32_path(operationContext.bip32_path, dataBuffer);
-
-                    os_perso_derive_node_bip32(operationContext.curve,
-                                               operationContext.bip32_path,
-                                               operationContext.path_length,
-                                               privateKeyData, NULL);
-
-                    cx_ecfp_init_private_key(operationContext.curve,
-                                             privateKeyData,
-                                             32,
-                                             &privateKey);
-
-                    cx_ecfp_generate_pair(operationContext.curve,
-                                          &operationContext.publicKey,
-                                          &privateKey, 1);
-
-                    os_memset(&privateKey, 0, sizeof(privateKey));
-                    os_memset(privateKeyData, 0, sizeof(privateKeyData));
-
-                    path_to_string(keyPath, operationContext.path_length, operationContext.bip32_path);
-
-                    if (address_enabled) {
-                        tx = provide_address(tx);
-                    } else {
-                        UI_PROMPT(ui_address_screen, address_ok, address_cancel);
-                        flags |= IO_ASYNCH_REPLY;
-                    }
-                }
-
-                break;
-                case INS_RESET: {
-                    uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
-                    uint32_t dataLength = G_io_apdu_buffer[OFFSET_LC];
-                    if (dataLength != sizeof(int)) {
-                        THROW(0x6C00);
-                    }
-                    operationContext.datalen = sizeof(int);
-                    memcpy(operationContext.data, dataBuffer, sizeof(int));
-                    UI_PROMPT(ui_bake_reset_screen, reset_ok, reset_cancel);
-                    flags |= IO_ASYNCH_REPLY;
-                    break;
-                }
-
-                case INS_SIGN: {
-                    uint8_t p1 = G_io_apdu_buffer[OFFSET_P1];
-                    /* uint8_t p2 = G_io_apdu_buffer[OFFSET_P2]; */
-                    uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
-                    uint32_t dataLength = G_io_apdu_buffer[OFFSET_LC];
-                    bool last = ((p1 & P1_LAST_MARKER) != 0);
-                    p1 &= ~P1_LAST_MARKER;
-
-                    if (p1 == P1_FIRST) {
-                        os_memset(operationContext.data, 0, TEZOS_BUFSIZE);
-                        operationContext.datalen = 0;
-                        operationContext.path_length = read_bip32_path(operationContext.bip32_path,
-                                                                      dataBuffer);
-                        switch(G_io_apdu_buffer[OFFSET_P2]) {
-                        case 0:
-                            operationContext.curve = CX_CURVE_Ed25519;
-                            break;
-                        case 1:
-                            operationContext.curve = CX_CURVE_SECP256K1;
-                            break;
-                        case 2:
-                            operationContext.curve = CX_CURVE_SECP256R1;
-                            break;
-                        }
-                        return_ok();
-                    }
-
-                    else if (p1 != P1_NEXT)
-                        THROW(0x6B00);
-
-                    if(G_io_apdu_buffer[OFFSET_P2] > 2)
-                        THROW(0x6B00);
-
-
-                    if (operationContext.datalen + dataLength > TEZOS_BUFSIZE)
-                        /* TODO: find a good error code */
-                        THROW(0x6C00);
-
-                    os_memmove(operationContext.data+operationContext.datalen,
-                               dataBuffer,
-                               dataLength);
-                    operationContext.datalen += dataLength;
-
-                    if (!last) {
-                        return_ok();
-                    }
-
-                    path_to_string(keyPath, operationContext.path_length, operationContext.bip32_path);
-
-                    switch (get_magic_byte(operationContext.data, operationContext.datalen)) {
-                    case MAGIC_BYTE_BLOCK:
-                    case MAGIC_BYTE_BAKING_OP:
-                        if (is_baking_authorized(operationContext.data,
-                                                 operationContext.datalen,
-                                                 operationContext.bip32_path,
-                                                 operationContext.path_length)) {
-                            tx = perform_signature(tx);
-                        } else {
-                            UI_PROMPT(ui_bake_screen, bake_ok, sign_cancel);
-                            flags |= IO_ASYNCH_REPLY;
-                        }
-                        break;
-                    case MAGIC_BYTE_UNSAFE_OP:
-                    case MAGIC_BYTE_UNSAFE_OP2:
-                    case MAGIC_BYTE_UNSAFE_OP3:
-                        UI_PROMPT(ui_sign_screen, sign_ok, sign_cancel);
-                        flags |= IO_ASYNCH_REPLY;
-                        break;
-                    default:
-                        THROW(0x6C00);
-                    }
-                }
-
-                break;
-
-                case 0xFF: // return to dashboard
-                    os_sched_exit(0);
-
-                default:
-                    THROW(0x6D00);
-                    break;
-                }
+                uint8_t instruction = G_io_apdu_buffer[1];
+                tx = handlers[instruction & INS_MASK](tx);
             }
             CATCH_OTHER(e) {
+                if (e == ASYNC_EXCEPTION) {
+                    flags = IO_ASYNCH_REPLY;
+                    goto async; // Can't jump out of CATCH_OTHER
+                }
+
+                unsigned short sw = e;
                 switch (e & 0xF000) {
                 case 0x6000:
                 case 0x9000:
-                    sw = e;
                     break;
                 default:
                     sw = 0x6800 | (e & 0x7FF);
@@ -462,6 +454,8 @@ void sample_main(void) {
                 G_io_apdu_buffer[tx] = sw >> 8;
                 G_io_apdu_buffer[tx + 1] = sw;
                 tx += 2;
+async:
+                ;
             }
             FINALLY {
             }
@@ -500,7 +494,7 @@ __attribute__((section(".boot"))) int main(void) {
 
             ui_initial_screen();
 
-            sample_main();
+            main_loop();
         }
         CATCH_OTHER(e) {
         }
