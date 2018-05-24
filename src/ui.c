@@ -6,6 +6,7 @@
 #include <stdbool.h>
 
 ux_state_t ux;
+unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 static void *cb_context;
 static callback_t ok_callback;

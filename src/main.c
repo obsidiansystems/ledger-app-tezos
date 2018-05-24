@@ -53,8 +53,6 @@ static void delay_reject();
 static int perform_signature(int tx);
 static int provide_address(int tx);
 
-unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
-
 #define TEZOS_BUFSIZE 1024
 
 typedef struct operationContext_t {
