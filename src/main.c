@@ -50,8 +50,8 @@ static void address_ok(void *);
 static void address_cancel(void *);
 static void delay_reject();
 
-static int perform_signature(int tx);
-static int provide_address(int tx);
+static int perform_signature();
+static int provide_address();
 
 #define TEZOS_BUFSIZE 1024
 
@@ -64,13 +64,12 @@ typedef struct operationContext_t {
     uint32_t datalen;
 } operationContext_t;
 
-char keyPath[200];
 operationContext_t operationContext;
 
 #define HARDENING_BIT (1u << 31)
 
 void sign_ok(void *ignore) {
-    int tx = perform_signature(0);
+    int tx = perform_signature();
 
     // Send back the response, do not restart the event loop
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
@@ -83,7 +82,7 @@ void bake_ok(void *ignore) {
         return delay_reject(); // Bad BIP32 path
     }
 
-    int tx = perform_signature(0);
+    int tx = perform_signature();
 
     // Send back the response, do not restart the event loop
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
@@ -92,13 +91,12 @@ void bake_ok(void *ignore) {
 void reset_ok(void *ignore) {
     int level = read_unaligned_big_endian(operationContext.data);
     write_highest_level(level);
-    int tx = 0;
 
-    G_io_apdu_buffer[tx++] = 0x90;
-    G_io_apdu_buffer[tx++] = 0x00;
+    G_io_apdu_buffer[0] = 0x90;
+    G_io_apdu_buffer[1] = 0x00;
 
     // Send back the response, do not restart the event loop
-    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
 }
 
 void reset_cancel(void *ignore) {
@@ -107,7 +105,7 @@ void reset_cancel(void *ignore) {
 
 #define HASH_SIZE 32
 
-int perform_signature(int tx) {
+int perform_signature() {
     uint8_t privateKeyData[32];
     cx_ecfp_private_key_t privateKey;
     static uint8_t hash[HASH_SIZE];
@@ -129,33 +127,33 @@ int perform_signature(int tx) {
 
     os_memset(privateKeyData, 0, sizeof(privateKeyData));
 
+    int tx;
     switch(operationContext.curve) {
     case CX_CURVE_Ed25519: {
-        tx += cx_eddsa_sign(&privateKey,
+        tx = cx_eddsa_sign(&privateKey,
                            0,
                            CX_SHA512,
                            hash,
                            HASH_SIZE,
                            NULL,
                            0,
-                           &G_io_apdu_buffer[tx],
+                           &G_io_apdu_buffer[0],
                            64,
                            NULL);
     }
         break;
     case CX_CURVE_SECP256K1: {
-        int prevtx = tx;
         unsigned int info;
-        tx += cx_ecdsa_sign(&privateKey,
+        tx = cx_ecdsa_sign(&privateKey,
                            CX_LAST | CX_RND_TRNG,
                            CX_NONE,
                            hash,
                            HASH_SIZE,
-                           &G_io_apdu_buffer[tx],
+                           &G_io_apdu_buffer[0],
                            100,
                            &info);
         if (info & CX_ECCINFO_PARITY_ODD) {
-            G_io_apdu_buffer[prevtx] |= 0x01;
+            G_io_apdu_buffer[0] |= 0x01;
         }
     }
         break;
@@ -178,13 +176,14 @@ void sign_cancel(void *ignore) {
 void address_ok(void *ignore) {
     address_enabled = true;
 
-    int tx = provide_address(0);
+    int tx = provide_address();
 
     // Send back the response, do not restart the event loop
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
 }
 
-int provide_address(int tx) {
+int provide_address() {
+    int tx = 0;
     switch(operationContext.curve) {
     case CX_CURVE_Ed25519: {
         cx_edward_compress_point(operationContext.curve,
@@ -221,41 +220,11 @@ void delay_reject() {
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
 }
 
-unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
-    switch (channel & ~(IO_FLAGS)) {
-    case CHANNEL_KEYBOARD:
-        break;
-
-    // multiplexed io exchange over a SPI channel and TLV encapsulated protocol
-    case CHANNEL_SPI:
-        if (tx_len) {
-            io_seproxyhal_spi_send(G_io_apdu_buffer, tx_len);
-
-            if (channel & IO_RESET_AFTER_REPLIED) {
-                reset();
-            }
-            return 0; // nothing received from the master so far (it's a tx
-                      // transaction)
-        } else {
-            return io_seproxyhal_spi_recv(G_io_apdu_buffer,
-                                          sizeof(G_io_apdu_buffer), 0);
-        }
-
-    default:
-        THROW(INVALID_PARAMETER);
-    }
-    return 0;
-}
-
-static void return_ok() {
-    THROW(0x9000);
-}
-
 // Throw this to indicate prompting
 #define ASYNC_EXCEPTION 0x2000
-// Return new tx
-typedef unsigned int (*apdu_handler)(unsigned int tx);
-unsigned int handle_apdu_get_public_key(unsigned int tx) {
+// Return number of bytes to transmit (tx)
+typedef unsigned int (*apdu_handler)();
+unsigned int handle_apdu_get_public_key() {
     uint8_t privateKeyData[32];
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
     cx_ecfp_private_key_t privateKey;
@@ -298,14 +267,14 @@ unsigned int handle_apdu_get_public_key(unsigned int tx) {
     os_memset(privateKeyData, 0, sizeof(privateKeyData));
 
     if (address_enabled) {
-        return provide_address(tx);
+        return provide_address();
     } else {
         UI_PROMPT(ui_address_screen, address_ok, address_cancel);
         THROW(ASYNC_EXCEPTION);
     }
 }
 
-unsigned int handle_apdu_reset(unsigned int tx) {
+unsigned int handle_apdu_reset() {
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
     uint32_t dataLength = G_io_apdu_buffer[OFFSET_LC];
     if (dataLength != sizeof(int)) {
@@ -317,7 +286,11 @@ unsigned int handle_apdu_reset(unsigned int tx) {
     THROW(ASYNC_EXCEPTION);
 }
 
-unsigned int handle_apdu_sign(unsigned int tx) {
+static void return_ok() {
+    THROW(0x9000);
+}
+
+unsigned int handle_apdu_sign() {
     uint8_t p1 = G_io_apdu_buffer[OFFSET_P1];
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
     uint32_t dataLength = G_io_apdu_buffer[OFFSET_LC];
@@ -369,7 +342,7 @@ unsigned int handle_apdu_sign(unsigned int tx) {
                                      operationContext.datalen,
                                      operationContext.bip32_path,
                                      operationContext.path_length)) {
-                return perform_signature(tx);
+                return perform_signature();
             } else {
                 UI_PROMPT(ui_bake_screen, bake_ok, sign_cancel);
                 THROW(ASYNC_EXCEPTION);
@@ -384,27 +357,26 @@ unsigned int handle_apdu_sign(unsigned int tx) {
     }
 }
 
-unsigned int handle_apdu_error(unsigned int tx) {
+unsigned int handle_apdu_error() {
     THROW(0x6D00);
 }
 
-unsigned int handle_apdu_exit(unsigned int tx) {
+unsigned int handle_apdu_exit() {
     os_sched_exit(-1);
     THROW(0x6D00); // avoid warning
 }
 
-#define INS_MASK 0x0F
+#define INS_MASK 0x07
 #define INS_GET_PUBLIC_KEY 0x02
 #define INS_SIGN 0x04
 #define INS_RESET 0x06
-#define INS_EXIT 0x0F
+#define INS_EXIT 0x07 // Or 0xFF, only significant to (x & INS_MASK)
 
 void main_loop(void) {
-    volatile unsigned int tx = 0;
-    volatile unsigned int flags = 0;
-
     static apdu_handler handlers[INS_MASK + 1];
-    for (int i = 0; i < 16; i++) {
+
+    // TODO: Consider using static initialization of a const, instead of this
+    for (int i = 0; i < INS_MASK + 1; i++) {
         handlers[i] = handle_apdu_error;
     }
     handlers[INS_GET_PUBLIC_KEY] = handle_apdu_get_public_key;
@@ -412,6 +384,9 @@ void main_loop(void) {
     handlers[INS_SIGN] = handle_apdu_sign;
     handlers[INS_EXIT] = handle_apdu_exit;
 
+    // TODO: Make this loop less wonky
+    volatile unsigned int tx = 0;
+    volatile unsigned int flags = 0;
     while (true) {
         BEGIN_TRY {
             TRY {
@@ -431,7 +406,7 @@ void main_loop(void) {
                 }
 
                 uint8_t instruction = G_io_apdu_buffer[1];
-                tx = handlers[instruction & INS_MASK](tx);
+                tx = handlers[instruction & INS_MASK]();
             }
             CATCH_OTHER(e) {
                 if (e == ASYNC_EXCEPTION) {
@@ -449,9 +424,9 @@ void main_loop(void) {
                     break;
                 }
                 // Unexpected exception => report
-                G_io_apdu_buffer[tx] = sw >> 8;
-                G_io_apdu_buffer[tx + 1] = sw;
-                tx += 2;
+                G_io_apdu_buffer[0] = sw >> 8;
+                G_io_apdu_buffer[1] = sw;
+                tx = 2;
 async:
                 ;
             }
@@ -471,6 +446,33 @@ void app_exit(void) {
         }
     }
     END_TRY_L(exit);
+}
+
+// TODO: I have no idea what this function does, but it is called by the OS
+unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
+    switch (channel & ~(IO_FLAGS)) {
+    case CHANNEL_KEYBOARD:
+        break;
+
+    // multiplexed io exchange over a SPI channel and TLV encapsulated protocol
+    case CHANNEL_SPI:
+        if (tx_len) {
+            io_seproxyhal_spi_send(G_io_apdu_buffer, tx_len);
+
+            if (channel & IO_RESET_AFTER_REPLIED) {
+                reset();
+            }
+            return 0; // nothing received from the master so far (it's a tx
+                      // transaction)
+        } else {
+            return io_seproxyhal_spi_recv(G_io_apdu_buffer,
+                                          sizeof(G_io_apdu_buffer), 0);
+        }
+
+    default:
+        THROW(INVALID_PARAMETER);
+    }
+    return 0;
 }
 
 __attribute__((section(".boot"))) int main(void) {
