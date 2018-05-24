@@ -184,28 +184,13 @@ void address_ok(void *ignore) {
 
 int provide_address() {
     int tx = 0;
-    switch(operationContext.curve) {
-    case CX_CURVE_Ed25519: {
-        cx_edward_compress_point(operationContext.curve,
-                                 operationContext.publicKey.W,
-                                 operationContext.publicKey.W_len);
-        G_io_apdu_buffer[tx++] = 33;
-        os_memmove(G_io_apdu_buffer + tx, operationContext.publicKey.W, 33);
-        tx += 33;
-    }
-        break;
-    default: {
-        G_io_apdu_buffer[tx++] = operationContext.publicKey.W_len;
-        os_memmove(G_io_apdu_buffer + tx,
-                   operationContext.publicKey.W,
-                   operationContext.publicKey.W_len);
-        tx += operationContext.publicKey.W_len;
-    }
-    }
-
+    G_io_apdu_buffer[tx++] = operationContext.publicKey.W_len;
+    os_memmove(G_io_apdu_buffer + tx,
+               operationContext.publicKey.W,
+               operationContext.publicKey.W_len);
+    tx += operationContext.publicKey.W_len;
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;
-
     return tx;
 }
 
@@ -222,8 +207,10 @@ void delay_reject() {
 
 // Throw this to indicate prompting
 #define ASYNC_EXCEPTION 0x2000
+
 // Return number of bytes to transmit (tx)
 typedef unsigned int (*apdu_handler)();
+
 unsigned int handle_apdu_get_public_key() {
     uint8_t privateKeyData[32];
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
@@ -266,10 +253,18 @@ unsigned int handle_apdu_get_public_key() {
     os_memset(&privateKey, 0, sizeof(privateKey));
     os_memset(privateKeyData, 0, sizeof(privateKeyData));
 
+    if (operationContext.curve == CX_CURVE_Ed25519) {
+        cx_edward_compress_point(operationContext.curve,
+                                 operationContext.publicKey.W,
+                                 operationContext.publicKey.W_len);
+        operationContext.publicKey.W_len = 33;
+    }
+
     if (address_enabled) {
         return provide_address();
     } else {
-        UI_PROMPT(ui_address_screen, address_ok, address_cancel);
+        prompt_address(operationContext.publicKey.W, operationContext.publicKey.W_len,
+                       address_ok, address_cancel);
         THROW(ASYNC_EXCEPTION);
     }
 }
@@ -367,10 +362,11 @@ unsigned int handle_apdu_exit() {
 }
 
 #define INS_MASK 0x07
+
 #define INS_GET_PUBLIC_KEY 0x02
 #define INS_SIGN 0x04
 #define INS_RESET 0x06
-#define INS_EXIT 0x07 // Or 0xFF, only significant to (x & INS_MASK)
+#define INS_EXIT 0x07 // So you can send 0xFF, only significant to (x & INS_MASK)
 
 void main_loop(void) {
     static apdu_handler handlers[INS_MASK + 1];
