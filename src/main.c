@@ -380,17 +380,10 @@ void main_loop(void) {
     handlers[INS_SIGN] = handle_apdu_sign;
     handlers[INS_EXIT] = handle_apdu_exit;
 
-    // TODO: Make this loop less wonky
-    volatile unsigned int tx = 0;
-    volatile unsigned int flags = 0;
+    volatile uint32_t rx = io_exchange(CHANNEL_APDU, 0);
     while (true) {
         BEGIN_TRY {
             TRY {
-                int old_tx = tx;
-                tx = 0; // ensure no race in CATCH_OTHER if io_exchange throws an error
-                int rx = io_exchange(CHANNEL_APDU | flags, old_tx);
-                flags = 0;
-
                 if (rx == 0) {
                     // no apdu received, well, reset the session, and reset the
                     // bootloader configuration
@@ -402,29 +395,24 @@ void main_loop(void) {
                 }
 
                 uint8_t instruction = G_io_apdu_buffer[1];
-                tx = handlers[instruction & INS_MASK]();
+                uint32_t tx = handlers[instruction & INS_MASK]();
+                rx = io_exchange(CHANNEL_APDU, tx);
             }
             CATCH_OTHER(e) {
-                if (e == ASYNC_EXCEPTION) {
-                    flags = IO_ASYNCH_REPLY;
-                    goto async; // Can't jump out of CATCH_OTHER
-                }
-
                 unsigned short sw = e;
-                switch (e & 0xF000) {
-                case 0x6000:
-                case 0x9000:
+                switch (sw) {
+                case ASYNC_EXCEPTION:
+                    rx = io_exchange(CHANNEL_APDU | IO_ASYNCH_REPLY, 0);
                     break;
                 default:
                     sw = 0x6800 | (e & 0x7FF);
+                case 0x6000 ... 0x6FFF:
+                case 0x9000 ... 0x9FFF:
+                    G_io_apdu_buffer[0] = sw >> 8;
+                    G_io_apdu_buffer[1] = sw;
+                    rx = io_exchange(CHANNEL_APDU, 2);
                     break;
                 }
-                // Unexpected exception => report
-                G_io_apdu_buffer[0] = sw >> 8;
-                G_io_apdu_buffer[1] = sw;
-                tx = 2;
-async:
-                ;
             }
             FINALLY {
             }
