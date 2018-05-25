@@ -1,8 +1,8 @@
 #include "ui.h"
 
-#include <stdbool.h>
+#include "paths.h"
 
-#include "idle_screen.h"
+#include <stdbool.h>
 
 ux_state_t ux;
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
@@ -15,29 +15,65 @@ static void do_nothing(void);
 
 uint32_t ux_step, ux_step_count;
 
-void ui_init(void) {
-    UX_INIT();
-    ok_callback = NULL;
-    cxl_callback = NULL;
-}
-
 static void do_nothing(void) {
 }
 
-void exit_app(void) {
-    BEGIN_TRY_L(exit) {
-        TRY_L(exit) {
-            os_sched_exit(-1);
-        }
-        FINALLY_L(exit) {
-        }
-    }
-    END_TRY_L(exit);
-}
+static char idle_text[16];
+
+const bagl_element_t ui_idle_screen[] = {
+    // type                               userid    x    y   w    h  str rad
+    // fill      fg        bg      fid iid  txt   touchparams...       ]
+    {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
+      0, 0},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x00, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Tezos",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x02, 0, 26, 128, 32, 0, 0, 0 , 0xFFFFFF, 0x000000,
+    BAGL_FONT_OPEN_SANS_REGULAR_11px|BAGL_FONT_ALIGNMENT_CENTER, 0  },
+    idle_text,
+    0,
+    0,
+    0,
+    NULL,
+    NULL,
+    NULL },
+
+    {{BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+      BAGL_GLYPH_ICON_CROSS},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+};
+
+static const bagl_element_t *idle_prepro(const bagl_element_t *elem);
 
 static void ui_idle(void) {
     ui_prompt(ui_idle_screen, sizeof(ui_idle_screen)/sizeof(*ui_idle_screen),
-              do_nothing, exit_app, NULL);
+              do_nothing, exit_app, idle_prepro);
+}
+
+void change_idle_display(uint32_t new) {
+    uint32_t it = number_to_string(idle_text, new);
+    idle_text[it] = '\0';
 }
 
 void ui_initial_screen(void) {
@@ -69,9 +105,15 @@ const bagl_element_t *timer_setup(const bagl_element_t *elem) {
     return elem;
 }
 
+const bagl_element_t *idle_prepro(const bagl_element_t *elem) {
+    ux_step_count = 0;
+    io_seproxyhal_setup_ticker(500);
+    return elem;
+}
+
 void ui_prompt(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback_t cxl_c,
                bagl_element_callback_t prepro) {
-    // Copied from definition of UX_DISPLAY in header file
+    // Adapted from definition of UX_DISPLAY in header file
     ok_callback = ok_c;
     cxl_callback = cxl_c;
     ux.elements = elems;
@@ -114,6 +156,8 @@ unsigned char io_event(unsigned char channel) {
         } else if (cxl_callback != exit_app) {
             cxl_callback();
             ui_idle();
+        } else if (cxl_callback == exit_app) {
+            ui_idle();
         }
         break;
 
@@ -132,4 +176,22 @@ unsigned char io_event(unsigned char channel) {
 
 void io_seproxyhal_display(const bagl_element_t *element) {
     return io_seproxyhal_display_default((bagl_element_t *)element);
+}
+
+void exit_app(void) {
+    BEGIN_TRY_L(exit) {
+        TRY_L(exit) {
+            os_sched_exit(-1);
+        }
+        FINALLY_L(exit) {
+        }
+    }
+    END_TRY_L(exit);
+}
+
+void ui_init(void) {
+    UX_INIT();
+    ok_callback = NULL;
+    cxl_callback = NULL;
+    idle_text[0] = '\0';
 }

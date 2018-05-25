@@ -29,8 +29,8 @@
 
 #define MAX_INT_DIGITS 10
 
-// This function does not output terminating null bytes
-static uint32_t number_to_string(char *dest, uint32_t number) {
+// This function does not output terminating null bytes.
+uint32_t number_to_string(char *dest, uint32_t number) {
     char tmp[MAX_INT_DIGITS];
     char *const tmp_end = tmp + MAX_INT_DIGITS;
     char *ptr;

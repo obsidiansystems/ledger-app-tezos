@@ -11,6 +11,7 @@ WIDE nvram_data N_data_real;
 
 void write_highest_level(int lvl) {
     nvm_write((void*)&N_data.highest_level, &lvl, sizeof(lvl));
+    change_idle_display(N_data.highest_level);
 }
 
 bool authorize_baking(void *data, int datalen, uint32_t *bip32_path, uint8_t path_length) {
@@ -28,6 +29,7 @@ bool authorize_baking(void *data, int datalen, uint32_t *bip32_path, uint8_t pat
     memcpy(new_baking_details.bip32_path, bip32_path, path_length * sizeof(*bip32_path));
     new_baking_details.path_length = path_length;
     nvm_write((void*)&N_data, &new_baking_details, sizeof(N_data));
+    change_idle_display(N_data.highest_level);
     return true;
 }
 
