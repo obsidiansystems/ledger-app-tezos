@@ -25,7 +25,8 @@ void ui_init(void) {
 }
 
 void ui_display_error(void) {
-    UI_PROMPT(ui_error_screen, exit_app, exit_app);
+    ui_prompt(ui_error_screen, sizeof(ui_error_screen)/sizeof(*ui_error_screen), exit_app, exit_app,
+              NULL, NULL);
 }
 
 static void do_nothing(void *context) {

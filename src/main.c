@@ -45,12 +45,15 @@ static bool address_enabled;
 
 static void bake_ok(void *);
 static void sign_ok(void *);
+static void sign_unsafe_ok(void *);
 static void sign_cancel(void *);
+
 static void address_ok(void *);
 static void address_cancel(void *);
+
 static void delay_reject();
 
-static int perform_signature();
+static int perform_signature(bool hash_first);
 static int provide_address();
 
 #define TEZOS_BUFSIZE 1024
@@ -68,10 +71,13 @@ operationContext_t operationContext;
 
 #define HARDENING_BIT (1u << 31)
 
-void sign_ok(void *ignore) {
-    int tx = perform_signature();
+void sign_unsafe_ok(void *context) {
+    int tx = perform_signature(false);
+    io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
+}
 
-    // Send back the response, do not restart the event loop
+void sign_ok(void *context) {
+    int tx = perform_signature(true);
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
 }
 
@@ -82,9 +88,7 @@ void bake_ok(void *ignore) {
         return delay_reject(); // Bad BIP32 path
     }
 
-    int tx = perform_signature();
-
-    // Send back the response, do not restart the event loop
+    int tx = perform_signature(true);
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
 }
 
@@ -105,14 +109,20 @@ void reset_cancel(void *ignore) {
 
 #define HASH_SIZE 32
 
-int perform_signature() {
+int perform_signature(bool hash_first) {
     uint8_t privateKeyData[32];
     cx_ecfp_private_key_t privateKey;
     static uint8_t hash[HASH_SIZE];
+    uint8_t *data = operationContext.data;
+    uint32_t datalen = operationContext.datalen;
 
     update_high_water_mark(operationContext.data, operationContext.datalen);
 
-    blake2b(hash, HASH_SIZE, operationContext.data, operationContext.datalen, NULL, 0);
+    if (hash_first) {
+        blake2b(hash, HASH_SIZE, operationContext.data, operationContext.datalen, NULL, 0);
+        data = hash;
+        datalen = HASH_SIZE;
+    }
 
     os_perso_derive_node_bip32(operationContext.curve,
                                operationContext.bip32_path,
@@ -133,8 +143,8 @@ int perform_signature() {
         tx = cx_eddsa_sign(&privateKey,
                            0,
                            CX_SHA512,
-                           hash,
-                           HASH_SIZE,
+                           data,
+                           datalen,
                            NULL,
                            0,
                            &G_io_apdu_buffer[0],
@@ -147,8 +157,8 @@ int perform_signature() {
         tx = cx_ecdsa_sign(&privateKey,
                            CX_LAST | CX_RND_TRNG,
                            CX_NONE,
-                           hash,
-                           HASH_SIZE,
+                           data,
+                           datalen,
                            &G_io_apdu_buffer[0],
                            100,
                            &info);
@@ -205,13 +215,25 @@ void delay_reject() {
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
 }
 
+#define INS_MASK 0x07
+
+#define INS_GET_PUBLIC_KEY 0x02
+#define INS_SIGN 0x04
+#define INS_SIGN_UNSAFE 0x05 // Data that is already hashed.
+#define INS_RESET 0x06
+#define INS_EXIT 0x07 // So you can send 0xFF, only significant to (x & INS_MASK)
+
 // Throw this to indicate prompting
 #define ASYNC_EXCEPTION 0x2000
 
-// Return number of bytes to transmit (tx)
-typedef unsigned int (*apdu_handler)();
+#define ASYNC_PROMPT(screen, ok, cxl) \
+    UI_PROMPT(screen, ok, cxl); \
+    THROW(ASYNC_EXCEPTION)
 
-unsigned int handle_apdu_get_public_key() {
+// Return number of bytes to transmit (tx)
+typedef unsigned int (*apdu_handler)(uint8_t instruction);
+
+unsigned int handle_apdu_get_public_key(uint8_t instruction) {
     uint8_t privateKeyData[32];
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
     cx_ecfp_private_key_t privateKey;
@@ -269,7 +291,7 @@ unsigned int handle_apdu_get_public_key() {
     }
 }
 
-unsigned int handle_apdu_reset() {
+unsigned int handle_apdu_reset(uint8_t instruction) {
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
     uint32_t dataLength = G_io_apdu_buffer[OFFSET_LC];
     if (dataLength != sizeof(int)) {
@@ -277,15 +299,14 @@ unsigned int handle_apdu_reset() {
     }
     operationContext.datalen = sizeof(int);
     memcpy(operationContext.data, dataBuffer, sizeof(int));
-    UI_PROMPT(ui_bake_reset_screen, reset_ok, reset_cancel);
-    THROW(ASYNC_EXCEPTION);
+    ASYNC_PROMPT(ui_bake_reset_screen, reset_ok, reset_cancel);
 }
 
 static void return_ok() {
     THROW(0x9000);
 }
 
-unsigned int handle_apdu_sign() {
+unsigned int handle_apdu_sign(uint8_t instruction) {
     uint8_t p1 = G_io_apdu_buffer[OFFSET_P1];
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
     uint32_t dataLength = G_io_apdu_buffer[OFFSET_LC];
@@ -330,6 +351,11 @@ unsigned int handle_apdu_sign() {
         return_ok();
     }
 
+    if (instruction == INS_SIGN_UNSAFE) {
+        ASYNC_PROMPT(ui_sign_unsafe_screen, sign_unsafe_ok, sign_cancel);
+    }
+
+    // Have raw data, can get insight into it
     switch (get_magic_byte(operationContext.data, operationContext.datalen)) {
         case MAGIC_BYTE_BLOCK:
         case MAGIC_BYTE_BAKING_OP:
@@ -337,49 +363,29 @@ unsigned int handle_apdu_sign() {
                                      operationContext.datalen,
                                      operationContext.bip32_path,
                                      operationContext.path_length)) {
-                return perform_signature();
+                return perform_signature(true);
             } else {
-                UI_PROMPT(ui_bake_screen, bake_ok, sign_cancel);
-                THROW(ASYNC_EXCEPTION);
+                ASYNC_PROMPT(ui_bake_screen, bake_ok, sign_cancel);
             }
         case MAGIC_BYTE_UNSAFE_OP:
         case MAGIC_BYTE_UNSAFE_OP2:
         case MAGIC_BYTE_UNSAFE_OP3:
-            UI_PROMPT(ui_sign_screen, sign_ok, sign_cancel);
-            THROW(ASYNC_EXCEPTION);
+            ASYNC_PROMPT(ui_sign_screen, sign_ok, sign_cancel);
         default:
             THROW(0x6C00);
     }
 }
 
-unsigned int handle_apdu_error() {
+unsigned int handle_apdu_error(uint8_t instruction) {
     THROW(0x6D00);
 }
 
-unsigned int handle_apdu_exit() {
+unsigned int handle_apdu_exit(uint8_t instruction) {
     os_sched_exit(-1);
     THROW(0x6D00); // avoid warning
 }
 
-#define INS_MASK 0x07
-
-#define INS_GET_PUBLIC_KEY 0x02
-#define INS_SIGN 0x04
-#define INS_RESET 0x06
-#define INS_EXIT 0x07 // So you can send 0xFF, only significant to (x & INS_MASK)
-
-void main_loop(void) {
-    static apdu_handler handlers[INS_MASK + 1];
-
-    // TODO: Consider using static initialization of a const, instead of this
-    for (int i = 0; i < INS_MASK + 1; i++) {
-        handlers[i] = handle_apdu_error;
-    }
-    handlers[INS_GET_PUBLIC_KEY] = handle_apdu_get_public_key;
-    handlers[INS_RESET] = handle_apdu_reset;
-    handlers[INS_SIGN] = handle_apdu_sign;
-    handlers[INS_EXIT] = handle_apdu_exit;
-
+void main_loop(apdu_handler handlers[INS_MASK + 1]) {
     volatile uint32_t rx = io_exchange(CHANNEL_APDU, 0);
     while (true) {
         BEGIN_TRY {
@@ -395,7 +401,7 @@ void main_loop(void) {
                 }
 
                 uint8_t instruction = G_io_apdu_buffer[1];
-                uint32_t tx = handlers[instruction & INS_MASK]();
+                uint32_t tx = handlers[instruction & INS_MASK](instruction);
                 rx = io_exchange(CHANNEL_APDU, tx);
             }
             CATCH_OTHER(e) {
@@ -421,6 +427,20 @@ void main_loop(void) {
     }
 }
 
+void app_main(void) {
+    static apdu_handler handlers[INS_MASK + 1];
+
+    // TODO: Consider using static initialization of a const, instead of this
+    for (int i = 0; i < INS_MASK + 1; i++) {
+        handlers[i] = handle_apdu_error;
+    }
+    handlers[INS_GET_PUBLIC_KEY] = handle_apdu_get_public_key;
+    handlers[INS_RESET] = handle_apdu_reset;
+    handlers[INS_SIGN] = handle_apdu_sign;
+    handlers[INS_SIGN_UNSAFE] = handle_apdu_sign;
+    handlers[INS_EXIT] = handle_apdu_exit;
+    main_loop(handlers);
+}
 void app_exit(void) {
     BEGIN_TRY_L(exit) {
         TRY_L(exit) {
@@ -478,7 +498,7 @@ __attribute__((section(".boot"))) int main(void) {
 
             ui_initial_screen();
 
-            main_loop();
+            app_main();
         }
         CATCH_OTHER(e) {
         }
