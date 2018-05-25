@@ -8,6 +8,9 @@ static bool pubkey_enabled;
 static cx_curve_t curve;
 static cx_ecfp_public_key_t public_key;
 
+static const struct bagl_element_e *prompt_address_prepro(const struct bagl_element_e *element);
+static void prompt_address(void *raw_bytes, uint32_t size, callback_t ok_cb, callback_t cxl_cb);
+
 static int provide_pubkey() {
     int tx = 0;
     G_io_apdu_buffer[tx++] = public_key.W_len;
@@ -20,7 +23,7 @@ static int provide_pubkey() {
     return tx;
 }
 
-static void pubkey_ok(void *ignore) {
+static void pubkey_ok() {
     pubkey_enabled = true;
 
     int tx = provide_pubkey();
@@ -72,4 +75,127 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
         prompt_address(public_key.W, public_key.W_len, pubkey_ok, delay_reject);
         THROW(ASYNC_EXCEPTION);
     }
+}
+
+#define ADDRESS_BYTES 40
+char address_display_data[ADDRESS_BYTES * 2 + 1];
+
+const bagl_element_t ui_display_address[] = {
+    // type                               userid    x    y   w    h  str rad
+    // fill      fg        bg      fid iid  txt   touchparams...       ]
+    {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
+      0, 0},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+      BAGL_GLYPH_ICON_CROSS},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+      BAGL_GLYPH_ICON_CHECK},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    //{{BAGL_ICON                           , 0x01,  21,   9,  14,  14, 0, 0, 0
+    //, 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_TRANSACTION_BADGE  }, NULL, 0, 0,
+    //0, NULL, NULL, NULL },
+    {{BAGL_LABELINE, 0x01, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Provide",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_LABELINE, 0x01, 0, 26, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "public key?",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x02, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Public Key",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x02, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     address_display_data,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+};
+
+static inline char to_hexit(char in) {
+    if (in < 0xA) {
+        return in + '0';
+    } else {
+        return in - 0xA + 'A';
+    }
+}
+
+void prompt_address(void *raw_bytes, uint32_t size, callback_t ok_cb, callback_t cxl_cb) {
+    if (size > ADDRESS_BYTES) {
+        uint16_t sz = 0x6B | (size & 0xFF);
+        THROW(sz);
+    }
+    uint8_t *bytes = raw_bytes;
+    uint32_t i;
+    for (i = 0; i < size; i++) {
+        address_display_data[i * 2] = to_hexit(bytes[i] >> 4);
+        address_display_data[i * 2 + 1] = to_hexit(bytes[i] & 0xF);
+    }
+    address_display_data[i * 2] = '\0';
+    ui_prompt(ui_display_address, sizeof(ui_display_address)/sizeof(*ui_display_address),
+              ok_cb, cxl_cb, prompt_address_prepro);
+    ux_step = 0;
+    ux_step_count = 2;
+}
+
+const struct bagl_element_e *prompt_address_prepro(const struct bagl_element_e *element) {
+    if (element->component.userid > 0) {
+        unsigned int display = ux_step == element->component.userid - 1;
+        if (display) {
+            switch (element->component.userid) {
+            case 1:
+                UX_CALLBACK_SET_INTERVAL(2000);
+                break;
+            case 2:
+                UX_CALLBACK_SET_INTERVAL(MAX(
+                    3000, 1000 + bagl_label_roundtrip_duration_ms(element, 7)));
+                break;
+            }
+        }
+        return (void*)display;
+    }
+    return (void*)1;
 }

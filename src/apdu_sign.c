@@ -20,21 +20,21 @@ static uint32_t bip32_path[MAX_BIP32_PATH];
 
 static int perform_signature(bool hash_first);
 
-void sign_unsafe_ok(void *context) {
+void sign_unsafe_ok() {
     int tx = perform_signature(false);
     delay_send(tx);
 }
 
-void sign_ok(void *context) {
+void sign_ok() {
     int tx = perform_signature(true);
     delay_send(tx);
 }
 
-void bake_ok(void *ignore) {
+void bake_ok() {
     bool success = authorize_baking(message_data, message_data_length,
                                     bip32_path, bip32_path_length);
     if (!success) {
-        return delay_reject(NULL); // Bad BIP32 path
+        return delay_reject(); // Bad BIP32 path
     }
 
     int tx = perform_signature(true);

@@ -62,7 +62,7 @@ void update_high_water_mark(void *data, int datalen) {
 
 static int level;
 
-static void reset_ok(void *ignore);
+static void reset_ok();
 
 unsigned int handle_apdu_reset(uint8_t instruction) {
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
@@ -74,7 +74,7 @@ unsigned int handle_apdu_reset(uint8_t instruction) {
     ASYNC_PROMPT(ui_bake_reset_screen, reset_ok, delay_reject);
 }
 
-void reset_ok(void *ignore) {
+void reset_ok() {
     write_highest_level(level);
 
     G_io_apdu_buffer[0] = 0x90;

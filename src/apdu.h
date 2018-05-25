@@ -40,7 +40,7 @@ static inline void delay_send(int tx) {
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
 }
 
-static inline void delay_reject(void *ignore) {
+static inline void delay_reject() {
     G_io_apdu_buffer[0] = 0x69;
     G_io_apdu_buffer[1] = 0x85;
     delay_send(2);

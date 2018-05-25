@@ -23,7 +23,6 @@ the specific language governing permissions and
 #include "apdu_pubkey.h"
 #include "apdu_sign.h"
 #include "baking_auth.h"
-#include "paths.h"
 #include "ui.h"
 
 #include "os.h"
@@ -55,33 +54,6 @@ void app_exit(void) {
         }
     }
     END_TRY_L(exit);
-}
-
-// TODO: I have no idea what this function does, but it is called by the OS
-unsigned short io_exchange_al(unsigned char channel, unsigned short tx_len) {
-    switch (channel & ~(IO_FLAGS)) {
-    case CHANNEL_KEYBOARD:
-        break;
-
-    // multiplexed io exchange over a SPI channel and TLV encapsulated protocol
-    case CHANNEL_SPI:
-        if (tx_len) {
-            io_seproxyhal_spi_send(G_io_apdu_buffer, tx_len);
-
-            if (channel & IO_RESET_AFTER_REPLIED) {
-                reset();
-            }
-            return 0; // nothing received from the master so far (it's a tx
-                      // transaction)
-        } else {
-            return io_seproxyhal_spi_recv(G_io_apdu_buffer,
-                                          sizeof(G_io_apdu_buffer), 0);
-        }
-
-    default:
-        THROW(INVALID_PARAMETER);
-    }
-    return 0;
 }
 
 __attribute__((section(".boot"))) int main(void) {
