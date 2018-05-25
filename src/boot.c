@@ -19,22 +19,38 @@ the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
 
-#include "apdu.h"
-#include "apdu_pubkey.h"
-#include "apdu_sign.h"
-#include "baking_auth.h"
+#include "ui.h"
 
-void app_main(void) {
-    static apdu_handler handlers[INS_MASK + 1];
+#include "os.h"
+#include "cx.h"
 
-    // TODO: Consider using static initialization of a const, instead of this
-    for (int i = 0; i < INS_MASK + 1; i++) {
-        handlers[i] = handle_apdu_error;
+void app_main(void);
+
+__attribute__((section(".boot"))) int main(void) {
+    // exit critical section
+    __asm volatile("cpsie i");
+
+    ui_init();
+
+    // ensure exception will work as planned
+    os_boot();
+
+    BEGIN_TRY {
+        TRY {
+            io_seproxyhal_init();
+
+            USB_power(1);
+
+            ui_initial_screen();
+
+            app_main();
+        }
+        CATCH_OTHER(e) {
+        }
+        FINALLY {
+        }
     }
-    handlers[INS_GET_PUBLIC_KEY] = handle_apdu_get_public_key;
-    handlers[INS_RESET] = handle_apdu_reset;
-    handlers[INS_SIGN] = handle_apdu_sign;
-    handlers[INS_SIGN_UNSAFE] = handle_apdu_sign;
-    handlers[INS_EXIT] = handle_apdu_exit;
-    main_loop(handlers);
+    END_TRY;
+
+    exit_app();
 }
