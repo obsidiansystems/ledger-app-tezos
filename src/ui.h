@@ -8,6 +8,8 @@ extern uint32_t ux_step, ux_step_count;
 
 void ui_initial_screen(void);
 void ui_init(void);
+void exit_app(void);
+
 void ui_prompt(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback_t cxl_c,
                bagl_element_callback_t prepro);
 unsigned char io_event(unsigned char channel); // TODO: Who calls this? How?

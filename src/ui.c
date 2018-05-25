@@ -1,9 +1,8 @@
 #include "ui.h"
 
-#include "idle_screen.h"
-#include "error_screen.h"
-
 #include <stdbool.h>
+
+#include "idle_screen.h"
 
 ux_state_t ux;
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
@@ -12,8 +11,7 @@ static callback_t ok_callback;
 static callback_t cxl_callback;
 
 static unsigned button_handler(unsigned button_mask, unsigned button_mask_counter);
-static void do_nothing(void *context);
-static void exit_app(void *context);
+static void do_nothing(void);
 
 uint32_t ux_step, ux_step_count;
 
@@ -23,11 +21,18 @@ void ui_init(void) {
     cxl_callback = NULL;
 }
 
-static void do_nothing() {
+static void do_nothing(void) {
 }
 
-static void exit_app() {
-    os_sched_exit(0);
+void exit_app(void) {
+    BEGIN_TRY_L(exit) {
+        TRY_L(exit) {
+            os_sched_exit(-1);
+        }
+        FINALLY_L(exit) {
+        }
+    }
+    END_TRY_L(exit);
 }
 
 static void ui_idle(void) {
