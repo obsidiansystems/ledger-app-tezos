@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "apdu.h"
+
 #define MAX_BIP32_PATH 10
 
 typedef struct {
@@ -19,3 +21,6 @@ void write_highest_level(int level);
 bool is_baking_authorized(void *data, int datalen, uint32_t *bip32_path, uint8_t path_length);
 void update_high_water_mark(void *data, int datalen);
 bool is_level_authorized(int level);
+
+#define INS_RESET 0x06
+unsigned int handle_apdu_reset(uint8_t instruction);

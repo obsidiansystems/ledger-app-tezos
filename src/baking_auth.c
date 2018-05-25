@@ -1,6 +1,7 @@
-#include "os.h"
-#include "cx.h"
+#include "apdu.h"
 #include "baking_auth.h"
+#include "cx.h"
+#include "os.h"
 #include "paths.h"
 #include "protocol.h"
 
@@ -55,4 +56,30 @@ void update_high_water_mark(void *data, int datalen) {
             write_highest_level(level);
         }
     }
+}
+
+#include "reset_screens.h"
+
+static int level;
+
+static void reset_ok(void *ignore);
+
+unsigned int handle_apdu_reset(uint8_t instruction) {
+    uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
+    uint32_t dataLength = G_io_apdu_buffer[OFFSET_LC];
+    if (dataLength != sizeof(int)) {
+        THROW(0x6C00);
+    }
+    level = read_unaligned_big_endian(dataBuffer);
+    ASYNC_PROMPT(ui_bake_reset_screen, reset_ok, delay_reject);
+}
+
+void reset_ok(void *ignore) {
+    write_highest_level(level);
+
+    G_io_apdu_buffer[0] = 0x90;
+    G_io_apdu_buffer[1] = 0x00;
+
+    // Send back the response, do not restart the event loop
+    delay_send(2);
 }
