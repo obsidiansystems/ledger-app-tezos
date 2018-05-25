@@ -23,15 +23,10 @@ void ui_init(void) {
     cxl_callback = NULL;
 }
 
-void ui_display_error(void) {
-    ui_prompt(ui_error_screen, sizeof(ui_error_screen)/sizeof(*ui_error_screen), exit_app, exit_app,
-              NULL);
+static void do_nothing() {
 }
 
-static void do_nothing(void *context) {
-}
-
-static void exit_app(void *context) {
+static void exit_app() {
     os_sched_exit(0);
 }
 
