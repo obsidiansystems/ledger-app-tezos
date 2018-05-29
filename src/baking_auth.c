@@ -20,7 +20,7 @@ bool authorize_baking(void *data, int datalen, uint32_t *bip32_path, uint8_t pat
     }
 
     int level = N_data.highest_level;
-    if (is_block_valid(data, datalen)) {
+    if (data != NULL && is_block_valid(data, datalen)) {
         level = get_block_level(data, datalen);
     }
 
@@ -37,6 +37,12 @@ bool is_level_authorized(int level) {
     return level > N_data.highest_level;
 }
 
+bool is_path_authorized(uint32_t *bip32_path, uint8_t path_length) {
+    return path_length != 0 &&
+        path_length == N_data.path_length &&
+        memcmp(bip32_path, N_data.bip32_path, path_length * sizeof(*bip32_path)) == 0;
+}
+
 bool is_baking_authorized(void *data, int datalen, uint32_t *bip32_path, uint8_t path_length) {
     if (is_block_valid(data, datalen)) {
         int level = get_block_level(data, datalen);
@@ -46,9 +52,7 @@ bool is_baking_authorized(void *data, int datalen, uint32_t *bip32_path, uint8_t
     } else if (get_magic_byte(data, datalen) == MAGIC_BYTE_BLOCK) {
         THROW(0x6C00);
     }
-    return path_length != 0 &&
-        path_length == N_data.path_length &&
-        memcmp(bip32_path, N_data.bip32_path, path_length * sizeof(*bip32_path)) == 0;
+    return is_path_authorized(bip32_path, path_length);
 }
 
 void update_high_water_mark(void *data, int datalen) {

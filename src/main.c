@@ -34,7 +34,9 @@ void app_main(void) {
     handlers[INS_GET_PUBLIC_KEY] = handle_apdu_get_public_key;
     handlers[INS_RESET] = handle_apdu_reset;
     handlers[INS_SIGN] = handle_apdu_sign;
+#ifndef BAKING_APP
     handlers[INS_SIGN_UNSAFE] = handle_apdu_sign;
+#endif
     handlers[INS_EXIT] = handle_apdu_exit;
     main_loop(handlers);
 }

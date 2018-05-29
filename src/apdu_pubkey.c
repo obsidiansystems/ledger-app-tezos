@@ -1,12 +1,17 @@
 #include "apdu_pubkey.h"
 
 #include "apdu.h"
+#include "baking_auth.h"
 #include "cx.h"
 #include "ui.h"
 
 static bool pubkey_enabled;
 static cx_curve_t curve;
 static cx_ecfp_public_key_t public_key;
+
+// The following need to be persisted for baking app
+static uint8_t path_length;
+static uint32_t bip32_path[MAX_BIP32_PATH];
 
 static const struct bagl_element_e *prompt_address_prepro(const struct bagl_element_e *element);
 static void prompt_address(void *raw_bytes, uint32_t size, callback_t ok_cb, callback_t cxl_cb);
@@ -24,7 +29,11 @@ static int provide_pubkey() {
 }
 
 static void pubkey_ok() {
+#ifdef BAKING_APP
+    authorize_baking(NULL, 0, bip32_path, path_length);
+#else
     pubkey_enabled = true;
+#endif
 
     int tx = provide_pubkey();
     delay_send(tx);
@@ -48,13 +57,9 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
         case 1:
             curve = CX_CURVE_SECP256K1;
             break;
-        case 2:
-            curve = CX_CURVE_SECP256R1;
-            break;
+        default:
+            THROW(0x6B00); // We don't support SECP256R1 in apdu_sign.c
     }
-
-    uint8_t path_length;
-    uint32_t bip32_path[MAX_BIP32_PATH];
 
     path_length = read_bip32_path(bip32_path, dataBuffer);
     os_perso_derive_node_bip32(curve, bip32_path, path_length, privateKeyData, NULL);
@@ -68,6 +73,10 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
         cx_edward_compress_point(curve, public_key.W, public_key.W_len);
         public_key.W_len = 33;
     }
+
+#if BAKING_APP
+    pubkey_enabled = is_path_authorized(bip32_path, path_length);
+#endif
 
     if (pubkey_enabled) {
         return provide_pubkey();
@@ -117,7 +126,11 @@ const bagl_element_t ui_display_address[] = {
     //0, NULL, NULL, NULL },
     {{BAGL_LABELINE, 0x01, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+#ifdef BAKING_APP
+     "Authorize baking",
+#else
      "Provide",
+#endif
      0,
      0,
      0,
@@ -126,7 +139,11 @@ const bagl_element_t ui_display_address[] = {
      NULL},
     {{BAGL_LABELINE, 0x01, 0, 26, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+#ifdef BAKING_APP
+     "with public key?",
+#else
      "public key?",
+#endif
      0,
      0,
      0,

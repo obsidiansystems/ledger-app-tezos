@@ -49,8 +49,12 @@ GCCPATH   := $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/bin/
 CLANGPATH := $(BOLOS_ENV)/clang-arm-fropi/bin/
 CC       := $(CLANGPATH)clang
 
-#CFLAGS   += -O0
+ifeq ($(BAKING_APP),)
 CFLAGS   += -O3 -Os
+endif
+ifeq ($(BAKING_APP),Y)
+CFLAGS   += -DBAKING_APP -O3 -Os
+endif
 
 AS     := $(GCCPATH)arm-none-eabi-gcc
 

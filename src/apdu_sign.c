@@ -64,9 +64,8 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
             case 1:
                 curve = CX_CURVE_SECP256K1;
                 break;
-            case 2:
-                curve = CX_CURVE_SECP256R1;
-                break;
+            default:
+                THROW(0x6B00);
         }
         return_ok();
     case P1_NEXT:
@@ -104,12 +103,20 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
                                      bip32_path_length)) {
                 return perform_signature(true);
             } else {
+#if BAKING_APP
+                THROW(0x9685);
+#else
                 ASYNC_PROMPT(ui_bake_screen, bake_ok, delay_reject);
+#endif
             }
         case MAGIC_BYTE_UNSAFE_OP:
         case MAGIC_BYTE_UNSAFE_OP2:
         case MAGIC_BYTE_UNSAFE_OP3:
+#if BAKING_APP
+            THROW(0x9685);
+#else
             ASYNC_PROMPT(ui_sign_screen, sign_ok, delay_reject);
+#endif
         default:
             THROW(0x6C00);
     }
@@ -176,7 +183,7 @@ static int perform_signature(bool hash_first) {
     }
         break;
     default:
-        THROW(0x6B00);
+        THROW(0x6B00); // This should not be able to happen.
     }
 
     os_memset(&privateKey, 0, sizeof(privateKey));
