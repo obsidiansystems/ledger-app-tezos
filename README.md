@@ -1,11 +1,11 @@
 # ledger-app-tezos
 
 There are two versions of this ledger app that are buildable from this
-codebase: a baking-only app ("the baking app"), and a general app that
-supports everything you might want to use the ledger for on Tezos ("the
-general app"). To build the baking app, define the environment variable
-`BAKING_APP=Y` while using the Makefile. To build the general app, leave
-this environment variable undefined.
+codebase: a baking-only app ("the baking app"), and a transaction app
+that supports everything you might want to use the ledger for on Tezos
+besides baking ("the transaction app"). To build the baking app, define
+the environment variable `BAKING_APP=Y` while using the Makefile. To
+build the transaction app, leave this environment variable undefined.
 
 ## The Baking App
 
@@ -76,17 +76,12 @@ The last 8 0s indicate the hexadecimal high water mark to reset to. A higher
 one can be specified, `00000000` is given as an example as that will allow
 all positive block levels to follow.
 
-## The General App
+## The Transaction App
 
-It is our eventual intention to modify the general app so that it does not
-support baking, and therefore to have two complementary apps for different
+This app and the baking app constitute complementary apps for different
 use cases -- which could be on paired ledgers and therefore use the same key,
 or which could also be used in different scenarios for different accounts.
-
-The general app currently does support baking, but differently. Baking is
-authorized on a particular key whenever the first block is baked on that key,
-and a prompt is given. This is designed for testing purposes and is not
-recommended for serious bakers; serious bakers should use the baking app.
+Baking (determined by magic number) is rejected by this app.
 
 The "provide address" command on the general app shows the address the first
 time the command is run for any given session. Subsequently, it provides the
@@ -96,6 +91,5 @@ restart it. This is again provided for testing/initial set up purposes.
 The sign command for the general app prompts every time for transactions and
 other "unsafe" operations, with the generic prompt saying "Sign?" We hope to
 eventually display more transaction details along with this. When block headers
-and endorsements are sent to the ledger, they are signed if the key is authorized
-as long as there isn't a high water mark violation. If the key is not authorized,
-it will prompt the user to change authorized keys.
+and endorsements are sent to the ledger, they are rejected as if the user
+rejected them.

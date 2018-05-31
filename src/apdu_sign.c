@@ -97,22 +97,22 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
     switch (get_magic_byte(message_data, message_data_length)) {
         case MAGIC_BYTE_BLOCK:
         case MAGIC_BYTE_BAKING_OP:
+#ifdef BAKING_APP
             if (is_baking_authorized(message_data,
                                      message_data_length,
                                      bip32_path,
                                      bip32_path_length)) {
                 return perform_signature(true);
             } else {
-#if BAKING_APP
                 THROW(0x9685);
-#else
-                ASYNC_PROMPT(ui_bake_screen, bake_ok, delay_reject);
-#endif
             }
+#else
+            THROW(0x9685);
+#endif
         case MAGIC_BYTE_UNSAFE_OP:
         case MAGIC_BYTE_UNSAFE_OP2:
         case MAGIC_BYTE_UNSAFE_OP3:
-#if BAKING_APP
+#ifdef BAKING_APP
             THROW(0x9685);
 #else
             ASYNC_PROMPT(ui_sign_screen, sign_ok, delay_reject);
