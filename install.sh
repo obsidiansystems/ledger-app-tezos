@@ -13,13 +13,6 @@ if [ "${2:-}X" != X ]; then
     app_file="$2"
 fi
 
-ICONHEX="$(python $rootdir/nanos-secure-sdk/icon.py $rootdir/ledger-app/icon.gif hexbitmaponly 2>/dev/null || :)"
-if ! [ -z "$ICONHEX" ]; then
-    icon="--icon $ICONHEX"
-else
-    icon=
-fi
-
 set -x
 python -m ledgerblue.loadApp \
     --appFlags 0x00 \
@@ -34,4 +27,4 @@ python -m ledgerblue.loadApp \
     --fileName $app_file \
     --appName "$app_name" \
     --appVersion 1.0.0 \
-    $icon
+    --icon "$(cat $rootdir/ledger-app/dist/icon.hex)"
