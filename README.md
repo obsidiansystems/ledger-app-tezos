@@ -3,10 +3,7 @@
 There are two versions of this ledger app that are buildable from this
 codebase: a baking-only app ("the baking app"), and a transaction app
 that supports everything you might want to use the ledger for on Tezos
-besides baking ("the transaction app"). To build the baking app, define
-the environment variable `BAKING_APP=Y` while using the Makefile. To
-build the transaction app, leave this environment variable undefined.
-
+besides baking ("the transaction app").
 ## The Baking App
 
 The baking app supports 3 operations: Authorize/get public key, reset high water
@@ -93,3 +90,28 @@ other "unsafe" operations, with the generic prompt saying "Sign?" We hope to
 eventually display more transaction details along with this. When block headers
 and endorsements are sent to the ledger, they are rejected as if the user
 rejected them.
+
+## Building and Installation
+
+### Building
+
+You will need to have the BOLOS SDK to use the Makefile, which can be cloned from
+[a GitHub repo](https://github.com/LedgerHQ/nanos-secure-sdk). You will also need to
+download two compilers:
+
+* [CLANG](http://releases.llvm.org/4.0.0/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.10.tar.xz)
+* [GCC](https://launchpadlibrarian.net/251687888/gcc-arm-none-eabi-5_3-2016q1-20160330-linux.tar.bz2)
+
+The parent directory of both compilers should be in the `BOLOS_ENV` environment variable and the
+`BOLOS_SDK`.
+
+To build the baking app, define the environment variable `BAKING_APP=Y`
+while using the Makefile. To build the transaction app, leave this
+environment variable undefined.
+
+### Installation
+
+To install, use the `install.sh` script, after having built the appropriate `app.hex`. It takes one
+parameter, the name of the app; we recommend "Tezos Baking" or "Tezos Signing". To install, you will
+need to be using [Blue Loader Python](https://github.com/LedgerHQ/blue-loader-python/), which has
+set up instructions available in its `README.md`.

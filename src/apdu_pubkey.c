@@ -74,7 +74,7 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
         public_key.W_len = 33;
     }
 
-#if BAKING_APP
+#ifdef BAKING_APP
     pubkey_enabled = is_path_authorized(bip32_path, path_length);
 #endif
 

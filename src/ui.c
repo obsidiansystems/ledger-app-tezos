@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "baking_auth.h"
 
 #include "paths.h"
 
@@ -77,6 +78,9 @@ void change_idle_display(uint32_t new) {
 }
 
 void ui_initial_screen(void) {
+#ifdef BAKING_APP
+    change_idle_display(N_data.highest_level);
+#endif
     ui_idle();
 }
 
