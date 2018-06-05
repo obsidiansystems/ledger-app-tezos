@@ -1,51 +1,77 @@
-# ledger-app-tezos
+# Ledger-app-tezos
 
-There are two versions of this ledger app that are buildable from this
-codebase: a baking-only app ("the baking app"), and a transaction app
-that supports everything you might want to use the ledger for on Tezos
-besides baking ("the transaction app").
-## The Baking App
+There are two versions of this Ledger Nano S application that are
+buildable from this codebase: a baking-only app ("Baking Application"),
+and a transaction app that supports everything you might want to use
+the Ledger for on Tezos besides baking ("Wallet Application").
 
-The baking app supports 3 operations: Authorize/get public key, reset high water
-mark, and sign. It will only sign block headers and endorsements, as the
-purpose of the baking app is that it cannot be coopted to perform other
-types of operations. If a ledger is running with the baking app, it is the
-expectation of its owner that no transactions will need to be signed with it.
-To sign transactions with that ledger, you will need to switch it to using the
-general app, or have the general app installed on a paired ledger. We recommend
-the paired ledger approach.
+## About Key Generation
+
+Every Ledger generates public and private keys for either `ed25519` or
+`secp256k1` encryption systems based on a seed (represented by and encoded
+in the words associated with that Ledger) and a BIP32 path. The same seed
+and BIP32 path will always result in the same key for the same systems.
+This means that, to keep your Bitcoin app from knowing your Tezos keys, and vice versa,
+different BIP32 paths have to be used for the same Ledger.
+
+All Tezos BIP32 paths begin with `44'/1729'` (the `'` indicates it is
+"hardened").  Which Ledger is intended to be used, as well as choice of
+encryption system, is indicated by a root key hash, the Tezos-specific
+base58 encoding of the hash of the public key at `44'/1729'` on that
+Ledger. At the time of this writing, we are currently working on a
+command line utility to extract this information from a Ledger.
+
+## The Baking Application
+
+The Baking Application supports 3 operations: Authorize/get public key,
+reset high water mark, and sign. It will only sign block headers and
+endorsements, as the purpose of the baking app is that it cannot be
+co-opted to perform other types of operations. If a Ledger is running
+with the Baking Application, it is the expectation of its owner that
+no transactions will need to be signed with it.  To sign transactions
+with that Ledger, you will need to switch it to using the Wallet Application,
+or have the Wallet Application installed on a paired Ledger. Therefore,
+if you have a larger stake and bake frequently, we recommend the paired
+Ledger approach. If, however, you bake infrequently and can afford to
+have your baker offline temporarily, then switching to the Wallet Application
+on the same Ledger should suffice.
 
 ### Authorize/Get Public Key
 
 The authorize/get public key operation is done with the `tezos-client import` command, e.g.
-`tezos-client import ledger secret key my-ledger ed25519`. This actually copies only the public
-key; it says "import secret key" to indicate that the ledgers secret key will be considered
-available for signing from them on, but it does not actually leave the ledger.
+`tezos-client import secret key my-ledger ledger://tz1..../44'/1729'`, where `tz1...` is the
+root public key hash for that particular Ledger.
 
-This sends a BIP32 path to the ledger, and, assuming the user verifies it, sends the
-public key back to the computer and authorizes the appropriate key for baking. Once a key
-is authorized for baking, the user will not have to approve this command again. If a key
-is not authorized for baking, endorsements and block headers with that key will be rejected
-for signing. This authorization data is persisted across runs of the application.
+This actually copies only the public
+key; it says "import secret key" to indicate that the Ledgers secret key will be considered
+available for signing from them on, but it does not actually leave the Ledger.
 
-For now, only one key can be authorized for baking per ledger at a time.
+This sends a BIP32 path to the Ledger, and, assuming the user verifies it,
+sends the public key back to the computer and authorizes the appropriate
+key for baking. Once a key is authorized for baking, the user will
+not have to approve this command again. If a key is not authorized
+for baking, signing endorsements and block headers with that key will
+be rejected. This authorization data is persisted across runs of the
+application.
+
+Only one key can be authorized for baking per Ledger at a time.
 
 ### Sign
 
 The sign operation is for signing block headers and endorsements. Block
 headers must have monotonically strictly increasing levels; that is, each
 block must have a higher level than all previous blocks signed with the
-ledger. This is intended to prevent double baking at the ledger level, as
+Ledger. This is intended to prevent double baking at the Ledger level, as
 a security measure against potential vulnerabilities where the computer
 might be tricked into double baking. This feature will hopefully be a
-redundant precaution, but it's implemented at the ledger level because
-the point of the ledger is to not trust the computer. The current high
-water mark -- the highest level to have been baked so far -- is displayed
-on the ledger screen, and is also persisted between runs of the device.
+redundant precaution, but it's implemented at the Ledger level because
+the point of the Ledger is to not trust the computer. The current High
+Water Mark (HWM) -- the highest level to have been baked so far -- is displayed
+on the Ledger screen, and is also persisted between runs of the device.
 
-The sign operation will be sent to the ledger by the baking daemon when configured to bake
-with a ledger key. The ledger uses the first byte of the information to be signed -- the magic
-number -- to tell whether it is a block header (which is verified with the high water mark),
+The sign operation will be sent to the Ledger by the baking daemon when configured to bake
+with a Ledger key. The Ledger uses the first byte of the information to be signed -- the magic
+number -- to tell whether it is a block header (which is verified with the High Water Mark),
 an endorsement (which is not), or some other operation (which it will reject).
 
 As long as the key is configured and the high water mark constraint is followed, there is no
@@ -54,41 +80,46 @@ reject an attempt at signing; this operation is designed to be used unsupervised
 
 ### Reset
 
-There is some possibility that the high water mark will need to be
-reset. This could be due to the computer somehow being tricked into
-sending a block with a high level to the ledger (either due to an attack
-or a bug on the computer side), or because the owner of the ledger wants
-to move from the real Tezos network to a test network, or to a different
-test network. This can be accomplished with the reset command.
+This feature requires the `ledgerblue` Python package, which is available
+at [Blue Loader Python](https://github.com/LedgerHQ/blue-loader-python/).
+Please read the instructions at the README there.
+
+There is some possibility that the HWM will need to be reset. This could
+be due to the computer somehow being tricked into sending a block with a
+high level to the Ledger (either due to an attack or a bug on the computer
+side), or because the owner of the Ledger wants to move from the real
+Tezos network to a test network, or to a different test network. This
+can be accomplished with the reset command.
 
 This is intended as a testing/debug tool and as a possible recovery from
 attempted attacks or bugs, not as a day to day command. It requires an
 explicit confirmation from the user, and there is no specific utility to
 send this command. To send it manually, you can use the following command
-line (assuming you have the `ledgerblue` Python package installed):
+line:
 
-`echo 800681000400000000 | python -m ledgerblue.runScrirpt --apdu`
+`echo 800681000400000000 | python -m Ledgerblue.runScrirpt --apdu`
 
 The last 8 0s indicate the hexadecimal high water mark to reset to. A higher
 one can be specified, `00000000` is given as an example as that will allow
 all positive block levels to follow.
 
-## The Transaction App
+## The Transaction Application
 
-This app and the baking app constitute complementary apps for different
-use cases -- which could be on paired ledgers and therefore use the same key,
-or which could also be used in different scenarios for different accounts.
-Baking (determined by magic number) is rejected by this app.
+This application and the Baking Application constitute complementary
+apps for different use cases -- which could be on paired Ledgers and
+therefore use the same key, or which could also be used in different
+scenarios for different accounts.  Baking (determined by magic number)
+is rejected by this app.
 
-The "provide address" command on the general app shows the address the first
+The "provide address" command on the Wallet Application shows the address the first
 time the command is run for any given session. Subsequently, it provides the
-address without prompting. To display addresses again, exit the ledger app and
+address without prompting. To display addresses again, exit the Wallet Application and
 restart it. This is again provided for testing/initial set up purposes.
 
-The sign command for the general app prompts every time for transactions and
+The sign command for the Wallet Application prompts every time for transactions and
 other "unsafe" operations, with the generic prompt saying "Sign?" We hope to
 eventually display more transaction details along with this. When block headers
-and endorsements are sent to the ledger, they are rejected as if the user
+and endorsements are sent to the Ledger, they are rejected silently as if the user
 rejected them.
 
 ## Building and Installation
@@ -109,7 +140,13 @@ To build the baking app, define the environment variable `BAKING_APP=Y`
 while using the Makefile. To build the transaction app, leave this
 environment variable undefined.
 
+Once we have done more testing, we will also release the `app.hex` files directly.
+
 ### Installation
+
+This requires the `ledgerblue` Python package, which is available
+at [Blue Loader Python](https://github.com/LedgerHQ/blue-loader-python/).
+Please read the instructions at the README there.
 
 To install, use the `install.sh` script, after having built the appropriate `app.hex`. It takes one
 parameter, the name of the app; we recommend "Tezos Baking" or "Tezos Signing". To install, you will
