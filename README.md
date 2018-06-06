@@ -126,6 +126,10 @@ rejected them.
 
 ### Building
 
+If you already have an `app.hex` file or files that you want to use,
+e.g. from a release, then you do not need these instructions.  Please skip
+to the next section for installation instructions.
+
 You will need to have the BOLOS SDK to use the Makefile, which can be cloned from
 [a GitHub repo](https://github.com/LedgerHQ/nanos-secure-sdk). You will also need to
 download two compilers:
@@ -144,11 +148,19 @@ Once we have done more testing, we will also release the `app.hex` files directl
 
 ### Installation
 
-This requires the `ledgerblue` Python package, which is available
-at [Blue Loader Python](https://github.com/LedgerHQ/blue-loader-python/).
-Please read the instructions at the README there.
+This requires the `ledgerblue` Python package, which is available at
+[Blue Loader Python](https://github.com/LedgerHQ/blue-loader-python/).
+Please read the instructions at the README there. It will require
+you to install some Python dev tools, which it lists, such as
+`virtualenv`. Please do so on your platform's native installation system.
 
-To install, use the `install.sh` script, after having built the appropriate `app.hex`. It takes one
-parameter, the name of the app; we recommend "Tezos Baking" or "Tezos Signing". To install, you will
-need to be using [Blue Loader Python](https://github.com/LedgerHQ/blue-loader-python/), which has
-set up instructions available in its `README.md`.
+To install, use the `install.sh` script, after having built or otherwise
+obtained the appropriate `app.hex`.
+
+It takes two parameters. First is the name of the app; we recommend `"Tezos Baking"`
+or `"Tezos Wallet"`. Second is the path to the `app.hex` file; if it has built in
+place using the `Makefile`, this is optional. An example command line, assuming you are
+in the parent directory of the checkout and you have a pre-existing `app.hex` file in your
+current directory named `baking_app.hex`, might be:
+
+`ledger-app-tezos/install.sh "Tezos Baking" baking_app.hex`

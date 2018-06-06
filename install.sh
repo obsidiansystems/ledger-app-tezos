@@ -1,14 +1,19 @@
 #!/bin/sh
 set -eux
 
-cd "$(dirname "$0")"/..
+rootdir="$(cd "$(dirname "$0")"/..; pwd)"
 
 app_name=Tezos
 if [ "${1:-}X" != X ]; then
     app_name="$1"
 fi
 
-ICONHEX="$(python nanos-secure-sdk/icon.py ledger-app/icon.gif hexbitmaponly 2>/dev/null || :)"
+app_file=$rootdir/ledger-app/bin/app.hex
+if [ "${2:-}X" != X ]; then
+    app_file="$2"
+fi
+
+ICONHEX="$(python $rootdir/nanos-secure-sdk/icon.py $rootdir/ledger-app/icon.gif hexbitmaponly 2>/dev/null || :)"
 if ! [ -z "$ICONHEX" ]; then
     icon="--icon $ICONHEX"
 else
@@ -26,7 +31,7 @@ python -m ledgerblue.loadApp \
     --targetId 0x31100003 \
     --delete \
     --path 44"'"/1729"'" \
-    --fileName ledger-app/bin/app.hex \
+    --fileName $app_file \
     --appName "$app_name" \
     --appVersion 1.0.0 \
     $icon
