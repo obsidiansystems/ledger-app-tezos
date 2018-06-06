@@ -6,7 +6,6 @@
 #include "ui.h"
 
 static bool pubkey_enabled;
-static cx_curve_t curve;
 static cx_ecfp_public_key_t public_key;
 
 // The following need to be persisted for baking app
@@ -42,6 +41,8 @@ static void pubkey_ok() {
 unsigned int handle_apdu_get_public_key(uint8_t instruction) {
     uint8_t privateKeyData[32];
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
+
+    cx_curve_t curve;
     cx_ecfp_private_key_t privateKey;
 
     if (G_io_apdu_buffer[OFFSET_P1] != 0)
@@ -57,8 +58,11 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
         case 1:
             curve = CX_CURVE_SECP256K1;
             break;
+        case 2:
+            curve = CX_CURVE_SECP256R1;
+            break;
         default:
-            THROW(0x6B00); // We don't support SECP256R1 in apdu_sign.c
+            THROW(0x6B00);
     }
 
     path_length = read_bip32_path(bip32_path, dataBuffer);
@@ -180,6 +184,7 @@ static inline char to_hexit(char in) {
     }
 }
 
+// TODO: Split into two functions
 void prompt_address(void *raw_bytes, uint32_t size, callback_t ok_cb, callback_t cxl_cb) {
     if (size > ADDRESS_BYTES) {
         uint16_t sz = 0x6B | (size & 0xFF);

@@ -64,6 +64,9 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
             case 1:
                 curve = CX_CURVE_SECP256K1;
                 break;
+            case 2:
+                curve = CX_CURVE_SECP256R1;
+                break;
             default:
                 THROW(0x6B00);
         }
@@ -131,7 +134,9 @@ static int perform_signature(bool hash_first) {
     uint8_t *data = message_data;
     uint32_t datalen = message_data_length;
 
+#ifdef BAKING_APP
     update_high_water_mark(message_data, message_data_length);
+#endif
 
     if (hash_first) {
         blake2b(hash, HASH_SIZE, message_data, message_data_length, NULL, 0);
@@ -167,7 +172,9 @@ static int perform_signature(bool hash_first) {
                            NULL);
     }
         break;
-    case CX_CURVE_SECP256K1: {
+    case CX_CURVE_SECP256K1:
+    case CX_CURVE_SECP256R1:
+    {
         unsigned int info;
         tx = cx_ecdsa_sign(&privateKey,
                            CX_LAST | CX_RND_TRNG,
