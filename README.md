@@ -39,7 +39,7 @@ on the same Ledger should suffice.
 ### Authorize/Get Public Key
 
 The authorize/get public key operation is done with the `tezos-client import` command, e.g.
-`tezos-client import secret key my-ledger ledger://tz1..../44'/1729'`, where `tz1...` is the
+`tezos-client import secret key my-ledger "ledger://tz1..../44'/1729'"`, where `tz1...` is the
 root public key hash for that particular Ledger.
 
 This actually copies only the public
