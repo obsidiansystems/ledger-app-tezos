@@ -128,11 +128,14 @@ rejected them.
 
 If you already have an `app.hex` file or files that you want to use,
 e.g. from a release, then you do not need these instructions.  Please skip
-to the next section for installation instructions.
+to the next section for installation instructions. These instructions are
+designed for Linux.
 
 You will need to have the BOLOS SDK to use the Makefile, which can be cloned from
 [a GitHub repo](https://github.com/LedgerHQ/nanos-secure-sdk). You will also need to
-download two compilers:
+download two compilers for use with the SDK. Note that these are specialized compilers
+to cross-compile for the ARM-based platform of the Ledger; please don't use the versions of
+`gcc` and `clang` that come with your system.
 
 * [CLANG](http://releases.llvm.org/4.0.0/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.10.tar.xz)
 * [GCC](https://launchpadlibrarian.net/251687888/gcc-arm-none-eabi-5_3-2016q1-20160330-linux.tar.bz2)
