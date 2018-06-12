@@ -5,7 +5,6 @@
 #include "cx.h"
 #include "ui.h"
 
-static bool pubkey_enabled;
 static cx_ecfp_public_key_t public_key;
 
 // The following need to be persisted for baking app
@@ -30,8 +29,6 @@ static int provide_pubkey() {
 static void pubkey_ok() {
 #ifdef BAKING_APP
     authorize_baking(NULL, 0, bip32_path, path_length);
-#else
-    pubkey_enabled = true;
 #endif
 
     int tx = provide_pubkey();
@@ -79,15 +76,13 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
     }
 
 #ifdef BAKING_APP
-    pubkey_enabled = is_path_authorized(bip32_path, path_length);
+    if (is_path_authorized(bip32_path, path_length)) {
+        return provide_pubkey();
+    }
 #endif
 
-    if (pubkey_enabled) {
-        return provide_pubkey();
-    } else {
-        prompt_address(public_key.W, public_key.W_len, pubkey_ok, delay_reject);
-        THROW(ASYNC_EXCEPTION);
-    }
+    prompt_address(public_key.W, public_key.W_len, pubkey_ok, delay_reject);
+    THROW(ASYNC_EXCEPTION);
 }
 
 #define ADDRESS_BYTES 40
