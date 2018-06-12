@@ -18,8 +18,15 @@ All Tezos BIP32 paths begin with `44'/1729'` (the `'` indicates it is
 "hardened").  Which Ledger is intended to be used, as well as choice of
 encryption system, is indicated by a root key hash, the Tezos-specific
 base58 encoding of the hash of the public key at `44'/1729'` on that
-Ledger. At the time of this writing, we are currently working on a
-command line utility to extract this information from a Ledger.
+Ledger. To extract the root key hash, please run:
+
+`tezos-client list connected ledgers`
+
+This gives separate root key hashes for each encryption system (either `ed25519`
+or `secp256k1`. The ledger does not support non-hardened path components. All
+components of all paths must be hardened, which is indicated by following them
+with a `'` character. This character may need to be escaped from the shell through
+backslashes `\` or double-quotes `"`.
 
 ## The Baking Application
 

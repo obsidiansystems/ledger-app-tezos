@@ -2,6 +2,8 @@
 
 #include "apdu.h"
 #include "baking_auth.h"
+#include "display.h"
+
 #include "cx.h"
 #include "ui.h"
 
@@ -171,27 +173,14 @@ const bagl_element_t ui_display_address[] = {
      NULL},
 };
 
-static inline char to_hexit(char in) {
-    if (in < 0xA) {
-        return in + '0';
-    } else {
-        return in - 0xA + 'A';
-    }
-}
-
 // TODO: Split into two functions
 void prompt_address(void *raw_bytes, uint32_t size, callback_t ok_cb, callback_t cxl_cb) {
-    if (size > ADDRESS_BYTES) {
+    if (!convert_address(address_display_data, sizeof(address_display_data),
+                         raw_bytes, size)) {
         uint16_t sz = 0x6B | (size & 0xFF);
         THROW(sz);
     }
-    uint8_t *bytes = raw_bytes;
-    uint32_t i;
-    for (i = 0; i < size; i++) {
-        address_display_data[i * 2] = to_hexit(bytes[i] >> 4);
-        address_display_data[i * 2 + 1] = to_hexit(bytes[i] & 0xF);
-    }
-    address_display_data[i * 2] = '\0';
+
     ui_prompt(ui_display_address, sizeof(ui_display_address)/sizeof(*ui_display_address),
               ok_cb, cxl_cb, prompt_address_prepro);
     ux_step = 0;
