@@ -87,7 +87,7 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
     THROW(ASYNC_EXCEPTION);
 }
 
-#define ADDRESS_BYTES 40
+#define ADDRESS_BYTES 65
 char address_display_data[ADDRESS_BYTES * 2 + 1];
 
 const bagl_element_t ui_display_address[] = {
