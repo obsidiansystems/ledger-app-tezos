@@ -141,28 +141,4 @@ Linux are available in the
 
 ### Installation
 
-This requires the `ledgerblue` Python package,
-which is available in the repo for
-[Blue Loader Python](https://github.com/LedgerHQ/blue-loader-python/).  Please read
-the instructions at the README there. It will require you to install
-some Python dev tools, which it lists, such as `virtualenv`. Please do
-so on your platform's native installation system, or, if you use Nix on Linux,
-you can use the scripts in the
-[Tezos Baking Platform repo](https://gitlab.com/obsidian.systems/tezos-baking-platform).
-
-Once you have installed `ledgerblue`, it is time to install the app
-itself. To do this, use the `install.sh` script in this repo, after
-having built or otherwise obtained the appropriate `app.hex`.
-
-It takes two parameters. First is the name of the app; we recommend `"Tezos Baking"`
-or `"Tezos Wallet"`. Second is the path to the `app.hex` file; if it has built in
-place using the `Makefile`, this is optional. An example command line, assuming you are
-in the parent directory of the checkout and you have a pre-existing `app.hex` file in your
-current directory named `baking_app.hex`, might be:
-
-`ledger-app-tezos/install.sh "Tezos Baking" baking_app.hex`
-
-To get the icon to install correctly, please check out
-[the BOLOS SDK](https://github.com/LedgerHQ/nanos-secure-sdk) and place it next to
-the `ledger-app-tezos` directory in your directory tree before running
-`install.sh`.
+For installation instructions, please look at the `install.md` file.
