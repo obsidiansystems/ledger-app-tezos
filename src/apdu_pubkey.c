@@ -181,10 +181,10 @@ void prompt_address(void *raw_bytes, uint32_t size, callback_t ok_cb, callback_t
         THROW(sz);
     }
 
-    ui_prompt(ui_display_address, sizeof(ui_display_address)/sizeof(*ui_display_address),
-              ok_cb, cxl_cb, prompt_address_prepro);
     ux_step = 0;
     ux_step_count = 2;
+    ui_prompt(ui_display_address, sizeof(ui_display_address)/sizeof(*ui_display_address),
+              ok_cb, cxl_cb, prompt_address_prepro);
 }
 
 const struct bagl_element_e *prompt_address_prepro(const struct bagl_element_e *element) {
@@ -193,7 +193,7 @@ const struct bagl_element_e *prompt_address_prepro(const struct bagl_element_e *
         if (display) {
             switch (element->component.userid) {
             case 1:
-                UX_CALLBACK_SET_INTERVAL(2000);
+                UX_CALLBACK_SET_INTERVAL(500);
                 break;
             case 2:
                 UX_CALLBACK_SET_INTERVAL(MAX(
