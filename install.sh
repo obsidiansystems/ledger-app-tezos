@@ -1,14 +1,14 @@
 #!/bin/sh
 set -eux
 
-rootdir="$(cd "$(dirname "$0")"/..; pwd)"
+rootdir="$(cd "$(dirname "$0")"/; pwd)"
 
 app_name=Tezos
 if [ "${1:-}X" != X ]; then
     app_name="$1"
 fi
 
-app_file=$rootdir/ledger-app/bin/app.hex
+app_file=$rootdir/bin/app.hex
 if [ "${2:-}X" != X ]; then
     app_file="$2"
 fi
@@ -27,4 +27,4 @@ python -m ledgerblue.loadApp \
     --fileName $app_file \
     --appName "$app_name" \
     --appVersion 1.0.0 \
-    --icon "$(cat $rootdir/ledger-app/dist/icon.hex)"
+    --icon "$(cat $rootdir/dist/icon.hex)"

@@ -34,12 +34,18 @@ Install `libusb` and `libudev`. On Ubuntu, you can do this with:
 sudo apt-get install libusb-1.0-0-dev libudev-dev
 ```
 
-## virtualenv
+## pip and virtualenv
 
-Install `virtualenv`. On Ubuntu, you can do this with:
+Install `pip`. On Ubuntu, you can do this with:
 
 ```bash
 sudo apt-get install python3-pip
+```
+
+Now, on any operating system, install `virtualenv` using `pip3`. It is important to use
+`pip3` and not `pip` for this, as this module requires `python3` support.
+
+```bash
 sudo pip3 install virtualenv
 ```
 
