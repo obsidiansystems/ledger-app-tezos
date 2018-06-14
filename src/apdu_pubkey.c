@@ -37,6 +37,12 @@ static void pubkey_ok() {
     delay_send(tx);
 }
 
+static bool is_path_root(uint32_t *bip32_path, uint8_t path_length) {
+    return path_length == 2 &&
+        bip32_path[0] == 0x8000002c &&
+        bip32_path[1] == 0x800006c1;
+}
+
 unsigned int handle_apdu_get_public_key(uint8_t instruction) {
     uint8_t privateKeyData[32];
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
@@ -78,7 +84,7 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
     }
 
 #ifdef BAKING_APP
-    if (is_path_authorized(bip32_path, path_length)) {
+    if (is_path_root(bip32_path, path_length) || is_path_authorized(bip32_path, path_length)) {
         return provide_pubkey();
     }
 #endif

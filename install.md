@@ -182,7 +182,10 @@ services.udev.extraRules = ''
 '';
 ```
 
-And run `sudo nixos-rebuild switch` to activate the configuration.
+Depending on your system's settings, you may wish to replace `users` with another group. Everyone
+in that group will get permissions for accessing the ledger.
+
+Once you have added this, run `sudo nixos-rebuild switch` to activate the configuration.
 
   [ledger-udev]: https://support.ledgerwallet.com/hc/en-us/articles/115005165269
   [ledger-manager]: https://www.ledgerwallet.com/apps/manager
