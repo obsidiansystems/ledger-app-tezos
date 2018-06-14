@@ -27,4 +27,4 @@ python -m ledgerblue.loadApp \
     --fileName $app_file \
     --appName "$app_name" \
     --appVersion 1.0.0 \
-    --icon "$(cat $rootdir/dist/icon.hex)"
+    --icon "$(cat "$rootdir/dist/icon.hex")"
