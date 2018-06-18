@@ -14,8 +14,160 @@ static uint8_t path_length;
 static uint32_t bip32_path[MAX_BIP32_PATH];
 
 static const struct bagl_element_e *prompt_address_prepro(const struct bagl_element_e *element);
-static void prompt_address(void *raw_bytes, uint32_t size, callback_t ok_cb, callback_t cxl_cb);
+static void prompt_address(const bagl_element_t *prompt, size_t prompt_size,
+                           void *raw_bytes, uint32_t size, callback_t ok_cb, callback_t cxl_cb);
 
+char address_display_data[64]; // Should be more than big enough
+
+const bagl_element_t ui_bake_prompt[] = {
+    // type                               userid    x    y   w    h  str rad
+    // fill      fg        bg      fid iid  txt   touchparams...       ]
+    {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
+      0, 0},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+      BAGL_GLYPH_ICON_CROSS},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+      BAGL_GLYPH_ICON_CHECK},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    //{{BAGL_ICON                           , 0x01,  21,   9,  14,  14, 0, 0, 0
+    //, 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_TRANSACTION_BADGE  }, NULL, 0, 0,
+    //0, NULL, NULL, NULL },
+    {{BAGL_LABELINE, 0x01, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Authorize baking",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_LABELINE, 0x01, 0, 26, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "with public key?",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x02, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Public Key",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x02, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     address_display_data,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+};
+
+const bagl_element_t ui_pubkey_prompt[] = {
+    // type                               userid    x    y   w    h  str rad
+    // fill      fg        bg      fid iid  txt   touchparams...       ]
+    {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
+      0, 0},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+      BAGL_GLYPH_ICON_CROSS},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+      BAGL_GLYPH_ICON_CHECK},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    //{{BAGL_ICON                           , 0x01,  21,   9,  14,  14, 0, 0, 0
+    //, 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_TRANSACTION_BADGE  }, NULL, 0, 0,
+    //0, NULL, NULL, NULL },
+    {{BAGL_LABELINE, 0x01, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Provide",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_LABELINE, 0x01, 0, 26, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "public key?",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x02, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Public Key",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x02, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     address_display_data,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+};
 static int provide_pubkey() {
     int tx = 0;
     G_io_apdu_buffer[tx++] = public_key.W_len;
@@ -29,12 +181,13 @@ static int provide_pubkey() {
 }
 
 static void pubkey_ok() {
-#ifdef BAKING_APP
-    authorize_baking(NULL, 0, bip32_path, path_length);
-#endif
-
     int tx = provide_pubkey();
     delay_send(tx);
+}
+
+static void baking_ok() {
+    authorize_baking(NULL, 0, bip32_path, path_length);
+    pubkey_ok();
 }
 
 static bool is_path_root(uint32_t *bip32_path, uint8_t path_length) {
@@ -83,104 +236,30 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
         public_key.W_len = 33;
     }
 
-#ifdef BAKING_APP
-    if (is_path_root(bip32_path, path_length) || is_path_authorized(bip32_path, path_length)) {
+    if (instruction == INS_GET_PUBLIC_KEY) {
         return provide_pubkey();
+    } else {
+        // instruction == INS_PROMPT_PUBLIC_KEY || instruction == INS_AUTHORIZE_BAKING
+        callback_t cb;
+        const bagl_element_t *prompt;
+        size_t prompt_size;
+        if (instruction == INS_AUTHORIZE_BAKING) {
+            cb = baking_ok;
+            prompt = ui_bake_prompt;
+            prompt_size = sizeof(ui_bake_prompt)/sizeof(*ui_bake_prompt);
+        } else {
+            // INS_PROMPT_PUBLIC_KEY
+            cb = pubkey_ok;
+            prompt = ui_pubkey_prompt;
+            prompt_size = sizeof(ui_pubkey_prompt)/sizeof(*ui_pubkey_prompt);
+        }
+        prompt_address(prompt, prompt_size, public_key.W, public_key.W_len, cb, delay_reject);
+        THROW(ASYNC_EXCEPTION);
     }
-#endif
-
-    prompt_address(public_key.W, public_key.W_len, pubkey_ok, delay_reject);
-    THROW(ASYNC_EXCEPTION);
 }
 
-#define ADDRESS_BYTES 65
-char address_display_data[ADDRESS_BYTES * 2 + 1];
-
-const bagl_element_t ui_display_address[] = {
-    // type                               userid    x    y   w    h  str rad
-    // fill      fg        bg      fid iid  txt   touchparams...       ]
-    {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
-      0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    {{BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
-      BAGL_GLYPH_ICON_CROSS},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
-      BAGL_GLYPH_ICON_CHECK},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    //{{BAGL_ICON                           , 0x01,  21,   9,  14,  14, 0, 0, 0
-    //, 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_TRANSACTION_BADGE  }, NULL, 0, 0,
-    //0, NULL, NULL, NULL },
-    {{BAGL_LABELINE, 0x01, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-#ifdef BAKING_APP
-     "Authorize baking",
-#else
-     "Provide",
-#endif
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x01, 0, 26, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-#ifdef BAKING_APP
-     "with public key?",
-#else
-     "public key?",
-#endif
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    {{BAGL_LABELINE, 0x02, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Public Key",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    {{BAGL_LABELINE, 0x02, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     address_display_data,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-};
-
-// TODO: Split into two functions
-void prompt_address(void *raw_bytes, uint32_t size, callback_t ok_cb, callback_t cxl_cb) {
+void prompt_address(const bagl_element_t *prompt, size_t prompt_size, void *raw_bytes,
+                    uint32_t size, callback_t ok_cb, callback_t cxl_cb) {
     if (!convert_address(address_display_data, sizeof(address_display_data),
                          raw_bytes, size)) {
         uint16_t sz = 0x6B | (size & 0xFF);
@@ -189,8 +268,7 @@ void prompt_address(void *raw_bytes, uint32_t size, callback_t ok_cb, callback_t
 
     ux_step = 0;
     ux_step_count = 2;
-    ui_prompt(ui_display_address, sizeof(ui_display_address)/sizeof(*ui_display_address),
-              ok_cb, cxl_cb, prompt_address_prepro);
+    ui_prompt(prompt, prompt_size, ok_cb, cxl_cb, prompt_address_prepro);
 }
 
 const struct bagl_element_e *prompt_address_prepro(const struct bagl_element_e *element) {
