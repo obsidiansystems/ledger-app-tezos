@@ -8,6 +8,7 @@
 #include "ui.h"
 
 static cx_ecfp_public_key_t public_key;
+static cx_curve_t curve;
 
 // The following need to be persisted for baking app
 static uint8_t path_length;
@@ -187,22 +188,17 @@ static void pubkey_ok() {
     delay_send(tx);
 }
 
+#ifdef BAKING_APP
 static void baking_ok() {
-    authorize_baking(NULL, 0, bip32_path, path_length);
+    authorize_baking(curve, NULL, 0, bip32_path, path_length);
     pubkey_ok();
 }
-
-static bool is_path_root(uint32_t *bip32_path, uint8_t path_length) {
-    return path_length == 2 &&
-        bip32_path[0] == 0x8000002c &&
-        bip32_path[1] == 0x800006c1;
-}
+#endif
 
 unsigned int handle_apdu_get_public_key(uint8_t instruction) {
     uint8_t privateKeyData[32];
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
 
-    cx_curve_t curve;
     cx_ecfp_private_key_t privateKey;
 
     if (G_io_apdu_buffer[OFFSET_P1] != 0)

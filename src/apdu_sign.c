@@ -30,17 +30,6 @@ void sign_ok() {
     delay_send(tx);
 }
 
-void bake_ok() {
-    bool success = authorize_baking(message_data, message_data_length,
-                                    bip32_path, bip32_path_length);
-    if (!success) {
-        return delay_reject(); // Bad BIP32 path
-    }
-
-    int tx = perform_signature(true);
-    delay_send(tx);
-}
-
 #define P1_FIRST 0x00
 #define P1_NEXT 0x01
 #define P1_LAST_MARKER 0x80
@@ -101,14 +90,9 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
         case MAGIC_BYTE_BLOCK:
         case MAGIC_BYTE_BAKING_OP:
 #ifdef BAKING_APP
-            if (is_baking_authorized(message_data,
-                                     message_data_length,
-                                     bip32_path,
-                                     bip32_path_length)) {
-                return perform_signature(true);
-            } else {
-                THROW(0x9685);
-            }
+            check_baking_authorized(curve, message_data, message_data_length,
+                                    bip32_path, bip32_path_length);
+            return perform_signature(true);
 #else
             THROW(0x9685);
 #endif

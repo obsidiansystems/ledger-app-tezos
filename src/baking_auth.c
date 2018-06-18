@@ -14,9 +14,9 @@ void write_highest_level(int lvl) {
     change_idle_display(N_data.highest_level);
 }
 
-bool authorize_baking(void *data, int datalen, uint32_t *bip32_path, uint8_t path_length) {
+void authorize_baking(cx_curve_t curve, void *data, int datalen, uint32_t *bip32_path, uint8_t path_length) {
     if (path_length > MAX_BIP32_PATH || path_length == 0) {
-        return false;
+        return;
     }
 
     int level = N_data.highest_level;
@@ -26,24 +26,26 @@ bool authorize_baking(void *data, int datalen, uint32_t *bip32_path, uint8_t pat
 
     nvram_data new_baking_details;
     new_baking_details.highest_level = level;
+    new_baking_details.curve = curve;
     memcpy(new_baking_details.bip32_path, bip32_path, path_length * sizeof(*bip32_path));
     new_baking_details.path_length = path_length;
     nvm_write((void*)&N_data, &new_baking_details, sizeof(N_data));
     change_idle_display(N_data.highest_level);
-    return true;
 }
 
 bool is_level_authorized(int level) {
     return level > N_data.highest_level;
 }
 
-bool is_path_authorized(uint32_t *bip32_path, uint8_t path_length) {
+bool is_path_authorized(cx_curve_t curve, uint32_t *bip32_path, uint8_t path_length) {
     return path_length != 0 &&
         path_length == N_data.path_length &&
+        curve == N_data.curve &&
         memcmp(bip32_path, N_data.bip32_path, path_length * sizeof(*bip32_path)) == 0;
 }
 
-bool is_baking_authorized(void *data, int datalen, uint32_t *bip32_path, uint8_t path_length) {
+void check_baking_authorized(cx_curve_t curve, void *data, int datalen, uint32_t *bip32_path,
+                             uint8_t path_length) {
     if (is_block_valid(data, datalen)) {
         int level = get_block_level(data, datalen);
         if (!is_level_authorized(level)) {
@@ -52,7 +54,9 @@ bool is_baking_authorized(void *data, int datalen, uint32_t *bip32_path, uint8_t
     } else if (get_magic_byte(data, datalen) == MAGIC_BYTE_BLOCK) {
         THROW(0x6C00);
     }
-    return is_path_authorized(bip32_path, path_length);
+    if (!is_path_authorized(curve, bip32_path, path_length)) {
+        THROW(0x6C00);
+    }
 }
 
 void update_high_water_mark(void *data, int datalen) {
