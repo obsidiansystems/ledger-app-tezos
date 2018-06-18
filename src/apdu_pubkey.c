@@ -19,6 +19,7 @@ static void prompt_address(const bagl_element_t *prompt, size_t prompt_size,
 
 char address_display_data[64]; // Should be more than big enough
 
+#ifdef BAKING_APP
 const bagl_element_t ui_bake_prompt[] = {
     // type                               userid    x    y   w    h  str rad
     // fill      fg        bg      fid iid  txt   touchparams...       ]
@@ -93,6 +94,7 @@ const bagl_element_t ui_bake_prompt[] = {
      NULL,
      NULL},
 };
+#endif
 
 const bagl_element_t ui_pubkey_prompt[] = {
     // type                               userid    x    y   w    h  str rad
@@ -243,16 +245,20 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
         callback_t cb;
         const bagl_element_t *prompt;
         size_t prompt_size;
+#ifdef BAKING_APP
         if (instruction == INS_AUTHORIZE_BAKING) {
             cb = baking_ok;
             prompt = ui_bake_prompt;
             prompt_size = sizeof(ui_bake_prompt)/sizeof(*ui_bake_prompt);
         } else {
+#endif
             // INS_PROMPT_PUBLIC_KEY
             cb = pubkey_ok;
             prompt = ui_pubkey_prompt;
             prompt_size = sizeof(ui_pubkey_prompt)/sizeof(*ui_pubkey_prompt);
+#ifdef BAKING_APP
         }
+#endif
         prompt_address(prompt, prompt_size, public_key.W, public_key.W_len, cb, delay_reject);
         THROW(ASYNC_EXCEPTION);
     }
