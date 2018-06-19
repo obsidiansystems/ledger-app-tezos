@@ -166,11 +166,14 @@ Then follow the prompts on the Ledger screen.
 
 If you have the [Nix package manager][nix] installed, then you can skip all of
 the dependency setup instructions above (libusb, virtualenv, and ledgerblue) and
-install by just running the following command:
+install by using the [Tezos Baking Platform](https://gitlab.com/obsidian.systems/tezos-baking-platform).
+In the `ledger` directory of that repo, run:
 
 ```bash
-nix-shell --run ./install.sh
+./setup_ledger.sh
 ```
+
+This will install both apps.
 
 For NixOS, you can set the udev rules by adding the following to the NixOS
 configuration file typically located at `/etc/nixos/configuration.nix`:
