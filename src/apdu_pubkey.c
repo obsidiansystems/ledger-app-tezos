@@ -221,7 +221,7 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
             THROW(0x6B00);
     }
 
-    path_length = read_bip32_path(bip32_path, dataBuffer);
+    path_length = read_bip32_path(G_io_apdu_buffer[OFFSET_LC], bip32_path, dataBuffer);
     os_perso_derive_node_bip32(curve, bip32_path, path_length, privateKeyData, NULL);
     cx_ecfp_init_private_key(curve, privateKeyData, 32, &privateKey);
     cx_ecfp_generate_pair(curve, &public_key, &privateKey, 1);

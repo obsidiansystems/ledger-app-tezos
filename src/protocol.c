@@ -38,5 +38,5 @@ int32_t read_unaligned_big_endian(const void *in) {
 
 int32_t get_block_level(const void *data, size_t length) {
     const struct block *blk = data;
-    return read_unaligned_big_endian(&blk->level);
+    return READ_UNALIGNED_BIG_ENDIAN(int32_t, &blk->level);
 }

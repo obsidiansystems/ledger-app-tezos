@@ -29,16 +29,20 @@ void main_loop(apdu_handler handlers[INS_MASK + 1]) {
                     THROW(0x6E00);
                 }
 
+                if (rx != G_io_apdu_buffer[OFFSET_LC] + OFFSET_CDATA) {
+                    THROW(0x6D00);
+                }
+
                 uint8_t instruction = G_io_apdu_buffer[1];
                 uint32_t tx = handlers[instruction & INS_MASK](instruction);
                 rx = io_exchange(CHANNEL_APDU, tx);
             }
+            CATCH(ASYNC_EXCEPTION) {
+                rx = io_exchange(CHANNEL_APDU | IO_ASYNCH_REPLY, 0);
+            }
             CATCH_OTHER(e) {
                 unsigned short sw = e;
                 switch (sw) {
-                case ASYNC_EXCEPTION:
-                    rx = io_exchange(CHANNEL_APDU | IO_ASYNCH_REPLY, 0);
-                    break;
                 default:
                     sw = 0x6800 | (e & 0x7FF);
                     // FALL THROUGH

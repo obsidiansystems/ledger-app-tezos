@@ -18,4 +18,17 @@ static inline uint8_t get_magic_byte(const uint8_t *data, size_t length) {
 bool is_block_valid(const void *data, size_t length);
 
 int32_t get_block_level(const void *data, size_t length); // Precondition: is_block_valid returns true
-int32_t read_unaligned_big_endian(const void *in);
+
+#define READ_UNALIGNED_BIG_ENDIAN(type, in) \
+    ({ \
+        const uint8_t *bytes = (uint8_t*)in; \
+        uint8_t out_bytes[sizeof(type)]; \
+        type res; \
+\
+        for (size_t i = 0; i < sizeof(type); i++) { \
+            out_bytes[i] = bytes[sizeof(type) - i - 1]; \
+        } \
+        memcpy(&res, out_bytes, sizeof(type)); \
+\
+        res; \
+    })

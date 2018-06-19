@@ -44,8 +44,7 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
     case P1_FIRST:
         os_memset(message_data, 0, TEZOS_BUFSIZE);
         message_data_length = 0;
-        bip32_path_length = read_bip32_path(bip32_path,
-                                                       dataBuffer);
+        bip32_path_length = read_bip32_path(dataLength, bip32_path, dataBuffer);
         switch(G_io_apdu_buffer[OFFSET_P2]) {
             case 0:
                 curve = CX_CURVE_Ed25519;

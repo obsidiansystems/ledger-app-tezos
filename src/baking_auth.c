@@ -80,7 +80,7 @@ unsigned int handle_apdu_reset(uint8_t instruction) {
     if (dataLength != sizeof(int)) {
         THROW(0x6C00);
     }
-    level = read_unaligned_big_endian(dataBuffer);
+    level = READ_UNALIGNED_BIG_ENDIAN(int32_t, dataBuffer);
     ASYNC_PROMPT(ui_bake_reset_screen, reset_ok, delay_reject);
 }
 

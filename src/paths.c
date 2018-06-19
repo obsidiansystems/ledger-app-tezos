@@ -71,8 +71,10 @@ uint32_t path_to_string(char *buf, uint32_t path_length, uint32_t *bip32_path) {
     return offset;
 }
 
-uint32_t read_bip32_path(uint32_t *bip32_path, const uint8_t *buf) {
+uint32_t read_bip32_path(uint32_t bytes, uint32_t *bip32_path, const uint8_t *buf) {
     uint32_t path_length = *buf;
+    if (bytes < path_length * sizeof(uint32_t) + 1) THROW(0x6B00);
+
     buf++;
 
     if (path_length == 0 || path_length > MAX_BIP32_PATH) {
