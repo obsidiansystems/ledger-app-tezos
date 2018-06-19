@@ -68,7 +68,60 @@ void update_high_water_mark(void *data, int datalen) {
     }
 }
 
-#include "reset_screens.h"
+#define RESET_STRING "Reset HWM: "
+char reset_string[sizeof(RESET_STRING) + 10]; // 10 is max number of digits in 32-bit number
+
+const bagl_element_t ui_bake_reset_screen[] = {
+    // type                               userid    x    y   w    h  str rad
+    // fill      fg        bg      fid iid  txt   touchparams...       ]
+    {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
+      0, 0},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x01, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Tezos",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_LABELINE, 0x01, 0, 26, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     reset_string,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+      BAGL_GLYPH_ICON_CROSS},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+      BAGL_GLYPH_ICON_CHECK},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+};
 
 static int level;
 
@@ -81,15 +134,23 @@ unsigned int handle_apdu_reset(uint8_t instruction) {
         THROW(0x6C00);
     }
     level = READ_UNALIGNED_BIG_ENDIAN(int32_t, dataBuffer);
+
+    strcpy(reset_string, RESET_STRING);
+    char *number_field = reset_string + sizeof(RESET_STRING) - 1;
+    uint32_t res = number_to_string(number_field, level);
+    number_field[res] = '\0';
+
     ASYNC_PROMPT(ui_bake_reset_screen, reset_ok, delay_reject);
 }
 
 void reset_ok() {
     write_highest_level(level);
 
-    G_io_apdu_buffer[0] = 0x90;
-    G_io_apdu_buffer[1] = 0x00;
+    uint32_t tx = 0;
+    G_io_apdu_buffer[tx++] = 0x90;
+    G_io_apdu_buffer[tx++] = 0x00;
+
 
     // Send back the response, do not restart the event loop
-    delay_send(2);
+    delay_send(tx);
 }
