@@ -167,7 +167,7 @@ Then follow the prompts on the Ledger screen.
 If you have the [Nix package manager][nix] installed, then you can skip all of
 the dependency setup instructions above (libusb, virtualenv, and ledgerblue) and
 install by using the [Tezos Baking Platform](https://gitlab.com/obsidian.systems/tezos-baking-platform).
-In the `ledger` directory of that repo, run:
+In the `ledger` directory of that repo, on the `ledger-baking` branch, run:
 
 ```bash
 ./setup_ledger.sh
