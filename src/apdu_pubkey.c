@@ -190,7 +190,7 @@ static void pubkey_ok() {
 
 #ifdef BAKING_APP
 static void baking_ok() {
-    authorize_baking(curve, NULL, 0, bip32_path, path_length);
+    authorize_baking(curve, bip32_path, path_length);
     pubkey_ok();
 }
 #endif

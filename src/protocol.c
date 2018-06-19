@@ -7,7 +7,7 @@
 
 struct __attribute__((__packed__)) block {
     char magic_byte;
-    int32_t level;
+    level_t level;
     uint8_t proto;
     // ... beyond this we don't care
 };
@@ -36,7 +36,7 @@ int32_t read_unaligned_big_endian(const void *in) {
     return res;
 }
 
-int32_t get_block_level(const void *data, size_t length) {
+level_t get_block_level(const void *data, size_t length) {
     const struct block *blk = data;
-    return READ_UNALIGNED_BIG_ENDIAN(int32_t, &blk->level);
+    return READ_UNALIGNED_BIG_ENDIAN(level_t, &blk->level);
 }

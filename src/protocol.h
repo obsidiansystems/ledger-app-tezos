@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "baking_auth.h"
+
 #define MAGIC_BYTE_BLOCK 0x01
 #define MAGIC_BYTE_BAKING_OP 0x02
 #define MAGIC_BYTE_UNSAFE_OP 0x03
@@ -17,7 +19,7 @@ static inline uint8_t get_magic_byte(const uint8_t *data, size_t length) {
 
 bool is_block_valid(const void *data, size_t length);
 
-int32_t get_block_level(const void *data, size_t length); // Precondition: is_block_valid returns true
+level_t get_block_level(const void *data, size_t length); // Precondition: is_block_valid returns true
 
 #define READ_UNALIGNED_BIG_ENDIAN(type, in) \
     ({ \

@@ -9,23 +9,23 @@
 
 WIDE nvram_data N_data_real;
 
-void write_highest_level(int lvl) {
+static bool is_valid_level(level_t lvl) {
+    return !(lvl & 0xC0000000);
+}
+
+void write_highest_level(level_t lvl) {
+    if (!is_valid_level(lvl)) return;
     nvm_write((void*)&N_data.highest_level, &lvl, sizeof(lvl));
     change_idle_display(N_data.highest_level);
 }
 
-void authorize_baking(cx_curve_t curve, void *data, int datalen, uint32_t *bip32_path, uint8_t path_length) {
+void authorize_baking(cx_curve_t curve, uint32_t *bip32_path, uint8_t path_length) {
     if (path_length > MAX_BIP32_PATH || path_length == 0) {
         return;
     }
 
-    int level = N_data.highest_level;
-    if (data != NULL && is_block_valid(data, datalen)) {
-        level = get_block_level(data, datalen);
-    }
-
     nvram_data new_baking_details;
-    new_baking_details.highest_level = level;
+    new_baking_details.highest_level = N_data.highest_level;
     new_baking_details.curve = curve;
     memcpy(new_baking_details.bip32_path, bip32_path, path_length * sizeof(*bip32_path));
     new_baking_details.path_length = path_length;
@@ -33,8 +33,8 @@ void authorize_baking(cx_curve_t curve, void *data, int datalen, uint32_t *bip32
     change_idle_display(N_data.highest_level);
 }
 
-bool is_level_authorized(int level) {
-    return level > N_data.highest_level;
+bool is_level_authorized(level_t level) {
+    return is_valid_level(level) && level > N_data.highest_level;
 }
 
 bool is_path_authorized(cx_curve_t curve, uint32_t *bip32_path, uint8_t path_length) {
@@ -47,7 +47,7 @@ bool is_path_authorized(cx_curve_t curve, uint32_t *bip32_path, uint8_t path_len
 void check_baking_authorized(cx_curve_t curve, void *data, int datalen, uint32_t *bip32_path,
                              uint8_t path_length) {
     if (is_block_valid(data, datalen)) {
-        int level = get_block_level(data, datalen);
+        level_t level = get_block_level(data, datalen);
         if (!is_level_authorized(level)) {
             THROW(0x6C00);
         }
@@ -61,8 +61,8 @@ void check_baking_authorized(cx_curve_t curve, void *data, int datalen, uint32_t
 
 void update_high_water_mark(void *data, int datalen) {
     if (is_block_valid(data, datalen)) {
-        int level = get_block_level(data, datalen);
-        if (level > N_data.highest_level) {
+        level_t level = get_block_level(data, datalen);
+        if (is_valid_level(level) && level > N_data.highest_level) {
             write_highest_level(level);
         }
     }
@@ -123,7 +123,7 @@ const bagl_element_t ui_bake_reset_screen[] = {
      NULL},
 };
 
-static int level;
+static level_t reset_level;
 
 static void reset_ok();
 
@@ -133,18 +133,23 @@ unsigned int handle_apdu_reset(uint8_t instruction) {
     if (dataLength != sizeof(int)) {
         THROW(0x6C00);
     }
-    level = READ_UNALIGNED_BIG_ENDIAN(int32_t, dataBuffer);
+    level_t lvl = READ_UNALIGNED_BIG_ENDIAN(int32_t, dataBuffer);
+
+    if (!is_valid_level(lvl)) {
+        THROW(0x6B00);
+    }
+    reset_level = lvl;
 
     strcpy(reset_string, RESET_STRING);
     char *number_field = reset_string + sizeof(RESET_STRING) - 1;
-    uint32_t res = number_to_string(number_field, level);
+    uint32_t res = number_to_string(number_field, reset_level);
     number_field[res] = '\0';
 
     ASYNC_PROMPT(ui_bake_reset_screen, reset_ok, delay_reject);
 }
 
 void reset_ok() {
-    write_highest_level(level);
+    write_highest_level(reset_level);
 
     uint32_t tx = 0;
     G_io_apdu_buffer[tx++] = 0x90;
