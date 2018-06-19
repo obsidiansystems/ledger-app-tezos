@@ -29,6 +29,9 @@ void main_loop(apdu_handler handlers[INS_MASK + 1]) {
                     THROW(0x6E00);
                 }
 
+                // The amount of bytes we get in our APDU must match what the APDU declares
+                // its own content length is. All these values are unsigned, so this implies
+                // that if rx < OFFSET_CDATA it also throws.
                 if (rx != G_io_apdu_buffer[OFFSET_LC] + OFFSET_CDATA) {
                     THROW(0x6D00);
                 }
