@@ -5,6 +5,9 @@ buildable from this codebase: a baking-only app ("Baking Application"),
 and a transaction app that supports everything you might want to use
 the Ledger for on Tezos besides baking ("Wallet Application").
 
+To use these apps, you must be sure to have up-to-date firmware on the ledger.
+This code was tested with version 1.4.2.
+
 ## About Key Generation
 
 Every Ledger generates public and private keys for either `ed25519` or
