@@ -21,7 +21,8 @@ All Tezos BIP32 paths begin with `44'/1729'` (the `'` indicates it is
 "hardened").  Which Ledger is intended to be used, as well as choice of
 encryption system, is indicated by a root key hash, the Tezos-specific
 base58 encoding of the hash of the public key at `44'/1729'` on that
-Ledger. To extract the root key hash, please run:
+Ledger. Because all Tezos paths start with this, in `tezos-client` commands
+it is implicit. To extract the root key hash, please run:
 
 `tezos-client list connected ledgers`
 
@@ -49,7 +50,7 @@ on the same Ledger should suffice.
 ### Authorize/Get Public Key
 
 The authorize/get public key operation is done with the `tezos-client import` command, e.g.
-`tezos-client import secret key my-ledger "ledger://tz1..../44'/1729'"`, where `tz1...` is the
+`tezos-client import secret key my-ledger "ledger://tz1..../0'/0'"`, where `tz1...` is the
 root public key hash for that particular Ledger.
 
 This actually copies only the public
