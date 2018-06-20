@@ -173,7 +173,8 @@ In the `ledger` directory of that repo, on the `ledger-baking` branch, run:
 ./setup_ledger.sh
 ```
 
-This will install both apps.
+This will build and install both apps, once you've followed the instructions in the error messages
+and downloaded the files indicated and added them to the Nix store.
 
 For NixOS, you can set the udev rules by adding the following to the NixOS
 configuration file typically located at `/etc/nixos/configuration.nix`:
