@@ -28,3 +28,8 @@ Once we have done more testing, we will also release the `app.hex` files directl
 
 To install on the ledger, please proceed to the Installation instructions
 in the main `README.md` file.
+
+## Nix
+
+To build with Nix, please follow the instructions in the `install.md` file in this repo,
+as Nix has one script that both builds and installs.
