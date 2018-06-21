@@ -366,11 +366,15 @@ A tool will soon be made available to do this automatically.
 
 To confirm that this worked, you can send a fake block to the ledger to sign.
 
-```printf '%s\n%s\n' "8004000011048000002c800006c18000000080000000" "8004810006010000000101" | ./apdu.sh`
+```
+printf '%s\n%s\n' "8004000011048000002c800006c18000000080000000" "8004810006010000000101" | ./apdu.sh
+```
 
 Or:
 
-```printf '%s\n%s\n' "8004000011048000002c800006c18000000080000000" "8004810006010000000101" | python -m ledgerblue.runScript --apdu`
+```
+printf '%s\n%s\n' "8004000011048000002c800006c18000000080000000" "8004810006010000000101" | python -m ledgerblue.runScript --apdu
+```
 
 The first line is similar to the above format, with the prefix as `800400` instead of `800100`.
 The second line is simply a fake block header with a level of 1, which the Ledger app will think
