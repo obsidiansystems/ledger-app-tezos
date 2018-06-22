@@ -43,6 +43,9 @@ and unplug your Ledger and plug it in again for the changes to take effect.
 For non-Nix users, a
 [script](https://raw.githubusercontent.com/LedgerHQ/udev-rules/master/add_udev_rules.sh)
 is available from LedgerHQ for this purpose. Download this script, read it, and run it as root.
+You might have to adjust which group this script uses, and modify the script for that purpose.
+I recommend against just piping `wget` into `sudo bash` without adjusting the script to your
+computer's configuration.
 
 Subsequently, unplug your ledger, and plug it in again for the changes to take effect.
 
