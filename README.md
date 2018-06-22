@@ -153,6 +153,7 @@ called "ledger" containing the virtualenv.
 
 ```
 virtualenv ledger # Any OS
+source ledger/bin/activate
 ```
 
 Your terminal session -- and only that terminal session -- will now be in the virtual env.
