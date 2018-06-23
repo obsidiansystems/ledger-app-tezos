@@ -20,14 +20,24 @@ static uint32_t bip32_path[MAX_BIP32_PATH];
 
 static int perform_signature(bool hash_first);
 
-void sign_unsafe_ok() {
+static void sign_unsafe_ok() {
     int tx = perform_signature(false);
     delay_send(tx);
 }
 
-void sign_ok() {
+static void sign_ok() {
     int tx = perform_signature(true);
     delay_send(tx);
+}
+
+static void clear_data() {
+    bip32_path_length = 0;
+    message_data_length = 0;
+}
+
+static void sign_reject() {
+    clear_data();
+    delay_reject();
 }
 
 #define P1_FIRST 0x00
@@ -60,6 +70,9 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
         }
         return_ok();
     case P1_NEXT:
+        if (bip32_path_length == 0) {
+            THROW(0x6B00);
+        }
         break;
     default:
         THROW(0x6B00);
@@ -101,12 +114,12 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
 #ifdef BAKING_APP
             THROW(0x9685);
 #else
-            ASYNC_PROMPT(ui_sign_screen, sign_ok, delay_reject);
+            ASYNC_PROMPT(ui_sign_screen, sign_ok, sign_reject);
 #endif
         default:
             THROW(0x6C00);
     }
-}
+
 
 #define HASH_SIZE 32
 
@@ -118,11 +131,12 @@ static int perform_signature(bool hash_first) {
     uint32_t datalen = message_data_length;
 
 #ifdef BAKING_APP
-    update_high_water_mark(message_data, message_data_length);
+    update_high_water_mark(data, datalen);
 #endif
 
+
     if (hash_first) {
-        blake2b(hash, HASH_SIZE, message_data, message_data_length, NULL, 0);
+        blake2b(hash, HASH_SIZE, data, datalen, NULL, 0);
         data = hash;
         datalen = HASH_SIZE;
     }
@@ -180,6 +194,8 @@ static int perform_signature(bool hash_first) {
 
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;
+
+    clear_data();
 
     return tx;
 }

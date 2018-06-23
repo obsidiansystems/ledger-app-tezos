@@ -162,7 +162,8 @@ terminal session.
 
 #### ledgerblue
 
-Within the virtualenv environment, use pip to install the [`ledgerblue` Python
+Within the virtualenv environment -- making sure
+that `(ledger)` is showing up before your prompt -- use pip to install the `ledgerblue` [Python
 package][pypi-ledgerblue]. This will install the Ledger Python packages into the
 virtualenv; they will be available only in a shell where the virtualenv has been
 activated.
@@ -170,6 +171,10 @@ activated.
 ```
 pip install ledgerblue
 ```
+
+If you have to use `sudo` or `pip3` here, that is an indication that you have not correctly
+set up `virtualenv`. It will still work in such a situation, but please research other material
+on troubleshooting `virtualenv` set-up.
 
 #### Load the app onto the Ledger device
 
@@ -185,9 +190,10 @@ as you continue. You may want to read the rest of these instructions before you
 begin installing, as you will need to confirm and verify a few things during the
 process.
 
-Still within the virtualenv, run the `./install.sh` command. This script
-takes two parameters, the first of which is the *name* of the application
-you are installing, and the second is the path to the `app.hex` file:
+Still within the virtualenv, run the `./install.sh` command.  This script
+is in the root directory of this very repo. This script takes two
+parameters, the first of which is the *name* of the application you are
+installing, and the second is the path to the `app.hex` file:
 
 * If you are installing the baking app, we recommend using the name "Tezos
   Baking".
