@@ -128,16 +128,18 @@ Python Loader][bolos-python-loader].
 
 #### Installing BOLOS Python Loader
 
-Install `libusb` and `libudev`. For example, on Ubuntu, you can do this with:
+Install `libusb` and `libudev`, with the relevant headers. On Debian-based
+distros, including Ubuntu, the packages with the headers are suffixed with `-dev`.
+Other distros will have their own conventions. So, for example, on Ubuntu, you can do this with:
 
 ```
-sudo apt-get install libusb-1.0.0-dev libudev-dev # Ubuntu only
+sudo apt-get install libusb-1.0.0-dev libudev-dev # Ubuntu example
 ```
 
 Then, install `pip3`. You must install `pip3` for this and not `pip`. On Ubuntu:
 
 ```
-sudo apt-get install python3-pip # Ubuntu only
+sudo apt-get install python3-pip # Ubuntu example
 ```
 
 Now, on any operating system, install `virtualenv` using `pip3`. It is important to use
@@ -149,7 +151,9 @@ sudo pip3 install virtualenv # Any OS
 
 Then create a Python virtual environment (abbreviated *virtualenv*). You could
 call it anything, but we shall call it "ledger". This will create a directory
-called "ledger" containing the virtualenv.
+called "ledger" containing the virtualenv. Then, you must enter the `virtualenv`. If you
+do not successfully enter the `virtualenv`, future commands will fail. You can tell
+you have entered the virtualenv when your prompt is prefixed with `(ledger)`.
 
 ```
 virtualenv ledger # Any OS
