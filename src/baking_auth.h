@@ -28,4 +28,6 @@ void update_high_water_mark(void *data, int datalen);
 bool is_level_authorized(level_t level);
 
 #define INS_RESET 0x06
+#define INS_QUERY_HWM 0x08
 unsigned int handle_apdu_reset(uint8_t instruction);
+unsigned int handle_apdu_hwm(uint8_t instruction);

@@ -159,3 +159,16 @@ void reset_ok() {
     // Send back the response, do not restart the event loop
     delay_send(tx);
 }
+
+unsigned int handle_apdu_hwm(uint8_t instruction) {
+    uint32_t level = N_data.highest_level;
+    char level_bytes[sizeof(level)];
+    memcpy(level_bytes, &level, sizeof(level));
+    int tx = 0;
+    for (; tx < sizeof(level); tx++) {
+        G_io_apdu_buffer[tx] = level_bytes[sizeof(level) - tx - 1];
+    }
+    G_io_apdu_buffer[tx++] = 0x90;
+    G_io_apdu_buffer[tx++] = 0x00;
+    delay_send(tx);
+}

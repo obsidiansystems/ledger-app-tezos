@@ -16,8 +16,8 @@
 
 #define TEZOS_BUFSIZE 1024
 
-#define INS_MASK 0x07
-#define INS_EXIT 0x07 // Equivalent to 0xFF, it's only significant in the bits in INS_MASK
+#define INS_MASK 0x0F
+#define INS_EXIT 0x0F // Equivalent to 0xFF, it's only significant in the bits in INS_MASK
 
 // Throw this to indicate prompting
 #define ASYNC_EXCEPTION 0x2000
