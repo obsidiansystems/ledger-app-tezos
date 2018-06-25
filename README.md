@@ -438,7 +438,7 @@ explicit confirmation from the user, and there is no specific utility to
 send this command. To send it manually, you can use the following command
 line:
 
-`echo 800681000400000000 | python -m Ledgerblue.runScrirpt --apdu`
+`echo 800681000400000000 | python -m ledgerblue.runScrirpt --apdu`
 
 The last 8 0s indicate the hexadecimal high water mark to reset to. A higher
 one can be specified, `00000000` is given as an example as that will allow
