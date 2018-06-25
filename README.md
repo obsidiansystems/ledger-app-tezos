@@ -1,9 +1,13 @@
 # Ledger-app-tezos
 
-There are two versions of this Ledger Nano S application that are
-buildable from this codebase: a baking-only app ("Baking Application"),
-and a transaction app that supports everything you might want to use
-the Ledger for on Tezos besides baking ("Wallet Application").
+This repository contains two [Tezos](https://www.tezos.com/)-related
+applications that can be loaded onto a
+[Ledger Nano S](https://www.ledgerwallet.com/products/ledger-nano-s):
+
+  1. The "Tezo Bake" application is for baking Tezos (signing and publishing
+     new blocks).
+  2. The "Tezos Sign" application is for making XTZ transactions, and
+     everything you might want to use the Ledger for on Tezos besides baking.
 
 To use these apps, you must be sure to have up-to-date firmware on the ledger.
 This code was tested with version 1.4.2. Please use the Ledger's tools,
