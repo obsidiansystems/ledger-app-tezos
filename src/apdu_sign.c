@@ -119,6 +119,7 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
         default:
             THROW(0x6C00);
     }
+}
 
 
 #define HASH_SIZE 32
