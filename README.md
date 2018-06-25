@@ -1,9 +1,13 @@
 # Ledger-app-tezos
 
-There are two versions of this Ledger Nano S application that are
-buildable from this codebase: a baking-only app ("Baking Application"),
-and a transaction app that supports everything you might want to use
-the Ledger for on Tezos besides baking ("Wallet Application").
+This repository contains two [Tezos](https://www.tezos.com/)-related
+applications that can be loaded onto a
+[Ledger Nano S](https://www.ledgerwallet.com/products/ledger-nano-s):
+
+  1. The "Tezo Bake" application is for baking Tezos (signing and publishing
+     new blocks).
+  2. The "Tezos Sign" application is for making XTZ transactions, and
+     everything you might want to use the Ledger for on Tezos besides baking.
 
 To use these apps, you must be sure to have up-to-date firmware on the ledger.
 This code was tested with version 1.4.2. Please use the Ledger's tools,
@@ -54,12 +58,13 @@ Subsequently, unplug your ledger, and plug it in again for the changes to take e
 These instructions work with NixOS, or they also work if you install Nix on another
 Linux distribution.
 
-Please clone the
-[Tezos Baking Platform](https://gitlab.com/obsidian.systems/tezos-baking-platform) and
-check out the `zeronet-new` branch, updating submodules. These are the commands to run
-in the freshly-cloned repo:
+Please run the following commands to clone the
+[Tezos Baking Platform](https://gitlab.com/obsidian.systems/tezos-baking-platform),
+check out the `zeronet-new` branch, and update all of the git submodules:
 
-```
+```bash
+git clone https://gitlab.com/obsidian.systems/tezos-baking-platform.git
+cd tezos-baking-platform
 git checkout zeronet-new
 git submodule sync
 git submodule update --recursive --init
@@ -121,10 +126,11 @@ On systems with Nix set up, you can use the `setup_ledger.sh` script
 from Tezos Baking Platform, or you can follow these instructions as well.
 
 Ledger's primary interface for loading an app onto a Ledger device is a Chrome
-app called [Ledger Manager][ledger-manager]. However, it only supports a limited
-set of officially-supported apps like Bitcoin and Ethereum, and Tezos is not yet
-among these. So you will need to use a command-line tool called the [BOLOS
-Python Loader][bolos-python-loader].
+app called [Ledger Manager](https://www.ledgerwallet.com/apps/manager). However,
+it only supports a limited set of officially-supported apps like Bitcoin and
+Ethereum, and Tezos is not yet among these. So you will need to use a
+command-line tool called the [BOLOS Python
+Loader](https://ledger.readthedocs.io/projects/blue-loader-python/en/0.1.16/index.html).
 
 #### Installing BOLOS Python Loader
 
@@ -166,11 +172,11 @@ terminal session.
 
 #### ledgerblue
 
-Within the virtualenv environment -- making sure
-that `(ledger)` is showing up before your prompt -- use pip to install the `ledgerblue` [Python
-package][pypi-ledgerblue]. This will install the Ledger Python packages into the
-virtualenv; they will be available only in a shell where the virtualenv has been
-activated.
+Within the virtualenv environment -- making sure that `(ledger)` is showing up
+before your prompt -- use pip to install the `ledgerblue` [Python
+package](https://pypi.org/project/ledgerblue/). This will install the Ledger
+Python packages into the virtualenv; they will be available only in a shell
+where the virtualenv has been activated.
 
 ```
 pip install ledgerblue
