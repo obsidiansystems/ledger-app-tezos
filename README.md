@@ -58,12 +58,13 @@ Subsequently, unplug your ledger, and plug it in again for the changes to take e
 These instructions work with NixOS, or they also work if you install Nix on another
 Linux distribution.
 
-Please clone the
-[Tezos Baking Platform](https://gitlab.com/obsidian.systems/tezos-baking-platform) and
-check out the `zeronet-new` branch, updating submodules. These are the commands to run
-in the freshly-cloned repo:
+Please run the following commands to clone the
+[Tezos Baking Platform](https://gitlab.com/obsidian.systems/tezos-baking-platform),
+check out the `zeronet-new` branch, and update all of the git submodules:
 
-```
+```bash
+git clone https://gitlab.com/obsidian.systems/tezos-baking-platform.git
+cd tezos-baking-platform
 git checkout zeronet-new
 git submodule sync
 git submodule update --recursive --init
