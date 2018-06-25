@@ -125,10 +125,11 @@ On systems with Nix set up, you can use the `setup_ledger.sh` script
 from Tezos Baking Platform, or you can follow these instructions as well.
 
 Ledger's primary interface for loading an app onto a Ledger device is a Chrome
-app called [Ledger Manager][ledger-manager]. However, it only supports a limited
-set of officially-supported apps like Bitcoin and Ethereum, and Tezos is not yet
-among these. So you will need to use a command-line tool called the [BOLOS
-Python Loader][bolos-python-loader].
+app called [Ledger Manager](https://www.ledgerwallet.com/apps/manager). However,
+it only supports a limited set of officially-supported apps like Bitcoin and
+Ethereum, and Tezos is not yet among these. So you will need to use a
+command-line tool called the [BOLOS Python
+Loader](https://ledger.readthedocs.io/projects/blue-loader-python/en/0.1.16/index.html).
 
 #### Installing BOLOS Python Loader
 
@@ -170,11 +171,11 @@ terminal session.
 
 #### ledgerblue
 
-Within the virtualenv environment -- making sure
-that `(ledger)` is showing up before your prompt -- use pip to install the `ledgerblue` [Python
-package][pypi-ledgerblue]. This will install the Ledger Python packages into the
-virtualenv; they will be available only in a shell where the virtualenv has been
-activated.
+Within the virtualenv environment -- making sure that `(ledger)` is showing up
+before your prompt -- use pip to install the `ledgerblue` [Python
+package](https://pypi.org/project/ledgerblue/). This will install the Ledger
+Python packages into the virtualenv; they will be available only in a shell
+where the virtualenv has been activated.
 
 ```
 pip install ledgerblue
