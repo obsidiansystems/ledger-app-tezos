@@ -11,13 +11,23 @@
 
 #include "sign_screens.h"
 
-#define TEZOS_BUFSIZE 1024
+#define TEZOS_BUFSIZE 256
+#define SIGN_HASH_SIZE 32
 
 static uint8_t message_data[TEZOS_BUFSIZE];
 static uint32_t message_data_length;
 static cx_curve_t curve;
 static uint8_t bip32_path_length;
 static uint32_t bip32_path[MAX_BIP32_PATH];
+
+static blake2s_state hash_state;
+static bool is_hash_state_inited;
+
+static void conditional_init_hash_state(void) {
+    if (!is_hash_state_inited) {
+        blake2b_init(&hash_state, SIGN_HASH_SIZE);
+    }
+}
 
 static int perform_signature(bool hash_first);
 
@@ -40,6 +50,7 @@ static void sign_ok(void) {
 static void clear_data(void) {
     bip32_path_length = 0;
     message_data_length = 0;
+    is_hash_state_inited = false;
 }
 
 static void sign_reject(void) {
@@ -92,7 +103,17 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
     }
 
     if (message_data_length + dataLength > TEZOS_BUFSIZE) {
+#ifdef BAKING_APP
         THROW(0x6C00);
+#else
+        if (instruction == INS_SIGN) {
+            conditional_init_hash_state();
+            blake2b_update(&hash_state, message_data, message_data_length);
+            message_data_length = 0;
+        } else {
+            THROW(0x6C00);
+        }
+#endif
     }
 
     os_memmove(message_data + message_data_length, dataBuffer, dataLength);
@@ -137,8 +158,6 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
 }
 
 
-#define SIGN_HASH_SIZE 32
-
 static int perform_signature(bool hash_first) {
     cx_ecfp_private_key_t privateKey;
     cx_ecfp_public_key_t publicKey;
@@ -147,7 +166,10 @@ static int perform_signature(bool hash_first) {
     uint32_t datalen = message_data_length;
 
     if (hash_first) {
-        blake2b(hash, SIGN_HASH_SIZE, data, datalen, NULL, 0);
+        conditional_init_hash_state();
+        blake2b_update(&hash_state, data, datalen);
+        blake2b_final(&hash_state, hash, SIGN_HASH_SIZE);
+        is_hash_state_inited = false;
         data = hash;
         datalen = SIGN_HASH_SIZE;
     }

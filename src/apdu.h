@@ -14,8 +14,6 @@
 #define OFFSET_LC 4
 #define OFFSET_CDATA 5
 
-#define TEZOS_BUFSIZE 1024
-
 #define INS_VERSION 0x00
 #define INS_MASK 0x0F
 #define INS_EXIT 0x0F // Equivalent to 0xFF, it's only significant in the bits in INS_MASK
