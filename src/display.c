@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "display.h"
 
 #include "base58.h"
@@ -54,7 +56,7 @@ int convert_address(char *buff, uint32_t buff_size, void *raw_bytes, uint32_t si
 
     // checksum -- twice because them's the rules
     uint8_t checksum[32];
-    cx_hash_sha256(&data, sizeof(data) - sizeof(data.checksum), checksum, sizeof(checksum));
+    cx_hash_sha256((const unsigned char*) &data, sizeof(data) - sizeof(data.checksum), checksum, sizeof(checksum));
     cx_hash_sha256(checksum, sizeof(checksum), checksum, sizeof(checksum));
     memcpy(data.checksum, checksum, sizeof(data.checksum));
 
