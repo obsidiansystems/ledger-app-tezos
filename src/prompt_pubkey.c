@@ -1,4 +1,4 @@
-#include "display.h"
+#include "prompt_pubkey.h"
 
 #include "base58.h"
 #include "blake2.h"

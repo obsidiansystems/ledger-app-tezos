@@ -2,7 +2,7 @@
 
 #include "apdu.h"
 #include "baking_auth.h"
-#include "display.h"
+#include "prompt_pubkey.h"
 #include "paths.h"
 
 #include "cx.h"
