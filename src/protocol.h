@@ -39,3 +39,26 @@ level_t get_block_level(const void *data, size_t length); // Precondition: is_bl
 
 bool is_valid_self_delegation(const void *data, size_t length, cx_curve_t curve,
                               size_t path_length, uint32_t *bip32_path);
+
+struct contract {
+    uint8_t outright;
+    uint8_t curve_code;
+    uint8_t pkh[HASH_SIZE];
+} __attribute__((packed));
+
+enum operation_tag {
+    OPERATION_TAG_REVEAL = 7,
+    OPERATION_TAG_DELEGATION = 10,
+};
+
+struct operation_header {
+    uint8_t tag;
+    struct contract contract;
+    uint64_t fee;
+} __attribute__((packed));
+
+struct delegation_contents {
+    uint8_t delegate_present;
+    uint8_t curve_code;
+    uint8_t hash[HASH_SIZE];
+} __attribute__((packed));

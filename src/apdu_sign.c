@@ -112,7 +112,11 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
         case MAGIC_BYTE_UNSAFE_OP2:
         case MAGIC_BYTE_UNSAFE_OP3:
 #ifdef BAKING_APP
-            THROW(0x9685);
+            if (is_valid_self_delegation(message_data, message_data_length, curve,
+                                         bip32_path_length, bip32_path)) {
+            } else {
+                THROW(0x9685);
+            }
 #else
             ASYNC_PROMPT(ui_sign_screen, sign_ok, sign_reject);
 #endif
@@ -125,8 +129,8 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
 #define HASH_SIZE 32
 
 static int perform_signature(bool hash_first) {
-    uint8_t privateKeyData[32];
     cx_ecfp_private_key_t privateKey;
+    cx_ecfp_public_key_t publicKey;
     static uint8_t hash[HASH_SIZE];
     uint8_t *data = message_data;
     uint32_t datalen = message_data_length;
@@ -142,18 +146,7 @@ static int perform_signature(bool hash_first) {
         datalen = HASH_SIZE;
     }
 
-    os_perso_derive_node_bip32(curve,
-                               bip32_path,
-                               bip32_path_length,
-                               privateKeyData,
-                               NULL);
-
-    cx_ecfp_init_private_key(curve,
-                             privateKeyData,
-                             32,
-                             &privateKey);
-
-    os_memset(privateKeyData, 0, sizeof(privateKeyData));
+    generate_key_pair(curve, bip32_path_length, bip32_path, &publicKey, &privateKey);
 
     int tx;
     switch (curve) {
