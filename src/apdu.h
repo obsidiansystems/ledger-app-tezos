@@ -28,7 +28,7 @@
     THROW(ASYNC_EXCEPTION)
 
 // Return number of bytes to transmit (tx)
-typedef unsigned int (*apdu_handler)(uint8_t instruction);
+typedef uint32_t (*apdu_handler)(uint8_t instruction);
 
 void main_loop(apdu_handler handlers[INS_MASK + 1]);
 
@@ -47,6 +47,8 @@ static inline void delay_reject() {
     delay_send(2);
 }
 
-unsigned int handle_apdu_error(uint8_t instruction);
-unsigned int handle_apdu_version(uint8_t instruction);
-unsigned int handle_apdu_exit(uint8_t instruction);
+uint32_t handle_apdu_error(uint8_t instruction);
+uint32_t handle_apdu_version(uint8_t instruction);
+uint32_t handle_apdu_exit(uint8_t instruction);
+
+uint32_t send_word_big_endian(uint32_t word);

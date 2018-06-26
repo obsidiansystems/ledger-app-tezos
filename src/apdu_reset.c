@@ -4,6 +4,7 @@
 #include "cx.h"
 #include "os.h"
 #include "protocol.h"
+
 #include <string.h>
 
 #define RESET_STRING "Reset HWM: "
@@ -99,14 +100,6 @@ void reset_ok() {
 }
 
 unsigned int handle_apdu_hwm(uint8_t instruction) {
-    uint32_t level = N_data.highest_level;
-    char level_bytes[sizeof(level)];
-    memcpy(level_bytes, &level, sizeof(level));
-    uint32_t tx = 0;
-    for (; tx < sizeof(level); tx++) {
-        G_io_apdu_buffer[tx] = level_bytes[sizeof(level) - tx - 1];
-    }
-    G_io_apdu_buffer[tx++] = 0x90;
-    G_io_apdu_buffer[tx++] = 0x00;
-    return tx;
+    level_t level = N_data.highest_level;
+    return send_word_big_endian(level);
 }

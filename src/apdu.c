@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 unsigned int handle_apdu_error(uint8_t instruction) {
     THROW(0x6D00);
@@ -12,16 +13,21 @@ unsigned int handle_apdu_exit(uint8_t instruction) {
     THROW(0x6D00); // avoid warning
 }
 
-unsigned int handle_apdu_version(uint8_t instruction) {
+uint32_t send_word_big_endian(uint32_t word) {
+    char word_bytes[sizeof(word)];
+    memcpy(word_bytes, &word, sizeof(word));
     uint32_t tx = 0;
-    G_io_apdu_buffer[tx++] = 0x00;
-    G_io_apdu_buffer[tx++] = 0x00;
-    G_io_apdu_buffer[tx++] = 0x00;
-    G_io_apdu_buffer[tx++] = 0x00;
-
+    for (; tx < sizeof(word); tx++) {
+        G_io_apdu_buffer[tx] = word_bytes[sizeof(word) - tx - 1];
+    }
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;
     return tx;
+}
+
+unsigned int handle_apdu_version(uint8_t instruction) {
+    const uint32_t VERSION = 0;
+    return send_word_big_endian(VERSION);
 }
 
 #define CLA 0x80
