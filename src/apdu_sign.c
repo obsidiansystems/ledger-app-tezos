@@ -26,6 +26,12 @@ static void sign_unsafe_ok(void) {
     delay_send(tx);
 }
 
+static void bake_auth_ok(void) {
+    authorize_baking(curve, bip32_path, bip32_path_length);
+    int tx = perform_signature(true);
+    delay_send(tx);
+}
+
 static void sign_ok(void) {
     int tx = perform_signature(true);
     delay_send(tx);
@@ -113,18 +119,13 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
         case MAGIC_BYTE_UNSAFE_OP2:
         case MAGIC_BYTE_UNSAFE_OP3:
 #ifdef BAKING_APP
-            if (is_valid_self_delegation(message_data, message_data_length, curve,
-                                         bip32_path_length, bip32_path)) {
-#if 0 // Not yet ready
-                cx_ecfp_private_key_t priv_key;
-                cx_ecfp_public_key_t pub_key;
-                generate_key_pair(curve, bip32_path_length, bip32_path, &pub_key, &priv_key);
-                prompt_address(true, curve, &pub_key, bake_auth_ok, sign_reject);
-                THROW(ASYNC_EXCEPTION);
-#endif
-            } else {
-                THROW(0x9685);
-            }
+            guard_valid_self_delegation(message_data, message_data_length, curve,
+                                        bip32_path_length, bip32_path);
+            cx_ecfp_private_key_t priv_key;
+            cx_ecfp_public_key_t pub_key;
+            generate_key_pair(curve, bip32_path_length, bip32_path, &pub_key, &priv_key);
+            prompt_address(true, curve, &pub_key, bake_auth_ok, sign_reject);
+            THROW(ASYNC_EXCEPTION);
 #else
             ASYNC_PROMPT(ui_sign_screen, sign_ok, sign_reject);
 #endif
@@ -142,11 +143,6 @@ static int perform_signature(bool hash_first) {
     static uint8_t hash[SIGN_HASH_SIZE];
     uint8_t *data = message_data;
     uint32_t datalen = message_data_length;
-
-#ifdef BAKING_APP
-    update_high_water_mark(data, datalen);
-#endif
-
 
     if (hash_first) {
         blake2b(hash, SIGN_HASH_SIZE, data, datalen, NULL, 0);
@@ -193,6 +189,10 @@ static int perform_signature(bool hash_first) {
     }
 
     os_memset(&privateKey, 0, sizeof(privateKey));
+
+#ifdef BAKING_APP
+    update_high_water_mark(message_data, message_data_length);
+#endif
 
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;

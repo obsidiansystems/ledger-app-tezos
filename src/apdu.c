@@ -26,7 +26,7 @@ uint32_t send_word_big_endian(uint32_t word) {
 }
 
 unsigned int handle_apdu_version(uint8_t instruction) {
-    const uint32_t APP_VERSION = 0;
+    const uint32_t APP_VERSION = 1;
     return send_word_big_endian(APP_VERSION);
 }
 

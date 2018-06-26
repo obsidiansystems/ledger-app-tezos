@@ -195,7 +195,7 @@ int convert_address(char *buff, uint32_t buff_size, cx_curve_t curve,
     }
 
     // hash
-    public_key_hash(data.hash, curve, public_key);
+    public_key_hash(data.hash, curve, public_key, NULL);
 
     // checksum -- twice because them's the rules
     uint8_t checksum[32];

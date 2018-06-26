@@ -20,6 +20,7 @@
 #include "os.h"
 #include "blake2.h"
 
+#include <alloca.h>
 #include <stdbool.h>
 #include <string.h>
 
@@ -101,20 +102,25 @@ void generate_key_pair(cx_curve_t curve, uint32_t path_length, uint32_t *bip32_p
 }
 
 void public_key_hash(uint8_t output[HASH_SIZE], cx_curve_t curve,
-                     const cx_ecfp_public_key_t *public_key) {
+                     const cx_ecfp_public_key_t *restrict public_key,
+                     cx_ecfp_public_key_t *restrict pubkey_out) {
+    if (pubkey_out == NULL) pubkey_out = alloca(sizeof(*pubkey_out));
     switch (curve) {
         case CX_CURVE_Ed25519:
-            blake2b(output, HASH_SIZE, public_key->W + 1, public_key->W_len - 1, NULL, 0);
-            return;
+            {
+                pubkey_out->W_len = public_key->W_len - 1;
+                memcpy(pubkey_out->W, public_key->W + 1, pubkey_out->W_len);
+                break;
+            }
         case CX_CURVE_SECP256K1:
             {
-                char bytes[33];
-                memcpy(bytes, public_key->W, 33);
-                bytes[0] = 0x02 + (public_key->W[64] & 0x01);
-                blake2b(output, HASH_SIZE, bytes, sizeof(bytes), NULL, 0);
-                return;
+                memcpy(pubkey_out->W, public_key->W, public_key->W_len);
+                pubkey_out->W[0] = 0x02 + (public_key->W[64] & 0x01);
+                pubkey_out->W_len = 33;
+                break;
             }
         default:
-            blake2b(output, HASH_SIZE, public_key->W, public_key->W_len, NULL, 0);
+            break;
     }
+    blake2b(output, HASH_SIZE, pubkey_out->W, pubkey_out->W_len, NULL, 0);
 }
