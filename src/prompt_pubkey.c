@@ -12,7 +12,7 @@
 
 char address_display_data[64]; // Should be more than big enough
 
-static int convert_address(char *buff, uint32_t buff_size, cx_curve_t curve,
+int convert_address(char *buff, uint32_t buff_size, cx_curve_t curve,
                            const cx_ecfp_public_key_t *public_key);
 static const struct bagl_element_e *prompt_address_prepro(const struct bagl_element_e *element);
 

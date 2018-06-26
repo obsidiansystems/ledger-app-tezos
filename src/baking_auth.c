@@ -67,3 +67,16 @@ void update_high_water_mark(void *data, int datalen) {
         }
     }
 }
+
+void update_auth_text(void) {
+    if (N_data.path_length == 0) {
+        strcpy(baking_auth_text, "Not Baking");
+    } else {
+        cx_ecfp_public_key_t pub_key;
+        cx_ecfp_private_key_t priv_key;
+        generate_key_pair(N_data.curve, N_data.path_length, N_data.bip32_path,
+                          &pub_key, &priv_key);
+        os_memset(&priv_key, 0, sizeof(priv_key));
+        convert_address(baking_auth_text, sizeof(baking_auth_text), N_data.curve, &pub_key);
+    }
+}

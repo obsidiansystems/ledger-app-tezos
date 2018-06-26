@@ -18,6 +18,8 @@ void change_idle_display(uint32_t new);
 
 const bagl_element_t *timer_setup (const bagl_element_t *elem);
 
+extern char baking_auth_text[40];
+
 // Helper for simple situations
 #define UI_PROMPT(elems, ok_c, cxl_c) ui_prompt(elems, \
                                                 sizeof(elems) / sizeof(elems[0]), \

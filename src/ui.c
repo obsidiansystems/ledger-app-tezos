@@ -20,6 +20,7 @@ static void do_nothing(void) {
 }
 
 static char idle_text[16];
+char baking_auth_text[40];
 
 const bagl_element_t ui_idle_screen[] = {
     // type                               userid    x    y   w    h  str rad
@@ -34,9 +35,9 @@ const bagl_element_t ui_idle_screen[] = {
      NULL,
      NULL},
 
-    {{BAGL_LABELINE, 0x00, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Tezos",
+    {{BAGL_LABELINE, 0x00, 0, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     baking_auth_text,
      0,
      0,
      0,
@@ -75,11 +76,14 @@ static void ui_idle(void) {
 void change_idle_display(uint32_t new) {
     uint32_t it = number_to_string(idle_text, new);
     idle_text[it] = '\0';
+    update_auth_text();
 }
 
 void ui_initial_screen(void) {
 #ifdef BAKING_APP
     change_idle_display(N_data.highest_level);
+#else
+    strcpy(baking_auth_text, "Tezos");
 #endif
     ui_idle();
 }

@@ -27,3 +27,4 @@ bool is_path_authorized(cx_curve_t curve, uint32_t *bip32_path, uint8_t path_len
 void update_high_water_mark(void *data, int datalen);
 bool is_level_authorized(level_t level);
 bool is_valid_level(level_t level);
+void update_auth_text(void);
