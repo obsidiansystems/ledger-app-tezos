@@ -8,6 +8,8 @@
 #include "cx.h"
 #include "ui.h"
 
+#include <string.h>
+
 static cx_ecfp_public_key_t public_key;
 static cx_curve_t curve;
 
@@ -66,10 +68,23 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
             THROW(0x6B00);
     }
 
-    path_length = read_bip32_path(G_io_apdu_buffer[OFFSET_LC], bip32_path, dataBuffer);
+#ifdef BAKING_APP
+    if (G_io_apdu_buffer[OFFSET_LC] == 0 && instruction == INS_AUTHORIZE_BAKING) {
+        curve = N_data.curve;
+        path_length = N_data.path_length;
+        memcpy(bip32_path, N_data.bip32_path, sizeof(*bip32_path) * path_length);
+    } else {
+#endif
+        path_length = read_bip32_path(G_io_apdu_buffer[OFFSET_LC], bip32_path, dataBuffer);
+#ifdef BAKING_APP
+        if (path_length == 0) {
+            THROW(0x6D00);
+        }
+    }
+#endif
     generate_key_pair(curve, path_length, bip32_path, &public_key, &privateKey);
-
     os_memset(&privateKey, 0, sizeof(privateKey));
+
 
     if (instruction == INS_GET_PUBLIC_KEY) {
         return provide_pubkey();
