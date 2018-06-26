@@ -32,16 +32,16 @@ typedef uint32_t (*apdu_handler)(uint8_t instruction);
 
 void main_loop(apdu_handler handlers[INS_MASK + 1]);
 
-static inline void return_ok() {
+static inline void return_ok(void) {
     THROW(0x9000);
 }
 
 // Send back response; do not restart the event loop
-static inline void delay_send(int tx) {
+static inline void delay_send(uint32_t tx) {
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
 }
 
-static inline void delay_reject() {
+static inline void delay_reject(void) {
     G_io_apdu_buffer[0] = 0x69;
     G_io_apdu_buffer[1] = 0x85;
     delay_send(2);
