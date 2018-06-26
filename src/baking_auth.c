@@ -5,6 +5,7 @@
 #include "paths.h"
 #include "protocol.h"
 
+#include <endian.h>
 #include <string.h>
 
 WIDE nvram_data N_data_real;
@@ -162,12 +163,10 @@ void reset_ok() {
 
 unsigned int handle_apdu_hwm(uint8_t instruction) {
     uint32_t level = N_data.highest_level;
-    char level_bytes[sizeof(level)];
-    memcpy(level_bytes, &level, sizeof(level));
+    be32toh(level);
     int tx = 0;
-    for (; tx < sizeof(level); tx++) {
-        G_io_apdu_buffer[tx] = level_bytes[sizeof(level) - tx - 1];
-    }
+    for (; tx < 4; tx++)
+        G_io_apdu_buffer[tx] = ((uint8_t*)&level)[tx];
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;
     delay_send(tx);
