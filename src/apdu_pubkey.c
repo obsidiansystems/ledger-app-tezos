@@ -57,9 +57,11 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
         case 1:
             curve = CX_CURVE_SECP256K1;
             break;
+#if 0
         case 2:
             curve = CX_CURVE_SECP256R1;
             break;
+#endif
         default:
             THROW(0x6B00);
     }

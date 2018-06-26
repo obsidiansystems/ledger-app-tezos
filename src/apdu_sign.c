@@ -69,9 +69,11 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
             case 1:
                 curve = CX_CURVE_SECP256K1;
                 break;
+#if 0
             case 2:
                 curve = CX_CURVE_SECP256R1;
                 break;
+#endif
             default:
                 THROW(0x6B00);
         }
@@ -168,7 +170,9 @@ static int perform_signature(bool hash_first) {
     }
         break;
     case CX_CURVE_SECP256K1:
+#if 0
     case CX_CURVE_SECP256R1:
+#endif
     {
         unsigned int info;
         tx = cx_ecdsa_sign(&privateKey,
