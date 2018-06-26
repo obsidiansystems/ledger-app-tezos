@@ -18,6 +18,7 @@
 #include "paths.h"
 
 #include "os.h"
+#include "blake2.h"
 
 #include <stdbool.h>
 #include <string.h>
@@ -106,7 +107,6 @@ void public_key_hash(uint8_t output[HASH_SIZE], cx_curve_t curve,
             blake2b(output, HASH_SIZE, public_key->W + 1, public_key->W_len - 1, NULL, 0);
             return;
         case CX_CURVE_SECP256K1:
-        case CX_CURVE_SECP256R1: // XXX is this right?
             {
                 char bytes[33];
                 memcpy(bytes, public_key->W, 33);
@@ -114,5 +114,7 @@ void public_key_hash(uint8_t output[HASH_SIZE], cx_curve_t curve,
                 blake2b(output, HASH_SIZE, bytes, sizeof(bytes), NULL, 0);
                 return;
             }
+        default:
+            blake2b(output, HASH_SIZE, public_key->W, public_key->W_len, NULL, 0);
     }
 }

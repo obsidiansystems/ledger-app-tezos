@@ -108,5 +108,5 @@ unsigned int handle_apdu_hwm(uint8_t instruction) {
     }
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;
-    delay_send(tx);
+    return tx;
 }

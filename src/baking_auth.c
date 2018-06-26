@@ -5,6 +5,8 @@
 #include "paths.h"
 #include "protocol.h"
 
+#include <string.h>
+
 WIDE nvram_data N_data_real;
 
 bool is_valid_level(level_t lvl) {

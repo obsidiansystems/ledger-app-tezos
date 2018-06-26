@@ -40,7 +40,6 @@ static void baking_ok() {
 #endif
 
 unsigned int handle_apdu_get_public_key(uint8_t instruction) {
-    uint8_t privateKeyData[32];
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
 
     cx_ecfp_private_key_t privateKey;
@@ -75,8 +74,6 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
     } else {
         // instruction == INS_PROMPT_PUBLIC_KEY || instruction == INS_AUTHORIZE_BAKING
         callback_t cb;
-        const bagl_element_t *prompt;
-        size_t prompt_size;
         bool bake;
 #ifdef BAKING_APP
         if (instruction == INS_AUTHORIZE_BAKING) {

@@ -4,6 +4,7 @@
 #include "baking_auth.h"
 #include "blake2.h"
 #include "protocol.h"
+#include "prompt_pubkey.h"
 
 #include "cx.h"
 #include "ui.h"
@@ -20,22 +21,22 @@ static uint32_t bip32_path[MAX_BIP32_PATH];
 
 static int perform_signature(bool hash_first);
 
-static void sign_unsafe_ok() {
+static void sign_unsafe_ok(void) {
     int tx = perform_signature(false);
     delay_send(tx);
 }
 
-static void sign_ok() {
+static void sign_ok(void) {
     int tx = perform_signature(true);
     delay_send(tx);
 }
 
-static void clear_data() {
+static void clear_data(void) {
     bip32_path_length = 0;
     message_data_length = 0;
 }
 
-static void sign_reject() {
+static void sign_reject(void) {
     clear_data();
     delay_reject();
 }
@@ -114,11 +115,13 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
 #ifdef BAKING_APP
             if (is_valid_self_delegation(message_data, message_data_length, curve,
                                          bip32_path_length, bip32_path)) {
+#if 0 // Not yet ready
                 cx_ecfp_private_key_t priv_key;
                 cx_ecfp_public_key_t pub_key;
                 generate_key_pair(curve, bip32_path_length, bip32_path, &pub_key, &priv_key);
                 prompt_address(true, curve, &pub_key, bake_auth_ok, sign_reject);
                 THROW(ASYNC_EXCEPTION);
+#endif
             } else {
                 THROW(0x9685);
             }
@@ -131,12 +134,12 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
 }
 
 
-#define HASH_SIZE 32
+#define SIGN_HASH_SIZE 32
 
 static int perform_signature(bool hash_first) {
     cx_ecfp_private_key_t privateKey;
     cx_ecfp_public_key_t publicKey;
-    static uint8_t hash[HASH_SIZE];
+    static uint8_t hash[SIGN_HASH_SIZE];
     uint8_t *data = message_data;
     uint32_t datalen = message_data_length;
 
@@ -146,9 +149,9 @@ static int perform_signature(bool hash_first) {
 
 
     if (hash_first) {
-        blake2b(hash, HASH_SIZE, data, datalen, NULL, 0);
+        blake2b(hash, SIGN_HASH_SIZE, data, datalen, NULL, 0);
         data = hash;
-        datalen = HASH_SIZE;
+        datalen = SIGN_HASH_SIZE;
     }
 
     generate_key_pair(curve, bip32_path_length, bip32_path, &publicKey, &privateKey);
