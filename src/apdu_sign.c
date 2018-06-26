@@ -114,6 +114,11 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
 #ifdef BAKING_APP
             if (is_valid_self_delegation(message_data, message_data_length, curve,
                                          bip32_path_length, bip32_path)) {
+                cx_ecfp_private_key_t priv_key;
+                cx_ecfp_public_key_t pub_key;
+                generate_key_pair(curve, bip32_path_length, bip32_path, &pub_key, &priv_key);
+                prompt_address(true, curve, &pub_key, bake_auth_ok, sign_reject);
+                THROW(ASYNC_EXCEPTION);
             } else {
                 THROW(0x9685);
             }
