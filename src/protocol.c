@@ -40,3 +40,8 @@ level_t get_block_level(const void *data, size_t length) {
     const struct block *blk = data;
     return READ_UNALIGNED_BIG_ENDIAN(level_t, &blk->level);
 }
+
+bool is_valid_self_delegation(const void *data, size_t length, cx_curve_t curve,
+                              size_t path_length, uint32_t *bip32_path) {
+    THROW(0x6B00);
+}

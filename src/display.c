@@ -2,55 +2,41 @@
 
 #include "base58.h"
 #include "blake2.h"
+#include "paths.h"
 
 #include "os.h"
 #include "cx.h"
 
-int convert_address(char *buff, uint32_t buff_size, void *raw_bytes, uint32_t size) {
-    const char type = *(char*)raw_bytes;
+#include <string.h>
 
+int convert_address(char *buff, uint32_t buff_size, cx_curve_t curve,
+                    const cx_ecfp_public_key_t *public_key) {
     // Data to encode
-    const int HASH_SIZE = 20;
     struct __attribute__((packed)) {
         char prefix[3];
-        char hash[HASH_SIZE];
+        uint8_t hash[HASH_SIZE];
         char checksum[4];
     } data;
 
     // prefix
     data.prefix[0] = 6;
     data.prefix[1] = 161;
-    switch (type) {
-        case 0x02: // Ed25519
+    switch (curve) {
+        case CX_CURVE_Ed25519: // Ed25519
             data.prefix[2] = 159;
             break;
-        case 0x04: // Secp256k1
+        case CX_CURVE_SECP256K1: // Secp256k1
             data.prefix[2] = 161;
             break;
+        case CX_CURVE_SECP256R1: // Secp256k1
+            data.prefix[2] = 163;
+            break;
+        default:
+            THROW(0x6F00); // Should not reach
     }
 
     // hash
-    switch (type) {
-        case 0x02: // Ed25519
-            {
-                // Already compressed
-                blake2b(data.hash, sizeof(data.hash), raw_bytes + 1, size - 1, NULL, 0);
-                break;
-            }
-        case 0x04: // Secp256k1
-            {
-                // Compress before hashing
-                char *bytes = raw_bytes;
-                char parity = bytes[64] & 0x01;
-                bytes[0] = 0x02 + parity;
-                size = 33;
-                blake2b(data.hash, sizeof(data.hash), bytes, size, NULL, 0);
-
-                // Restore original data
-                bytes[0] = 0x04;
-                break;
-            }
-    }
+    public_key_hash(data.hash, curve, public_key);
 
     // checksum -- twice because them's the rules
     uint8_t checksum[32];

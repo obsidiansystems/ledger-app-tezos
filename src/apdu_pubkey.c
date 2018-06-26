@@ -3,6 +3,7 @@
 #include "apdu.h"
 #include "baking_auth.h"
 #include "display.h"
+#include "paths.h"
 
 #include "cx.h"
 #include "ui.h"
@@ -222,17 +223,9 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
     }
 
     path_length = read_bip32_path(G_io_apdu_buffer[OFFSET_LC], bip32_path, dataBuffer);
-    os_perso_derive_node_bip32(curve, bip32_path, path_length, privateKeyData, NULL);
-    cx_ecfp_init_private_key(curve, privateKeyData, 32, &privateKey);
-    cx_ecfp_generate_pair(curve, &public_key, &privateKey, 1);
+    generate_key_pair(curve, path_length, bip32_path, &public_key, &privateKey);
 
     os_memset(&privateKey, 0, sizeof(privateKey));
-    os_memset(privateKeyData, 0, sizeof(privateKeyData));
-
-    if (curve == CX_CURVE_Ed25519) {
-        cx_edward_compress_point(curve, public_key.W, public_key.W_len);
-        public_key.W_len = 33;
-    }
 
     if (instruction == INS_GET_PUBLIC_KEY) {
         return provide_pubkey();

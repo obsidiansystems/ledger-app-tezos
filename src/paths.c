@@ -17,12 +17,7 @@
 
 #include "paths.h"
 
-#ifdef TESTING
-#include <stdlib.h>
-#include <stdio.h>
-#else
 #include "os.h"
-#endif
 
 #include <stdbool.h>
 #include <string.h>
@@ -78,13 +73,8 @@ uint32_t read_bip32_path(uint32_t bytes, uint32_t *bip32_path, const uint8_t *bu
     buf++;
 
     if (path_length == 0 || path_length > MAX_BIP32_PATH) {
-#ifdef TESTING
-        printf("Invalid path\n");
-        abort();
-#else
         screen_printf("Invalid path\n");
         THROW(0x6a80);
-#endif
     }
 
     for (uint32_t i = 0; i < path_length; i++) {
@@ -95,18 +85,34 @@ uint32_t read_bip32_path(uint32_t bytes, uint32_t *bip32_path, const uint8_t *bu
     return path_length;
 }
 
-#ifdef TESTING
-int main() {
-    uint32_t bip32_path[MAX_BIP32_PATH];
-    uint32_t size;
-    bip32_path[0] = 33;
-    bip32_path[1] = 45;
-    bip32_path[2] = 0x80000202;
-    size = 3;
-    char buff[80];
-    int sz = path_to_string(buff, size, bip32_path);
-    // Intended output:
-    // [11]: 33/45/514'
-    printf("[%d]: %s\n", sz, buff);
+void generate_key_pair(cx_curve_t curve, uint32_t path_length, uint32_t *bip32_path,
+                       cx_ecfp_public_key_t *public_key, cx_ecfp_private_key_t *private_key) {
+    uint8_t privateKeyData[32];
+    os_perso_derive_node_bip32(curve, bip32_path, path_length, privateKeyData, NULL);
+    cx_ecfp_init_private_key(curve, privateKeyData, 32, private_key);
+    cx_ecfp_generate_pair(curve, public_key, private_key, 1);
+
+    if (curve == CX_CURVE_Ed25519) {
+        cx_edward_compress_point(curve, public_key->W, public_key->W_len);
+        public_key->W_len = 33;
+    }
+    os_memset(privateKeyData, 0, sizeof(privateKeyData));
 }
-#endif
+
+void public_key_hash(uint8_t output[HASH_SIZE], cx_curve_t curve,
+                     const cx_ecfp_public_key_t *public_key) {
+    switch (curve) {
+        case CX_CURVE_Ed25519:
+            blake2b(output, HASH_SIZE, public_key->W + 1, public_key->W_len - 1, NULL, 0);
+            return;
+        case CX_CURVE_SECP256K1:
+        case CX_CURVE_SECP256R1: // XXX is this right?
+            {
+                char bytes[33];
+                memcpy(bytes, public_key->W, 33);
+                bytes[0] = 0x02 + (public_key->W[64] & 0x01);
+                blake2b(output, HASH_SIZE, bytes, sizeof(bytes), NULL, 0);
+                return;
+            }
+    }
+}

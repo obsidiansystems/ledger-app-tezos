@@ -6,6 +6,8 @@
 
 #include "baking_auth.h"
 
+#include "cx.h"
+
 #define MAGIC_BYTE_BLOCK 0x01
 #define MAGIC_BYTE_BAKING_OP 0x02
 #define MAGIC_BYTE_UNSAFE_OP 0x03
@@ -34,3 +36,6 @@ level_t get_block_level(const void *data, size_t length); // Precondition: is_bl
 \
         res; \
     })
+
+bool is_valid_self_delegation(const void *data, size_t length, cx_curve_t curve,
+                              size_t path_length, uint32_t *bip32_path);

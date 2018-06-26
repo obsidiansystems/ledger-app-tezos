@@ -22,7 +22,7 @@ the specific language governing permissions and
 #include "apdu.h"
 #include "apdu_pubkey.h"
 #include "apdu_sign.h"
-#include "baking_auth.h"
+#include "apdu_reset.h"
 
 void app_main(void) {
     static apdu_handler handlers[INS_MASK + 1];
