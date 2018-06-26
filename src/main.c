@@ -31,6 +31,7 @@ void app_main(void) {
     for (int i = 0; i < INS_MASK + 1; i++) {
         handlers[i] = handle_apdu_error;
     }
+    handlers[INS_VERSION] = handle_apdu_version;
     handlers[INS_GET_PUBLIC_KEY] = handle_apdu_get_public_key;
     handlers[INS_PROMPT_PUBLIC_KEY] = handle_apdu_get_public_key;
 #ifdef BAKING_APP

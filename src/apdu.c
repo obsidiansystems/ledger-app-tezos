@@ -12,6 +12,18 @@ unsigned int handle_apdu_exit(uint8_t instruction) {
     THROW(0x6D00); // avoid warning
 }
 
+unsigned int handle_apdu_version(uint8_t instruction) {
+    uint32_t tx = 0;
+    G_io_apdu_buffer[tx++] = 0x00;
+    G_io_apdu_buffer[tx++] = 0x00;
+    G_io_apdu_buffer[tx++] = 0x00;
+    G_io_apdu_buffer[tx++] = 0x00;
+
+    G_io_apdu_buffer[tx++] = 0x90;
+    G_io_apdu_buffer[tx++] = 0x00;
+    return tx;
+}
+
 #define CLA 0x80
 
 void main_loop(apdu_handler handlers[INS_MASK + 1]) {

@@ -16,6 +16,7 @@
 
 #define TEZOS_BUFSIZE 1024
 
+#define INS_VERSION 0x00
 #define INS_MASK 0x0F
 #define INS_EXIT 0x0F // Equivalent to 0xFF, it's only significant in the bits in INS_MASK
 
@@ -47,4 +48,5 @@ static inline void delay_reject() {
 }
 
 unsigned int handle_apdu_error(uint8_t instruction);
+unsigned int handle_apdu_version(uint8_t instruction);
 unsigned int handle_apdu_exit(uint8_t instruction);
