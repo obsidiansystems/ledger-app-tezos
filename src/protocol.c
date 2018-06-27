@@ -87,6 +87,9 @@ void guard_valid_self_delegation(const void *data, size_t length, cx_curve_t cur
         case CX_CURVE_SECP256K1:
             curve_code = 1;
             break;
+        case CX_CURVE_SECP256R1:
+            curve_code = 2;
+            break;
         default:
             PARSE_ERROR(9); // Should not be reached
     }
