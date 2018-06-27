@@ -113,14 +113,13 @@ void public_key_hash(uint8_t output[HASH_SIZE], cx_curve_t curve,
                 break;
             }
         case CX_CURVE_SECP256K1:
+        case CX_CURVE_SECP256R1:
             {
                 memcpy(pubkey_out->W, public_key->W, public_key->W_len);
                 pubkey_out->W[0] = 0x02 + (public_key->W[64] & 0x01);
                 pubkey_out->W_len = 33;
                 break;
             }
-        default:
-            break;
     }
     blake2b(output, HASH_SIZE, pubkey_out->W, pubkey_out->W_len, NULL, 0);
 }
