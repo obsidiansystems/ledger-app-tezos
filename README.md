@@ -89,6 +89,7 @@ which process will be described below.
 ### Advanced Linux: Building Your Own `*.hex` Files without Nix
 
 This is done from this repo. It may be easier to use released `*.hex` files.
+You do not need to do this if you download a released `*.hex` file.
 
 You will need to have the BOLOS SDK to use the Makefile, which can be cloned from
 [a GitHub repo](https://github.com/LedgerHQ/nanos-secure-sdk). You will also need to
@@ -347,57 +348,17 @@ and block headers with that key will be rejected. This authorization
 data is persisted across runs of the application.  Only one key can be
 authorized for baking per Ledger at a time.
 
-You need either the `virtualenv` installed above (non-Nix) or the
-`tezos-baking-platform` (Nix).
-
-Assuming you want `44'/1729'/0'/0'` If you are using `virtualenv`, run:
-
-```
-echo 8001000011048000002c800006c18000000080000000 | python -m ledgerblue.runScript --apdu
-```
-
-If you are using `tezos-baking-platform`, there is a script `apdu.sh` in the `ledger`
-directory. Run:
-
-```
-echo 8001000011048000002c800006c18000000080000000 | ./apdu.sh
-```
-
-That string of hex digits can be customized for other key paths. The format is this:
-
-```
-800100 -- invariant prefix indicating our intention to authorize this key.
-00     -- indicates signing type, use 00 for ed25519 or 01 for secp256k1
-11     -- indicates length of rest of the string: hex(number of path components * 4 + 1)
-04     -- indicates number of path components
-8000002c -- This is 44 (the first path component) in hex, with the upper bit set to 1 to indicate hardened
-800006c1 -- This is 1729 in hex with the upper bit again set to 1
-80000000 -- Represents 0' in the same way
-80000000 -- 4th path component
-```
-
-A tool will soon be made available to do this automatically.
-
-To confirm that this worked, you can send a fake block to the ledger to sign.
-
-```
-printf '%s\n%s\n' "8004000011048000002c800006c18000000080000000" "8004810006010000000101" | ./apdu.sh
-```
-
-Or:
-
-```
-printf '%s\n%s\n' "8004000011048000002c800006c18000000080000000" "8004810006010000000101" | python -m ledgerblue.runScript --apdu
-```
-
-The first line is similar to the above format, with the prefix as `800400` instead of `800100`.
-The second line is simply a fake block header with a level of 1, which the Ledger app will think
-is a block header and display a new high water mark of `1`, thereby confirming that the Ledger works.
+In order to authorize a public key for baking, you can either use the
+APDU for authorizing a public key, which is not yet exposed in the
+`tezos-client` interface. Alternatively, you can have the baking app
+sign a self-delegation. Simply run the `tezos-client` command to
+register for delegation and the ledger should prompt accordingly.
 
 ### Sign
 
-The sign operation is for signing block headers and endorsements. Block
-headers must have monotonically strictly increasing levels; that is, each
+The sign operation is for signing block headers and endorsements.
+
+Block headers must have monotonically strictly increasing levels; that is, each
 block must have a higher level than all previous blocks signed with the
 Ledger. This is intended to prevent double baking at the Ledger level, as
 a security measure against potential vulnerabilities where the computer
@@ -412,12 +373,22 @@ configured to bake with a Ledger key. The Ledger uses the first byte
 of the information to be signed -- the magic number -- to tell whether
 it is a block header (which is verified with the High Water Mark),
 an endorsement (which is not), or some other operation (which it will
-reject).
+reject, unless it is a self-delegation).
 
-As long as the key is configured and the high water mark constraint is
-followed, there is no user prompting required for signing. The baking app
-will only ever sign without prompting or reject an attempt at signing;
-this operation is designed to be used unsupervised.
+With the exception of self-delegations, as long as the key is configured
+and the high water mark constraint is followed, there is no user prompting
+required for signing. The baking app will only ever sign without prompting
+or reject an attempt at signing; this operation is designed to be used
+unsupervised.
+
+As mentioned, the only exception to this is self-delegation. This will prompt
+and display the public key hash of the account. This will authorize the key
+for baking on the ledger. This is independent of what the signed self-delegation
+will then do on the blockchain. If you are baking on a new ledger, or have
+reinstalled the app, you might have to sign a self-delegation to authorize
+the key on the ledger, even if you are already registered for baking on the
+block-chain. This will also have to be done if you have previously signed
+this with the wallet app.
 
 ### Reset
 
@@ -446,11 +417,6 @@ all positive block levels to follow.
 
 There is a script for Nix users in `tezos-baking-platform` called `reset.sh` which
 does the same thing.
-
-### Practical Baking
-
-In practice, when you bake, you will first have to delegate the ledger account to itself.
-To do this, use the Wallet App, not the Baking App, and then switch back to the Baking App.
 
 ## Transactions: The Wallet Application
 
