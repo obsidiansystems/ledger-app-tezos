@@ -1,4 +1,5 @@
 #include "apdu.h"
+#include "version.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -26,8 +27,12 @@ uint32_t send_word_big_endian(uint32_t word) {
 }
 
 unsigned int handle_apdu_version(uint8_t instruction) {
-    const uint32_t APP_VERSION = 1;
-    return send_word_big_endian(APP_VERSION);
+    int tx = 0;
+    memcpy(G_io_apdu_buffer, &version, sizeof(version_t));
+    tx += sizeof(version_t);
+    G_io_apdu_buffer[tx++] = 0x90;
+    G_io_apdu_buffer[tx++] = 0x00;
+    return tx;
 }
 
 #define CLA 0x80

@@ -187,11 +187,9 @@ int convert_address(char *buff, uint32_t buff_size, cx_curve_t curve,
         case CX_CURVE_SECP256K1: // Secp256k1
             data.prefix[2] = 161;
             break;
-#if 0
-        case CX_CURVE_SECP256R1: // Secp256k1
-            data.prefix[2] = 163;
+        case CX_CURVE_SECP256R1: // Secp256r1
+            data.prefix[2] = 164;
             break;
-#endif
         default:
             THROW(0x6F00); // Should not reach
     }
