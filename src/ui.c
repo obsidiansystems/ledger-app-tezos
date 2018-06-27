@@ -35,7 +35,7 @@ const bagl_element_t ui_idle_screen[] = {
      NULL,
      NULL},
 
-    {{BAGL_LABELINE, 0x00, 0, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+    {{BAGL_LABELINE, 0x02, 0, 12, 128, 32, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
      baking_auth_text,
      0,
