@@ -54,7 +54,6 @@ enum operation_tag {
 struct operation_header {
     uint8_t tag;
     struct contract contract;
-    uint64_t fee;
 } __attribute__((packed));
 
 struct delegation_contents {

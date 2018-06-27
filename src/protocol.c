@@ -41,7 +41,8 @@ level_t get_block_level(const void *data, size_t length) {
     return READ_UNALIGNED_BIG_ENDIAN(level_t, &blk->level);
 }
 
-#define PARSE_ERROR(N) THROW(0x9685)
+// Error code can be made to depend on N for debugging
+#define PARSE_ERROR(N) THROW(0x9600 + N)
 
 static const void *next_bytes(const void *data, size_t length, size_t *ix, size_t data_len) {
     const uint8_t *bytes = data;
@@ -51,11 +52,15 @@ static const void *next_bytes(const void *data, size_t length, size_t *ix, size_
     return res;
 }
 
-static void skip_z(const uint8_t *bytes, size_t length, size_t *pos) {
+static uint64_t parse_z(const uint8_t *bytes, size_t length, size_t *pos) {
+    uint64_t acc = 0;
+    uint32_t shift = 0;
     while (true) {
         uint8_t next_byte = *(uint8_t*)next_bytes(bytes, length, pos, 1);
+        acc |= (next_byte & 0x7F) << shift;
+        shift += 7;
         if (!(next_byte & 0x80)) { // last byte has no high bit set
-            return;
+            return acc;
         }
     }
 }
@@ -90,7 +95,7 @@ void guard_valid_self_delegation(const void *data, size_t length, cx_curve_t cur
 
 #define NEXT_TYPE(type) (*(const type*)next_bytes(data, length, &ix, sizeof(type)))
 #define NEXT_BYTE() NEXT_TYPE(uint8_t)
-#define SKIP_Z() skip_z(data, length, &ix)
+#define PARSE_Z() parse_z(data, length, &ix)
 
     // Magic number
     if (NEXT_BYTE() != MAGIC_BYTE_UNSAFE_OP) PARSE_ERROR(15);
@@ -106,11 +111,10 @@ void guard_valid_self_delegation(const void *data, size_t length, cx_curve_t cur
         if (hdr->contract.outright != 0) PARSE_ERROR(12);
         if (memcmp(hdr->contract.pkh, hash, HASH_SIZE) != 0) PARSE_ERROR(14);
 
-        uint64_t fee = READ_UNALIGNED_BIG_ENDIAN(uint64_t, &hdr->fee);
-
-        SKIP_Z();
-        if (NEXT_BYTE() != 0) PARSE_ERROR(1); // gas limit
-        if (NEXT_BYTE() != 0) PARSE_ERROR(2); // storage limit
+        uint64_t fee = PARSE_Z(); // fee
+        PARSE_Z(); // counter
+        if (PARSE_Z() != 0) PARSE_ERROR(1); // gas limit
+        if (PARSE_Z() != 0) PARSE_ERROR(2); // storage limit
 
         switch (hdr->tag) {
             case OPERATION_TAG_REVEAL:
