@@ -7,6 +7,7 @@
 
 struct __attribute__((__packed__)) block {
     char magic_byte;
+    uint32_t chain_id;
     level_t level;
     uint8_t proto;
     // ... beyond this we don't care
