@@ -608,8 +608,8 @@ tezos-client transfer QTY from SRC to DST
 ```
 
   * `QTY` is the amount of tez. It's best to not include commas and to include 6
-    decimal points (ie. 1000000.000000). If you'd prefer to include commas, put
-    the `QTY` in quotes - "1,000,000.000,000".
+    decimal points (ie. 1000000.000000). If you'd prefer to include commas, you can:
+    `1,000,000.000,000`.
   * `SRC` is the source, or where the money is coming from. This should be your
     alias or public key has.
   * `DST` is the destination, or where the money is going. You should use the
@@ -662,7 +662,18 @@ $ tezos-baker-alpha run with local node ~/.tezos-node ledger_<...>_ed_0_0
 ```
 
 This won't actually be able bake successfully yet until you run the rest of
-these setup steps.
+these setup steps. This will run indefinitely, so you might want to do it in
+a dedicated terminal or in a `tmux` or `screen` session.
+
+You will also want to start the endorser and accuser daemons:
+
+```
+$ tezos-endorser-alpha run ledger_<...>_ed_0_0
+$ tezos-accuser-alpha run
+```
+
+Again, each of these will run indefinitely, and each should be in its own terminal
+`tmux`, or `screen` window.
 
 ### Authorize public key
 
