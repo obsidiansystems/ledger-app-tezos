@@ -386,24 +386,14 @@ display `Tezos`.
 ## Registering the Ledger with the node
 
 For the remainder of this document, we assume you have a Tezos node running and
-tezos-client installed. Currently there are two ways to do this:
+tezos-client installed. Also, Docker has some issues working with the ledger,
+so unless you're willing to troubleshoot them, we don't recommend it.
+
+Currently there are two other ways to do this:
 
   1. If you have the Nix package manager, use the
      [Tezos baking platform](https://gitlab.com/obsidian.systems/tezos-baking-platform).
-
-  2. To use Docker, follow these
-     [alphanet](http://doc.tzalpha.net/introduction/alphanet.html)
-     instructions, modified for zeronet:
-
-     ```
-     wget https://gitlab.com/tezos/tezos/raw/alphanet/scripts/alphanet.sh
-     mv alphanet.sh zeronet.sh
-     chmod +x zeronet.sh
-     ./zeronet.sh start
-     ```
-
-     After that, you can run `./zeronet.sh` shell, which will allow you to run
-     `tezos-client` commands.
+  2. Build tezos from the tezos repo with [these instructions](http://doc.tzalpha.net/introduction/howto.html#get-the-sources).
 
 ### What is tezos-client
 
