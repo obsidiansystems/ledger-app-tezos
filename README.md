@@ -395,6 +395,9 @@ Currently there are two other ways to do this:
      [Tezos baking platform](https://gitlab.com/obsidian.systems/tezos-baking-platform).
   2. Build tezos from the tezos repo with [these instructions](http://doc.tzalpha.net/introduction/howto.html#get-the-sources).
 
+Depending on how you build it, you might need to prefix `./` to your commands, and the names
+of some of the binaries might be different.
+
 ### What is tezos-client
 
 We can call the network at large "Tezos." Tezos consists of a bunch of nodes,
@@ -651,6 +654,8 @@ instructions.
 $ tezos-baker-alpha run with local node ~/.tezos-node ledger_<...>_ed_0_0
 ```
 
+Alternatively, it might be called `tezos-alpha-baker`.
+
 This won't actually be able bake successfully yet until you run the rest of
 these setup steps. This will run indefinitely, so you might want to do it in
 a dedicated terminal or in a `tmux` or `screen` session.
@@ -662,6 +667,7 @@ $ tezos-endorser-alpha run ledger_<...>_ed_0_0
 $ tezos-accuser-alpha run
 ```
 
+Alternatively, they might might be called `tezos-alpha-endorser` and `tezos-alpha-accuser`.
 Again, each of these will run indefinitely, and each should be in its own terminal
 `tmux`, or `screen` window.
 
