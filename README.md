@@ -572,19 +572,6 @@ Now transfer the balance to the account whose key resides on your Ledger:
 $ tezos-client transfer 66000 from chris-martin2 to ledger_<...>_ed_0_0
 ```
 
-### Delegate
-
-In order to bake from the ledger account you need to register the key as a
-delegate. Open the Tezos Wallet application on the Ledger, and then run this:
-
-```bash
-$ tezos-client register key ledger_<...>_ed_0_0 as delegate
-```
-
-A prompt will show up on the Ledger asking you to sign. After you press the
-button on the Ledger to approve the signing, you must wait for the Tezos network
-to accept the delegation operation. Then your account is usable for baking.
-
 ### Further transaction details
 
 In general, to send tez, you'll need to:
@@ -685,8 +672,18 @@ following:
 
   * Use the APDU for authorizing a public key, which is not yet exposed in the
     `tezos-client` interface.
-  * Have the baking app sign a self-delegation. Run the `tezos-client` command
-    to register for delegation, and the ledger should prompt accordingly.
+  * Have the baking app sign a self-delegation. This is explained in the next section.
+
+### Delegate
+
+In order to bake from the ledger account you need to register the key as a
+delegate. Open the Tezos Baking application on the Ledger, and then run this:
+
+```bash
+$ tezos-client register key ledger_<...>_ed_0_0 as delegate
+```
+
+This will both authorize it as a key for baking and sign the operation.
 
 ### Sign
 
