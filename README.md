@@ -66,11 +66,12 @@ and closing your password manager when not in use.
 
 ### Ledger firmware update
 
-To use these apps, you must be sure to have
-[up-to-date firmware](https://support.ledgerwallet.com/hc/en-us/articles/360002731113)
-on the Ledger. This code was tested with version 1.4.2. Please use the Ledger's
-tools, including their [Chrome app](https://www.ledgerwallet.com/apps/manager),
-to do this.
+To use these apps, you must be sure to have [up-to-date
+firmware](https://support.ledgerwallet.com/hc/en-us/articles/360002731113)
+on the Ledger. This code was tested with version
+1.4.2. Please use the Ledger's tools, including their [Chrome
+app](https://www.ledgerwallet.com/apps/manager), to do this. Note that
+you can't talk to the Ledger OS itself while a Ledger app is running.
 
 ### udev rules (Linux only)
 
