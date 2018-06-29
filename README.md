@@ -1,4 +1,4 @@
-# Ledger-app-tezos
+# Tezos Ledger Applications
 
 ## Overview
 
@@ -27,6 +27,11 @@ This repository contains two Ledger applications:
 
 It is possible to do all of these things without a hardware wallet, but using a
 hardware wallet provides you better security against key theft.
+
+We recommend you read this entire document to understand the commands available,
+and which commands are most appropriate to your situation. This will require
+judgment on how best to meet your needs, and this document will also provide
+context to help you understand that.
 
 ## Set up your Ledger device
 
@@ -214,7 +219,7 @@ $ env BAKING_APP=Y make
 $ mv bin/app.hex baking.hex
 ```
 
-To build just the Tezos Baking app:
+To build just the Tezos Baking App:
 
 ```
 $ env BAKING_APP=Y make
@@ -387,7 +392,7 @@ display `Tezos`.
 ## Registering the Ledger with the node
 
 For the remainder of this document, we assume you have a Tezos node running and
-tezos-client installed. Also, Docker has some issues working with the ledger,
+`tezos-client` installed. Also, Docker has some issues working with the ledger,
 so unless you're willing to troubleshoot them, we don't recommend it.
 
 Currently there are two other ways to do this:
@@ -418,6 +423,11 @@ In summary:
 * We access that node through tezos-client
 * We store our client's keys on the ledger
 
+Note that `tezos-client` will not only not support certain commands unless the node is installed,
+but the error messages for those commands will not even indicate that those commands are possible.
+If a command documented here gives an `Unrecognized command` error, make sure you have a node
+running.
+
 ### Side note about key generation
 
 Every Ledger generates public and private keys for `ed25519`, `secp256k1`, or
@@ -436,7 +446,7 @@ All Tezos BIP32 paths begin with `44'/1729'` (the `'` indicates it is
 "hardened").  Which Ledger is intended to be used, as well as choice of
 encryption system, is indicated by a root key hash, the Tezos-specific base58
 encoding of the hash of the public key at `44'/1729'` on that Ledger. Because
-all Tezos paths start with this, in `tezos-client` commands it is implicit.
+all Tezos paths start with this, in `tezos-client` commands it is implied.
 
 ### Importing the key from the Ledger
 
@@ -515,7 +525,7 @@ ledger_<...>_ed_0_0: tz1ccbGmKKwucwfCr846deZxGeDhiaTykGgK (ledger sk known)
 
 ## Using the Tezos Wallet application
 
-This application and the Tezos Baking application constitute complementary apps
+This application and the Tezos Baking Application constitute complementary apps
 for different use cases -- which could be on paired Ledgers and therefore use
 the same key, or which could also be used in different scenarios for different
 accounts. Baking is rejected by this app.
@@ -612,9 +622,41 @@ There are other options which you can read up about more in the docs, but these
 are the main ones you'd potentially want to use when just sending tez to
 someone.
 
-## Using the Tezos Baking application
+### Delegation
 
-The Tezos Baking application supports 3 operations:
+If you want to delegate tez controlled by a Ledger account to another account to
+bake, that requires the Wallet App. This is distinct from registering the Ledger
+account itself to bake, which is also called "delegation," and which is covered
+in the section on the baking app below.
+
+To delegate tez controlled by a Ledger to someone else,
+you must first originate an account. Please read more
+about this in the Tezos document, [How to bake on the
+alphanet](http://doc.tzalpha.net/introduction/alphanet.html#how-to-bake-on-the-alphanet), to
+understand why this is necessary and the semantics of delegation.
+
+To originate an account, the command is:
+```
+$ tezos-client originate account <NEW> for <MGR> transferring <QTY> from <SRC> --delegatable
+```
+
+  * `NEW` is the alias you will now give to the originated account. Only originted accounts can
+     be delegated, and even then only if originated with this `--delegatable` flag.
+  * `MGR` is the name of the key you will use to manage the account. If you want to manage it
+    with a Ledger, it should be an existing imported key from the Ledger.
+  * `QTY` is the initial amount of tez to give to the originated account.
+  * `SRC` is the account where you'll be getting the tez from.
+
+Subsequently, every transaction made with `<NEW>` will require the Ledger mentioned in `<MGR>`
+to sign it. This is done with the wallet application, and includes setting a delegate with:
+
+```
+$ tezos-client set delegate for <NEW> to <DELEGATE>
+```
+
+## Using the Tezos Baking Application
+
+The Tezos Baking Application supports 3 operations:
 
   1. Authorize/get public key
   2. Reset high water mark
@@ -622,7 +664,7 @@ The Tezos Baking application supports 3 operations:
 
 It will only sign block headers and endorsements, as the purpose of the baking
 app is that it cannot be co-opted to perform other types of operations (like
-transferring XTZ). If a Ledger is running with the Tezos Baking application, it
+transferring XTZ). If a Ledger is running with the Tezos Baking Application, it
 is the expectation of its owner that no transactions will need to be signed with
 it. To sign transactions with that Ledger, you will need to switch it to using
 the Tezos Wallet application, or have the Tezos Wallet application installed on
@@ -631,10 +673,6 @@ recommend the paired Ledger approach. If, however, you bake infrequently and can
 afford to have your baker offline temporarily, then switching to the Tezos
 Wallet application on the same Ledger should suffice.
 
-If you wish to delegate to someone else, rather than yourself, you will need to
-read the description of *implicit* and *originated* accounts in the Tezos
-[How to bake on the alphanet](http://doc.tzalpha.net/introduction/alphanet.html#how-to-bake-on-the-alphanet)
-instructions.
 
 ### Start the baking daemon
 
@@ -671,20 +709,54 @@ time.
 In order to authorize a public key for baking, you can do either of the
 following:
 
-  * Use the APDU for authorizing a public key, which is not yet exposed in the
-    `tezos-client` interface.
+  * Use the APDU for authorizing a public key.
+
+    The command for this is as follows:
+
+    ```
+    $ tezos-client authorize ledger to bake for <SIGNATURE>
+    ```
+
+    This only authorizes the key for baking on the Ledger, but does
+    not inform the blockchain of your intention to bake. This might
+    be necessary if you re-install the app, or if you have a different
+    paired Ledger that you are using to bake for the first time.
+
   * Have the baking app sign a self-delegation. This is explained in the next section.
 
-### Delegate
+### Registering as a Delegate
 
 In order to bake from the ledger account you need to register the key as a
-delegate. Open the Tezos Baking application on the Ledger, and then run this:
+delegate. This is formally done by delegating the account to itself. As a
+non-originated account, an account directly stored on the Ledger can only
+delegate to itself.
 
-```bash
+Open the Tezos Baking Application on the Ledger, and then run this:
+
+```
 $ tezos-client register key ledger_<...>_ed_0_0 as delegate
 ```
 
-This will both authorize it as a key for baking and sign the operation.
+This command is intended to inform the blockchain itself of your intention to
+bake with this key. It can be signed with either the Wallet App or the Baking
+App, but if you sign it with the Baking App, it also implies to the Ledger
+that you want to authorize that key for baking on the Ledger as well.
+
+Authorizing a key for baking on a specific Ledger and authorizing it for
+baking in general on the blockchain are two distinct authorizations. This
+command will do both of them if signed with the appropriate baking app,
+whereas the `authorize ledger` command in the previous section will
+only do it for the in question, which is appropriate if it is already
+authorized to bake on the blockchain.
+
+The `register key` command is equivalent to:
+
+```
+$ tezos-client set delegate for ledger_<...>_ed_0_0 to ledger_<...>_ed_0_0
+```
+
+The Baking App only signs self-delegations; the Wallet App is needed to sign
+delegations of originated accounts controlled by a Ledger.
 
 ### Sign
 
@@ -723,10 +795,6 @@ with the wallet app.
 
 ### Reset
 
-This feature requires the `ledgerblue` Python package, which is available
-at [Blue Loader Python](https://github.com/LedgerHQ/blue-loader-python/).
-Please read the instructions at the README there.
-
 There is some possibility that the HWM will need to be reset. This could be due
 to the computer somehow being tricked into sending a block with a high level to
 the Ledger (either due to an attack or a bug on the computer side), or because
@@ -739,11 +807,16 @@ attempted attacks or bugs, not as a day to day command. It requires an explicit
 confirmation from the user, and there is no specific utility to send this
 command. To send it manually, you can use the following command line:
 
-`echo 800681000400000000 | python -m ledgerblue.runScript --apdu`
+`tezos-client set ledger high water mark for "ledger://<tz...>/" to <HWM>`
 
-The last 8 0s indicate the hexadecimal high water mark to reset to. A higher one
-can be specified, `00000000` is given as an example as that will allow all
-positive block levels to follow.
+`<HWM>` indicates the new high water mark to reset to. If you are joining a new
+test network, `0` is a fitting number, as then all blocks will be allowed again.
+You can also set it to the most recently baked level on that test net.
+
+If you are not physically present at your computer, but are curious what the
+Ledger's high water mark is, you can run:
+
+`tezos-client get ledger high water mark for "ledger://<tz...>/`
 
 ## Troubleshooting
 
@@ -766,3 +839,10 @@ Make sure a Ledger Nano S is connected and in the Tezos Wallet app.
 
 In addition to the possibilities listed in the error message, this could also
 mean that your udev rules are not set up correctly.
+
+### Unrecognized command
+
+If you see an `Unrecognized command` error, it might be because there is no node for `tezos-client`
+to connect to. Please ensure that you are running a node. `ps aux | grep tezos-node` should display
+the process information for the current node. If it displays nothing, or just displays a `grep`
+command, then there is no node running on your machine.
