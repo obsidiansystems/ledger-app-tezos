@@ -85,7 +85,8 @@ The Wallet App does not require such extra steps, and so these extra
 protections are more appropriate for keys used for transaction than they
 are for keys used for baking. If you do use these features, we recommend
 your tez be stored in the passphrase-protected and deniable account,
-and that you delegate them to a baking account.
+and that you delegate them to a baking account. This way, the baking
+account won't actually store the vast majority of the tez.
 
 ### Ledger firmware update
 
