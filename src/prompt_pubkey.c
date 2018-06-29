@@ -232,6 +232,8 @@ void prompt_address(bool bake, cx_curve_t curve,
 }
 
 const struct bagl_element_e *prompt_address_prepro(const struct bagl_element_e *element) {
+    static int count = 0;
+    ux_step_count = 2;
     if (element->component.userid > 0) {
         unsigned int display = ux_step == element->component.userid - 1;
         if (display) {

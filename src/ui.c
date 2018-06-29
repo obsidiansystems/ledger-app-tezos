@@ -51,7 +51,7 @@ const bagl_element_t ui_idle_screen[] = {
     //0, NULL, NULL, NULL },
     {{BAGL_LABELINE, 0x01, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "HWM",
+     "Last Baked Level",
      0,
      0,
      0,
@@ -92,10 +92,10 @@ const bagl_element_t ui_idle_screen[] = {
 static const bagl_element_t *idle_prepro(const bagl_element_t *elem);
 
 static void ui_idle(void) {
-    ui_prompt(ui_idle_screen, sizeof(ui_idle_screen)/sizeof(*ui_idle_screen),
-              do_nothing, exit_app, idle_prepro);
     ux_step = 0;
     ux_step_count = 2;
+    ui_prompt(ui_idle_screen, sizeof(ui_idle_screen)/sizeof(*ui_idle_screen),
+              do_nothing, exit_app, idle_prepro);
 }
 
 void change_idle_display(uint32_t new) {
@@ -124,8 +124,7 @@ unsigned button_handler(unsigned button_mask, unsigned button_mask_counter) {
         default:
             return 0;
     }
-    ux_step = 0;
-    ux_step_count = 2;
+    update_auth_text();
     ui_idle(); // display original screen
     return 0; // do not redraw the widget
 }
@@ -141,12 +140,14 @@ const bagl_element_t *timer_setup(const bagl_element_t *elem) {
 }
 
 const bagl_element_t *idle_prepro(const bagl_element_t *element) {
+    ux_step_count = 2;
+    io_seproxyhal_setup_ticker(250);
     if (element->component.userid > 0) {
         unsigned int display = ux_step == element->component.userid - 1;
         if (display) {
             switch (element->component.userid) {
             case 1:
-                UX_CALLBACK_SET_INTERVAL(2000);
+                UX_CALLBACK_SET_INTERVAL(500);
                 break;
             case 2:
                 UX_CALLBACK_SET_INTERVAL(MAX(
