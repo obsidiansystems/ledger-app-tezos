@@ -103,7 +103,7 @@ You need to set `udev` rules to set the permissions so that your user account
 can access the Ledger device. This requires system administration privileges
 on your Linux system.
 
-#### Instructions for most distros
+#### Instructions for most distros (not including NixOS)
 
 LedgerHQ provides a
 [script](https://raw.githubusercontent.com/LedgerHQ/udev-rules/master/add_udev_rules.sh)
