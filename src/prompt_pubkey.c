@@ -240,11 +240,11 @@ const struct bagl_element_e *prompt_address_prepro(const struct bagl_element_e *
         if (display) {
             switch (element->component.userid) {
             case 1:
-                UX_CALLBACK_SET_INTERVAL(500);
+                UX_CALLBACK_SET_INTERVAL(1000);
                 break;
             case 2:
                 UX_CALLBACK_SET_INTERVAL(MAX(
-                    1500, 1000 + bagl_label_roundtrip_duration_ms(element, 7)));
+                    1500, 500 + bagl_label_roundtrip_duration_ms(element, 7)));
                 break;
             }
         }
