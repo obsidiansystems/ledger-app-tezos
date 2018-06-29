@@ -64,10 +64,14 @@ You will write it down on paper, along with your PIN, and store it. If you will
 have a large amount of money, consider putting your paper in a safe or safe
 deposit box, but at the very least keep it away from places where children,
 dogs, housekeepers, obnoxious neighbors, could inadvertently destroy it.
-Additionally, we recommend  storing your PIN in a password manager.
+Additionally, we recommend storing your PIN in a password manager.
 
 Finally, if you will not be baking yourself, consider disconnecting your Ledger
 and closing your password manager when not in use.
+
+More advanced techniques for those interested in even more layers of security
+or plausible deniability features should look at the
+[Ledger's documentation on this](https://support.ledgerwallet.com/hc/en-us/articles/115005214529-Advanced-Passphrase-options).
 
 ### Ledger firmware update
 
