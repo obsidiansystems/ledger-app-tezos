@@ -69,9 +69,23 @@ Additionally, we recommend storing your PIN in a password manager.
 Finally, if you will not be baking yourself, consider disconnecting your Ledger
 and closing your password manager when not in use.
 
+### Protecting Your Key -- Further Advanced Reading
+
 More advanced techniques for those interested in even more layers of security
 or plausible deniability features should look at the
 [Ledger's documentation on this](https://support.ledgerwallet.com/hc/en-us/articles/115005214529-Advanced-Passphrase-options).
+
+Note that Ledgers with different seeds will appear to `tezos-client` to be
+different Ledgers. Note also that it can change what key is authorized in
+the Baking App. When using these features in a Ledger used for baking,
+please exit and re-start the Baking App right before baking is supposed to
+happen, and manually verify that it displays the key you expect to bake for.
+
+The Wallet App does not require such extra steps, and so these extra
+protections are more appropriate for keys used for transaction than they
+are for keys used for baking. If you do use these features, we recommend
+your tez be stored in the passphrase-protected and deniable account,
+and that you delegate them to a baking account.
 
 ### Ledger firmware update
 
