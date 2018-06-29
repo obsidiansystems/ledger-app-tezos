@@ -149,7 +149,7 @@ const bagl_element_t *idle_prepro(const bagl_element_t *element) {
         if (display) {
             switch (element->component.userid) {
             case 1:
-                UX_CALLBACK_SET_INTERVAL(1000);
+                UX_CALLBACK_SET_INTERVAL(2000);
                 break;
             case 2:
                 UX_CALLBACK_SET_INTERVAL(MAX(
