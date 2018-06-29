@@ -236,7 +236,7 @@ const struct bagl_element_e *prompt_address_prepro(const struct bagl_element_e *
         if (display) {
             switch (element->component.userid) {
             case 1:
-                UX_CALLBACK_SET_INTERVAL(500);
+                UX_CALLBACK_SET_INTERVAL(2000);
                 break;
             case 2:
                 UX_CALLBACK_SET_INTERVAL(MAX(

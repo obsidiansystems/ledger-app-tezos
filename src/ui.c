@@ -4,6 +4,7 @@
 #include "paths.h"
 
 #include <stdbool.h>
+#include <string.h>
 
 ux_state_t ux;
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
@@ -35,9 +36,9 @@ const bagl_element_t ui_idle_screen[] = {
      NULL,
      NULL},
 
-    {{BAGL_LABELINE, 0x02, 0, 12, 128, 32, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     baking_auth_text,
+    {{BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+      BAGL_GLYPH_ICON_CROSS},
+     NULL,
      0,
      0,
      0,
@@ -45,19 +46,41 @@ const bagl_element_t ui_idle_screen[] = {
      NULL,
      NULL},
 
-    {{BAGL_LABELINE, 0x02, 0, 26, 128, 32, 0, 0, 0 , 0xFFFFFF, 0x000000,
-    BAGL_FONT_OPEN_SANS_REGULAR_11px|BAGL_FONT_ALIGNMENT_CENTER, 0  },
-    idle_text,
-    0,
-    0,
-    0,
-    NULL,
-    NULL,
-    NULL },
-
-    {{BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
-      BAGL_GLYPH_ICON_CROSS},
+    //{{BAGL_ICON                           , 0x01,  21,   9,  14,  14, 0, 0, 0
+    //, 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_TRANSACTION_BADGE  }, NULL, 0, 0,
+    //0, NULL, NULL, NULL },
+    {{BAGL_LABELINE, 0x01, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "HWM",
+     0,
+     0,
+     0,
      NULL,
+     NULL,
+     NULL},
+    {{BAGL_LABELINE, 0x01, 0, 26, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     idle_text,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x02, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Baking Key",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x02, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     baking_auth_text,
      0,
      0,
      0,
@@ -71,6 +94,8 @@ static const bagl_element_t *idle_prepro(const bagl_element_t *elem);
 static void ui_idle(void) {
     ui_prompt(ui_idle_screen, sizeof(ui_idle_screen)/sizeof(*ui_idle_screen),
               do_nothing, exit_app, idle_prepro);
+    ux_step = 0;
+    ux_step_count = 2;
 }
 
 void change_idle_display(uint32_t new) {
@@ -99,6 +124,8 @@ unsigned button_handler(unsigned button_mask, unsigned button_mask_counter) {
         default:
             return 0;
     }
+    ux_step = 0;
+    ux_step_count = 2;
     ui_idle(); // display original screen
     return 0; // do not redraw the widget
 }
@@ -113,10 +140,23 @@ const bagl_element_t *timer_setup(const bagl_element_t *elem) {
     return elem;
 }
 
-const bagl_element_t *idle_prepro(const bagl_element_t *elem) {
-    ux_step_count = 0;
-    io_seproxyhal_setup_ticker(500);
-    return elem;
+const bagl_element_t *idle_prepro(const bagl_element_t *element) {
+    if (element->component.userid > 0) {
+        unsigned int display = ux_step == element->component.userid - 1;
+        if (display) {
+            switch (element->component.userid) {
+            case 1:
+                UX_CALLBACK_SET_INTERVAL(2000);
+                break;
+            case 2:
+                UX_CALLBACK_SET_INTERVAL(MAX(
+                    3000, 1000 + bagl_label_roundtrip_duration_ms(element, 7)));
+                break;
+            }
+        }
+        return (void*)display;
+    }
+    return (void*)1;
 }
 
 void ui_prompt(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback_t cxl_c,

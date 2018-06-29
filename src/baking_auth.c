@@ -78,6 +78,5 @@ void update_auth_text(void) {
                           &pub_key, &priv_key);
         os_memset(&priv_key, 0, sizeof(priv_key));
         convert_address(baking_auth_text, sizeof(baking_auth_text), N_data.curve, &pub_key);
-        strcpy(baking_auth_text + 10, "...");
     }
 }

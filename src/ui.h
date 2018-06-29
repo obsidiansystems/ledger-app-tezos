@@ -23,4 +23,6 @@ extern char baking_auth_text[40];
 // Helper for simple situations
 #define UI_PROMPT(elems, ok_c, cxl_c) ui_prompt(elems, \
                                                 sizeof(elems) / sizeof(elems[0]), \
-                                                ok_c, cxl_c, timer_setup)
+                                                ok_c, cxl_c, timer_setup); \
+                                      ux_step = 0; \
+                                      ux_step_count = 0
