@@ -43,7 +43,7 @@ level_t get_block_level(const void *data, size_t length) {
 }
 
 // Error code can be made to depend on N for debugging
-#define PARSE_ERROR(N) THROW(0x9600 + N)
+#define PARSE_ERROR(N) THROW(EXC_PARSE_ERROR)
 
 static const void *next_bytes(const void *data, size_t length, size_t *ix, size_t data_len) {
     const uint8_t *bytes = data;

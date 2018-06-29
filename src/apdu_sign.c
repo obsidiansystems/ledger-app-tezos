@@ -62,7 +62,7 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
         os_memset(message_data, 0, TEZOS_BUFSIZE);
         message_data_length = 0;
         bip32_path_length = read_bip32_path(dataLength, bip32_path, dataBuffer);
-        switch(G_io_apdu_buffer[OFFSET_P2]) {
+        switch(G_io_apdu_buffer[OFFSET_CURVE]) {
             case 0:
                 curve = CX_CURVE_Ed25519;
                 break;
@@ -73,24 +73,20 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
                 curve = CX_CURVE_SECP256R1;
                 break;
             default:
-                THROW(0x6B00);
+                THROW(EXC_WRONG_PARAM);
         }
         return_ok();
     case P1_NEXT:
         if (bip32_path_length == 0) {
-            THROW(0x6B00);
+            THROW(EXC_WRONG_LENGTH_FOR_INS);
         }
         break;
     default:
-        THROW(0x6B00);
-    }
-
-    if(G_io_apdu_buffer[OFFSET_P2] > 2) {
-        THROW(0x6B00);
+        THROW(EXC_WRONG_PARAM);
     }
 
     if (message_data_length + dataLength > TEZOS_BUFSIZE) {
-        THROW(0x6C00);
+        THROW(EXC_PARSE_ERROR);
     }
 
     os_memmove(message_data + message_data_length, dataBuffer, dataLength);
@@ -113,7 +109,7 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
                                     bip32_path, bip32_path_length);
             return perform_signature(true);
 #else
-            THROW(0x9685);
+            THROW(EXC_PARSE_ERROR);
 #endif
         case MAGIC_BYTE_UNSAFE_OP:
         case MAGIC_BYTE_UNSAFE_OP2:
@@ -130,7 +126,7 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
             ASYNC_PROMPT(ui_sign_screen, sign_ok, sign_reject);
 #endif
         default:
-            THROW(0x6C00);
+            THROW(EXC_PARSE_ERROR);
     }
 }
 
@@ -185,7 +181,7 @@ static int perform_signature(bool hash_first) {
     }
         break;
     default:
-        THROW(0x6B00); // This should not be able to happen.
+        THROW(EXC_WRONG_PARAM); // This should not be able to happen.
     }
 
     os_memset(&privateKey, 0, sizeof(privateKey));

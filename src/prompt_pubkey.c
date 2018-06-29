@@ -1,5 +1,6 @@
 #include "prompt_pubkey.h"
 
+#include "apdu.h"
 #include "base58.h"
 #include "blake2.h"
 #include "paths.h"
@@ -191,7 +192,7 @@ int convert_address(char *buff, uint32_t buff_size, cx_curve_t curve,
             data.prefix[2] = 164;
             break;
         default:
-            THROW(0x6F00); // Should not reach
+            THROW(EXC_WRONG_PARAM); // Should not reach
     }
 
     // hash
@@ -212,7 +213,7 @@ void prompt_address(bool bake, cx_curve_t curve,
                     const cx_ecfp_public_key_t *key, callback_t ok_cb, callback_t cxl_cb) {
     if (!convert_address(address_display_data, sizeof(address_display_data),
                          curve, key)) {
-        THROW(0x6B00);
+        THROW(EXC_WRONG_VALUES);
     }
 
     ux_step = 0;

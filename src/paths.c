@@ -17,6 +17,7 @@
 
 #include "paths.h"
 
+#include "apdu.h"
 #include "os.h"
 #include "blake2.h"
 
@@ -70,13 +71,13 @@ uint32_t path_to_string(char *buf, uint32_t path_length, uint32_t *bip32_path) {
 
 uint32_t read_bip32_path(uint32_t bytes, uint32_t *bip32_path, const uint8_t *buf) {
     uint32_t path_length = *buf;
-    if (bytes < path_length * sizeof(uint32_t) + 1) THROW(0x6B00);
+    if (bytes < path_length * sizeof(uint32_t) + 1) THROW(EXC_WRONG_LENGTH_FOR_INS);
 
     buf++;
 
     if (path_length == 0 || path_length > MAX_BIP32_PATH) {
         screen_printf("Invalid path\n");
-        THROW(0x6a80);
+        THROW(EXC_WRONG_VALUES);
     }
 
     for (uint32_t i = 0; i < path_length; i++) {
@@ -120,6 +121,8 @@ void public_key_hash(uint8_t output[HASH_SIZE], cx_curve_t curve,
                 pubkey_out->W_len = 33;
                 break;
             }
+        default:
+            THROW(EXC_WRONG_PARAM);
     }
     blake2b(output, HASH_SIZE, pubkey_out->W, pubkey_out->W_len, NULL, 0);
 }

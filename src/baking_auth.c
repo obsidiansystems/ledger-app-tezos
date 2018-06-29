@@ -49,13 +49,13 @@ void check_baking_authorized(cx_curve_t curve, void *data, int datalen, uint32_t
     if (is_block_valid(data, datalen)) {
         level_t level = get_block_level(data, datalen);
         if (!is_level_authorized(level)) {
-            THROW(0x6C00);
+            THROW(EXC_SECURITY);
         }
     } else if (get_magic_byte(data, datalen) == MAGIC_BYTE_BLOCK) {
-        THROW(0x6C00);
+        THROW(EXC_SECURITY);
     }
     if (!is_path_authorized(curve, bip32_path, path_length)) {
-        THROW(0x6C00);
+        THROW(EXC_SECURITY);
     }
 }
 
