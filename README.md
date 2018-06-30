@@ -33,6 +33,8 @@ and which commands are most appropriate to your situation. This will require
 judgment on how best to meet your needs, and this document will also provide
 context to help you understand that.
 
+The commands in these instructions have only been tested on Linux.
+
 ## Set up your Ledger device
 
 Tezos recommends a hardware wallet called the Ledger Nano S. When you first get
