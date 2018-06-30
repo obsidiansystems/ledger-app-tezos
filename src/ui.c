@@ -52,13 +52,19 @@ const bagl_element_t ui_idle_screen[] = {
     //0, NULL, NULL, NULL },
     {{BAGL_LABELINE, 0x01, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+#ifdef BAKING_APP
      "Last Baked Level",
+#else
+     "Tezos",
+#endif
      0,
      0,
      0,
      NULL,
      NULL,
      NULL},
+
+#ifdef BAKING_APP
     {{BAGL_LABELINE, 0x01, 0, 26, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
      idle_text,
@@ -68,10 +74,15 @@ const bagl_element_t ui_idle_screen[] = {
      NULL,
      NULL,
      NULL},
+#endif
 
     {{BAGL_LABELINE, 0x02, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+#ifdef BAKING_APP
      "Baking Key",
+#else
+     "Wallet App",
+#endif
      0,
      0,
      0,
@@ -79,6 +90,7 @@ const bagl_element_t ui_idle_screen[] = {
      NULL,
      NULL},
 
+#ifdef BAKING_APP
     {{BAGL_LABELINE, 0x02, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
      baking_auth_text,
@@ -88,6 +100,7 @@ const bagl_element_t ui_idle_screen[] = {
      NULL,
      NULL,
      NULL},
+#endif
 };
 
 static const bagl_element_t *idle_prepro(const bagl_element_t *elem);
@@ -149,11 +162,10 @@ const bagl_element_t *idle_prepro(const bagl_element_t *element) {
         if (display) {
             switch (element->component.userid) {
             case 1:
-                UX_CALLBACK_SET_INTERVAL(2000);
+                UX_CALLBACK_SET_INTERVAL(1000);
                 break;
             case 2:
-                UX_CALLBACK_SET_INTERVAL(MAX(
-                    1500, 500 + bagl_label_roundtrip_duration_ms(element, 7)));
+                UX_CALLBACK_SET_INTERVAL(MAX(1500, bagl_label_roundtrip_duration_ms(element, 7) / 2));
                 break;
             }
         }
@@ -199,7 +211,7 @@ unsigned char io_event(unsigned char channel) {
                 // don't redisplay if UX not allowed (pin locked in the common bolos
                 // ux ?)
                 if (ux_step_count && UX_ALLOWED) {
-                    switch_event_count++;
+                    if (cxl_callback != exit_app) switch_event_count++;
                     // prepare next screen
                     ux_step = (ux_step + 1) % ux_step_count;
                     // redisplay screen

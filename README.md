@@ -777,7 +777,11 @@ $ tezos-client set delegate for ledger_<...>_ed_0_0 to ledger_<...>_ed_0_0
 ```
 
 The Baking App only signs self-delegations; the Wallet App is needed to sign
-delegations of originated accounts controlled by a Ledger.
+delegations of originated accounts controlled by a Ledger. The Baking App
+also only signs delegations with fees less than 0.05 ꜩ; to sign those with
+more, you must use the Wallet App to authorize baking for the blockchain,
+and the command in the previous section to authorize baking for the Ledger,
+which is always available as an alternative to signing this with the Baking App.
 
 ### Sign
 

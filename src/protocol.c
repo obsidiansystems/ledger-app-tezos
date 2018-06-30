@@ -130,7 +130,7 @@ void guard_valid_self_delegation(const void *data, size_t length, cx_curve_t cur
                 if (memcmp(public_key.W, pubkey, public_key.W_len) != 0) PARSE_ERROR(4);
                 break;
             case OPERATION_TAG_DELEGATION:
-                if (fee != 50000) PARSE_ERROR(-1); // You want another fee, use wallet app!
+                if (fee > 50000) PARSE_ERROR(-1); // You want a higher fee, use wallet app!
 
                 // Delegation up next!
                 const struct delegation_contents *dlg = &NEXT_TYPE(struct delegation_contents);
