@@ -282,19 +282,23 @@ $ sudo pip3 install virtualenv # Any OS
 
 Then create a Python virtual environment (abbreviated *virtualenv*). You could
 call it anything, but we shall call it "ledger". This will create a directory
-called "ledger" containing the virtualenv. Then, you must enter the
-`virtualenv`. If you do not successfully enter the `virtualenv`, future commands
-will fail. You can tell you have entered the virtualenv when your prompt is
-prefixed with `(ledger)`.
+called "ledger" containing the virtualenv:
 
 ```
 $ virtualenv ledger # Any OS
+```
+
+Then, you must enter the `virtualenv`. If you do not successfully enter the `virtualenv`,
+future commands will fail. You can tell you have entered the virtualenv when your prompt is
+prefixed with `(ledger)`.
+
+```
 $ source ledger/bin/activate
 ```
 
 Your terminal session -- and only that terminal session -- will now be in the
 virtual env. To have a new terminal session enter the virtualenv, run the above
-command only in that terminal session.
+`source` command only in the same directory in the new terminal session.
 
 ### ledgerblue
 
@@ -333,10 +337,18 @@ as you continue. You may want to read the rest of these instructions before you
 begin installing, as you will need to confirm and verify a few things during the
 process.
 
-Still within the virtualenv, run the `./install.sh` command.  This script is in
-the root directory of this very repo. This script takes two parameters, the
-first of which is the *name* of the application you are installing, and the
-second is the path to the `app.hex` file:
+Still within the virtualenv, run the `./install.sh` command. This script is in
+the root directory of this very repo, which means that in order to have it, you
+must clone this repo and `cd` into the resulting directory:
+
+```
+$ git clone git@github.com:obsidiansystems/ledger-app-tezos.git
+$ cd ledger-app-tezos/
+```
+
+This `./install.sh` script takes two parameters, the first of which is
+the *name* of the application you are installing, and the second is the
+path to the `app.hex` file:
 
 * If you are installing the baking app, we recommend using the name "Tezos
   Baking".
