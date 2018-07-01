@@ -348,7 +348,9 @@ $ cd ledger-app-tezos/
 
 This `./install.sh` script takes two parameters, the first of which is
 the *name* of the application you are installing, and the second is the
-path to the `app.hex` file:
+path to the `app.hex` file. (Up to date `app.hex` files can be found in
+the releases for this repo, and can be unpacked in the same directory that
+contains `./install.sh`):
 
 * If you are installing the baking app, we recommend using the name "Tezos
   Baking".
