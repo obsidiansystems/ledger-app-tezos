@@ -859,6 +859,36 @@ Ledger's high water mark is, you can run:
 
 `tezos-client get ledger high water mark for "ledger://<tz...>/`
 
+## Upgrading
+
+When you want to upgrade to a new version, whether you built it yourself from source
+or whether it's a new release of the `app.hex` files, use the same commands as you did
+to originally install it. As the keys are generated from the Ledger's seeds and the
+derivation paths, you will have the same keys with every version of this Ledger app,
+so there is no need to re-import the keys with `tezos-client`.
+
+### Special Upgrading Considerations for Bakers
+
+If you've already been baking on an old version of the Baking App, the new version will
+not remember which key you are baking with nor the High Water Mark. You will have to re-run
+this command to remind the Ledger what key you intend to authorize for baking:
+
+```
+$ tezos-client authorize ledger to bake for <SIGNATURE>
+```
+
+You can also set the High Water Mark to the level of the most recently baked block with:
+
+```
+tezos-client set ledger high water mark for "ledger://<tz...>/" to <HWM>
+```
+
+This will require the correct URL for the Ledger acquired from:
+
+```
+tezos-client list connected ledgers
+```
+
 ## Troubleshooting
 
 ### unexpected seq num
