@@ -33,7 +33,11 @@ and which commands are most appropriate to your situation. This will require
 judgment on how best to meet your needs, and this document will also provide
 context to help you understand that.
 
-The commands in these instructions have only been tested on Linux.
+The commands in these instructions have only been tested on Linux. If
+you use any form of virtualization, e.g. docker or VirtualBox, please
+consult the documentation of that virtualization system to determine
+how to access USB from inside the virtualization, as that can be a
+complicated and difficult process.
 
 ## Set up your Ledger device
 
@@ -917,3 +921,13 @@ If you see an `Unrecognized command` error, it might be because there is no node
 to connect to. Please ensure that you are running a node. `ps aux | grep tezos-node` should display
 the process information for the current node. If it displays nothing, or just displays a `grep`
 command, then there is no node running on your machine.
+
+### Ledger App Crashes
+
+If the Ledger app crashes when you load it, there are two primary causes:
+
+  * Quitting the `tezos-client` process before the Ledger responds. Even if you meant to cancel
+    the operation in question, cancel it from the Ledger before pressing Ctrl-C, otherwise you
+    might have to restart the Ledger.
+  * Out of date firmware: If the Ledger app doesn't work at all, make sure you are running firmware
+    version 1.4.2.
