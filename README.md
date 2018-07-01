@@ -536,7 +536,7 @@ secret key ...` to run.
   * `ed25519` is the standard recommended curve
   * If you know you're always going to use only one key, use a root key; you can
     only have one root account per ledger per signing curve. If you might want
-    to leave open the possibility of using your Ledger for multiple identities,
+    to leave open the possibility of using your Ledger for multiple keys,
     use a BIP32 path. We recommend the latter.
 
 If you use a BIP32 path, be sure to write it down. You need the full address to
@@ -561,6 +561,9 @@ should see the key you chose in the list:
 $ tezos-client list known addresses
 ledger_<...>_ed_0_0: tz1ccbGmKKwucwfCr846deZxGeDhiaTykGgK (ledger sk known)
 ```
+
+We recommend reading as much as possible about BIP32 to ensure you fully understand
+this.
 
 ## Using the Tezos Wallet application
 
