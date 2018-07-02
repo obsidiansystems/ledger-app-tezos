@@ -12,7 +12,7 @@ void exit_app(void);
 
 void ui_prompt(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback_t cxl_c,
                bagl_element_callback_t prepro);
-unsigned char io_event(unsigned char channel); // TODO: Who calls this? How?
+unsigned char io_event(unsigned char channel);
 void io_seproxyhal_display(const bagl_element_t *element);
 void change_idle_display(uint32_t new);
 
