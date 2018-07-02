@@ -1,16 +1,17 @@
 #include "apdu.h"
+#include "version.h"
 
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 
 unsigned int handle_apdu_error(uint8_t instruction) {
-    THROW(0x6D00);
+    THROW(EXC_INVALID_INS);
 }
 
 unsigned int handle_apdu_exit(uint8_t instruction) {
     os_sched_exit(-1);
-    THROW(0x6D00); // avoid warning
+    THROW(EXC_INVALID_INS); // avoid warning
 }
 
 uint32_t send_word_big_endian(uint32_t word) {
@@ -26,8 +27,12 @@ uint32_t send_word_big_endian(uint32_t word) {
 }
 
 unsigned int handle_apdu_version(uint8_t instruction) {
-    const uint32_t APP_VERSION = 1;
-    return send_word_big_endian(APP_VERSION);
+    int tx = 0;
+    memcpy(G_io_apdu_buffer, &version, sizeof(version_t));
+    tx += sizeof(version_t);
+    G_io_apdu_buffer[tx++] = 0x90;
+    G_io_apdu_buffer[tx++] = 0x00;
+    return tx;
 }
 
 #define CLA 0x80
@@ -40,18 +45,18 @@ void main_loop(apdu_handler handlers[INS_MASK + 1]) {
                 if (rx == 0) {
                     // no apdu received, well, reset the session, and reset the
                     // bootloader configuration
-                    THROW(0x6982);
+                    THROW(EXC_SECURITY);
                 }
 
                 if (G_io_apdu_buffer[0] != CLA) {
-                    THROW(0x6E00);
+                    THROW(EXC_CLASS);
                 }
 
                 // The amount of bytes we get in our APDU must match what the APDU declares
                 // its own content length is. All these values are unsigned, so this implies
                 // that if rx < OFFSET_CDATA it also throws.
                 if (rx != G_io_apdu_buffer[OFFSET_LC] + OFFSET_CDATA) {
-                    THROW(0x6D00);
+                    THROW(EXC_WRONG_LENGTH);
                 }
 
                 uint8_t instruction = G_io_apdu_buffer[1];

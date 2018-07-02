@@ -47,25 +47,20 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
     cx_ecfp_private_key_t privateKey;
 
     if (G_io_apdu_buffer[OFFSET_P1] != 0)
-        THROW(0x6B00);
+        THROW(EXC_WRONG_PARAM);
 
-    if(G_io_apdu_buffer[OFFSET_P2] > 2)
-        THROW(0x6B00);
-
-    switch(G_io_apdu_buffer[OFFSET_P2]) {
+    switch(G_io_apdu_buffer[OFFSET_CURVE]) {
         case 0:
             curve = CX_CURVE_Ed25519;
             break;
         case 1:
             curve = CX_CURVE_SECP256K1;
             break;
-#if 0
         case 2:
             curve = CX_CURVE_SECP256R1;
             break;
-#endif
         default:
-            THROW(0x6B00);
+            THROW(EXC_WRONG_PARAM);
     }
 
 #ifdef BAKING_APP
@@ -78,7 +73,7 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
         path_length = read_bip32_path(G_io_apdu_buffer[OFFSET_LC], bip32_path, dataBuffer);
 #ifdef BAKING_APP
         if (path_length == 0) {
-            THROW(0x6D00);
+            THROW(EXC_WRONG_LENGTH_FOR_INS);
         }
     }
 #endif

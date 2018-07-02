@@ -10,7 +10,7 @@
 #define OFFSET_CLA 0
 #define OFFSET_INS 1
 #define OFFSET_P1 2
-#define OFFSET_P2 3
+#define OFFSET_CURVE 3
 #define OFFSET_LC 4
 #define OFFSET_CDATA 5
 
@@ -20,6 +20,16 @@
 
 // Throw this to indicate prompting
 #define ASYNC_EXCEPTION 0x2000
+
+#define EXC_WRONG_PARAM 0x6B00
+#define EXC_WRONG_LENGTH 0x6C00
+#define EXC_INVALID_INS 0x6D00
+#define EXC_WRONG_LENGTH_FOR_INS 0x917E
+#define EXC_REJECT 0x6985
+#define EXC_PARSE_ERROR 0x9405
+#define EXC_WRONG_VALUES 0x6A80
+#define EXC_SECURITY 0x6982
+#define EXC_CLASS 0x6E00
 
 #define ASYNC_PROMPT(screen, ok, cxl) \
     UI_PROMPT(screen, ok, cxl); \
@@ -40,8 +50,8 @@ static inline void delay_send(uint32_t tx) {
 }
 
 static inline void delay_reject(void) {
-    G_io_apdu_buffer[0] = 0x69;
-    G_io_apdu_buffer[1] = 0x85;
+    G_io_apdu_buffer[0] = EXC_REJECT >> 8;
+    G_io_apdu_buffer[1] = EXC_REJECT & 0xFF;
     delay_send(2);
 }
 

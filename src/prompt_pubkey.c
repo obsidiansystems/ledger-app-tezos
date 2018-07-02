@@ -1,5 +1,6 @@
 #include "prompt_pubkey.h"
 
+#include "apdu.h"
 #include "base58.h"
 #include "blake2.h"
 #include "paths.h"
@@ -12,7 +13,7 @@
 
 char address_display_data[64]; // Should be more than big enough
 
-static int convert_address(char *buff, uint32_t buff_size, cx_curve_t curve,
+int convert_address(char *buff, uint32_t buff_size, cx_curve_t curve,
                            const cx_ecfp_public_key_t *public_key);
 static const struct bagl_element_e *prompt_address_prepro(const struct bagl_element_e *element);
 
@@ -187,13 +188,11 @@ int convert_address(char *buff, uint32_t buff_size, cx_curve_t curve,
         case CX_CURVE_SECP256K1: // Secp256k1
             data.prefix[2] = 161;
             break;
-#if 0
-        case CX_CURVE_SECP256R1: // Secp256k1
-            data.prefix[2] = 163;
+        case CX_CURVE_SECP256R1: // Secp256r1
+            data.prefix[2] = 164;
             break;
-#endif
         default:
-            THROW(0x6F00); // Should not reach
+            THROW(EXC_WRONG_PARAM); // Should not reach
     }
 
     // hash
@@ -214,39 +213,19 @@ void prompt_address(bool bake, cx_curve_t curve,
                     const cx_ecfp_public_key_t *key, callback_t ok_cb, callback_t cxl_cb) {
     if (!convert_address(address_display_data, sizeof(address_display_data),
                          curve, key)) {
-        THROW(0x6B00);
+        THROW(EXC_WRONG_VALUES);
     }
 
-    ux_step = 0;
     ux_step_count = 2;
 #ifdef BAKING_APP
     if (bake) {
         ui_prompt(ui_bake_prompt, sizeof(ui_bake_prompt)/sizeof(*ui_bake_prompt),
-                  ok_cb, cxl_cb, prompt_address_prepro);
+                  ok_cb, cxl_cb, two_screens_scroll_second_prepro);
     } else {
 #endif
         ui_prompt(ui_pubkey_prompt, sizeof(ui_pubkey_prompt)/sizeof(*ui_pubkey_prompt),
-                  ok_cb, cxl_cb, prompt_address_prepro);
+                  ok_cb, cxl_cb, two_screens_scroll_second_prepro);
 #ifdef BAKING_APP
     }
 #endif
-}
-
-const struct bagl_element_e *prompt_address_prepro(const struct bagl_element_e *element) {
-    if (element->component.userid > 0) {
-        unsigned int display = ux_step == element->component.userid - 1;
-        if (display) {
-            switch (element->component.userid) {
-            case 1:
-                UX_CALLBACK_SET_INTERVAL(500);
-                break;
-            case 2:
-                UX_CALLBACK_SET_INTERVAL(MAX(
-                    3000, 1000 + bagl_label_roundtrip_duration_ms(element, 7)));
-                break;
-            }
-        }
-        return (void*)display;
-    }
-    return (void*)1;
 }

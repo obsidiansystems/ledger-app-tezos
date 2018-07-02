@@ -16,9 +16,14 @@ unsigned char io_event(unsigned char channel); // TODO: Who calls this? How?
 void io_seproxyhal_display(const bagl_element_t *element);
 void change_idle_display(uint32_t new);
 
-const bagl_element_t *timer_setup (const bagl_element_t *elem);
+const bagl_element_t *default_prepro(const bagl_element_t *elem);
+const bagl_element_t *two_screens_scroll_second_prepro(const bagl_element_t *elem);
+
+extern char baking_auth_text[40];
 
 // Helper for simple situations
-#define UI_PROMPT(elems, ok_c, cxl_c) ui_prompt(elems, \
-                                                sizeof(elems) / sizeof(elems[0]), \
-                                                ok_c, cxl_c, timer_setup)
+#define UI_PROMPT(elems, ok_c, cxl_c) \
+    ux_step = 0; \
+    ui_prompt(elems, \
+              sizeof(elems) / sizeof(elems[0]), \
+              ok_c, cxl_c, default_prepro)

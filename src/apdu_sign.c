@@ -22,6 +22,7 @@ static uint32_t bip32_path[MAX_BIP32_PATH];
 
 static blake2s_state hash_state;
 static bool is_hash_state_inited;
+static uint8_t magic_number;
 
 static void conditional_init_hash_state(void) {
     if (!is_hash_state_inited) {
@@ -51,12 +52,42 @@ static void clear_data(void) {
     bip32_path_length = 0;
     message_data_length = 0;
     is_hash_state_inited = false;
+    magic_number = 0;
 }
 
 static void sign_reject(void) {
     clear_data();
     delay_reject();
 }
+
+#ifdef BAKING_APP
+uint32_t baking_sign_complete(void) {
+    // Have raw data, can get insight into it
+    switch (magic_number) {
+        case MAGIC_BYTE_BLOCK:
+        case MAGIC_BYTE_BAKING_OP:
+            check_baking_authorized(curve, message_data, message_data_length,
+                                    bip32_path, bip32_path_length);
+            return perform_signature(true);
+
+        case MAGIC_BYTE_UNSAFE_OP:
+            guard_valid_self_delegation(message_data, message_data_length, curve,
+                                        bip32_path_length, bip32_path);
+            cx_ecfp_private_key_t priv_key;
+            cx_ecfp_public_key_t pub_key;
+            generate_key_pair(curve, bip32_path_length, bip32_path, &pub_key, &priv_key);
+            prompt_address(true, curve, &pub_key, bake_auth_ok, sign_reject);
+            THROW(ASYNC_EXCEPTION);
+
+        case MAGIC_BYTE_UNSAFE_OP2:
+        case MAGIC_BYTE_UNSAFE_OP3:
+        default:
+
+            THROW(EXC_PARSE_ERROR);
+    }
+}
+
+#endif
 
 #define P1_FIRST 0x00
 #define P1_NEXT 0x01
@@ -73,46 +104,42 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
         os_memset(message_data, 0, TEZOS_BUFSIZE);
         message_data_length = 0;
         bip32_path_length = read_bip32_path(dataLength, bip32_path, dataBuffer);
-        switch(G_io_apdu_buffer[OFFSET_P2]) {
+        switch(G_io_apdu_buffer[OFFSET_CURVE]) {
             case 0:
                 curve = CX_CURVE_Ed25519;
                 break;
             case 1:
                 curve = CX_CURVE_SECP256K1;
                 break;
-#if 0
             case 2:
                 curve = CX_CURVE_SECP256R1;
                 break;
-#endif
             default:
-                THROW(0x6B00);
+                THROW(EXC_WRONG_PARAM);
         }
         return_ok();
     case P1_NEXT:
         if (bip32_path_length == 0) {
-            THROW(0x6B00);
+            THROW(EXC_WRONG_LENGTH_FOR_INS);
         }
         break;
     default:
-        THROW(0x6B00);
+        THROW(EXC_WRONG_PARAM);
     }
 
-    if(G_io_apdu_buffer[OFFSET_P2] > 2) {
-        THROW(0x6B00);
+    if (instruction != INS_SIGN_UNSAFE && magic_number == 0) {
+        magic_number = get_magic_byte(dataBuffer, dataLength);
     }
 
     if (message_data_length + dataLength > TEZOS_BUFSIZE) {
 #ifdef BAKING_APP
-        THROW(0x6C00);
+        THROW(EXC_PARSE_ERROR);
 #else
-        if (instruction == INS_SIGN) {
-            conditional_init_hash_state();
-            blake2b_update(&hash_state, message_data, message_data_length);
-            message_data_length = 0;
-        } else {
-            THROW(0x6C00);
-        }
+        if (instruction != INS_SIGN) THROW(EXC_PARSE_ERROR);
+
+        conditional_init_hash_state();
+        blake2b_update(&hash_state, message_data, message_data_length);
+        message_data_length = 0;
 #endif
     }
 
@@ -123,38 +150,24 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
         return_ok();
     }
 
+#ifdef BAKING_APP
+    return baking_sign_complete();
+#else
     if (instruction == INS_SIGN_UNSAFE) {
         ASYNC_PROMPT(ui_sign_unsafe_screen, sign_unsafe_ok, delay_reject);
+    } else {
+        switch (magic_number) {
+            case MAGIC_BYTE_BLOCK:
+            case MAGIC_BYTE_BAKING_OP:
+            default:
+                THROW(EXC_PARSE_ERROR);
+            case MAGIC_BYTE_UNSAFE_OP:
+            case MAGIC_BYTE_UNSAFE_OP2:
+            case MAGIC_BYTE_UNSAFE_OP3:
+                ASYNC_PROMPT(ui_sign_screen, sign_ok, delay_reject);
+        }
     }
-
-    // Have raw data, can get insight into it
-    switch (get_magic_byte(message_data, message_data_length)) {
-        case MAGIC_BYTE_BLOCK:
-        case MAGIC_BYTE_BAKING_OP:
-#ifdef BAKING_APP
-            check_baking_authorized(curve, message_data, message_data_length,
-                                    bip32_path, bip32_path_length);
-            return perform_signature(true);
-#else
-            THROW(0x9685);
 #endif
-        case MAGIC_BYTE_UNSAFE_OP:
-        case MAGIC_BYTE_UNSAFE_OP2:
-        case MAGIC_BYTE_UNSAFE_OP3:
-#ifdef BAKING_APP
-            guard_valid_self_delegation(message_data, message_data_length, curve,
-                                        bip32_path_length, bip32_path);
-            cx_ecfp_private_key_t priv_key;
-            cx_ecfp_public_key_t pub_key;
-            generate_key_pair(curve, bip32_path_length, bip32_path, &pub_key, &priv_key);
-            prompt_address(true, curve, &pub_key, bake_auth_ok, sign_reject);
-            THROW(ASYNC_EXCEPTION);
-#else
-            ASYNC_PROMPT(ui_sign_screen, sign_ok, sign_reject);
-#endif
-        default:
-            THROW(0x6C00);
-    }
 }
 
 
@@ -192,9 +205,7 @@ static int perform_signature(bool hash_first) {
     }
         break;
     case CX_CURVE_SECP256K1:
-#if 0
     case CX_CURVE_SECP256R1:
-#endif
     {
         unsigned int info;
         tx = cx_ecdsa_sign(&privateKey,
@@ -211,7 +222,7 @@ static int perform_signature(bool hash_first) {
     }
         break;
     default:
-        THROW(0x6B00); // This should not be able to happen.
+        THROW(EXC_WRONG_PARAM); // This should not be able to happen.
     }
 
     os_memset(&privateKey, 0, sizeof(privateKey));
