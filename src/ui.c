@@ -107,7 +107,9 @@ const bagl_element_t ui_idle_screen[] = {
 };
 
 static void ui_idle(void) {
+#ifdef BAKING_APP
     update_auth_text();
+#endif
     ui_prompt(ui_idle_screen, sizeof(ui_idle_screen)/sizeof(*ui_idle_screen),
               do_nothing, exit_app, two_screens_scroll_second_prepro);
 }
@@ -121,8 +123,6 @@ void change_idle_display(uint32_t new) {
 void ui_initial_screen(void) {
 #ifdef BAKING_APP
     change_idle_display(N_data.highest_level);
-#else
-    strcpy(baking_auth_text, "Tezos");
 #endif
     ui_idle();
 }
@@ -213,7 +213,7 @@ unsigned char io_event(unsigned char channel) {
             UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
                 // don't redisplay if UX not allowed (pin locked in the common bolos
                 // ux ?)
-                if (ux_step_count && UX_ALLOWED) {
+                if (UX_ALLOWED) {
                     // prepare next screen
                     ux_step = (ux_step + 1) % ux_step_count;
                     if (cxl_callback != exit_app && ux_step == 0) {
