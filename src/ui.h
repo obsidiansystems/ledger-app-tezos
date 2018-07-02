@@ -17,6 +17,7 @@ void io_seproxyhal_display(const bagl_element_t *element);
 void change_idle_display(uint32_t new);
 
 const bagl_element_t *default_prepro(const bagl_element_t *elem);
+const bagl_element_t *two_screens_scroll_second_prepro(const bagl_element_t *elem);
 
 extern char baking_auth_text[40];
 

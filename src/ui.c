@@ -106,14 +106,10 @@ const bagl_element_t ui_idle_screen[] = {
 #endif
 };
 
-static const bagl_element_t *idle_prepro(const bagl_element_t *elem);
-
 static void ui_idle(void) {
     update_auth_text();
-    ux_step = 0;
-    ux_step_count = 2;
     ui_prompt(ui_idle_screen, sizeof(ui_idle_screen)/sizeof(*ui_idle_screen),
-              do_nothing, exit_app, idle_prepro);
+              do_nothing, exit_app, two_screens_scroll_second_prepro);
 }
 
 void change_idle_display(uint32_t new) {
@@ -161,8 +157,7 @@ const bagl_element_t *default_prepro(const bagl_element_t *elem) {
     return elem;
 }
 
-// TODO: Refactor with prepro code in prompt_pubkey.c
-const bagl_element_t *idle_prepro(const bagl_element_t *element) {
+const bagl_element_t *two_screens_scroll_second_prepro(const bagl_element_t *element) {
     ux_step_count = 2;
     if (element->component.userid > 0) {
         unsigned int display = ux_step == element->component.userid - 1;
@@ -185,6 +180,7 @@ void ui_prompt(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback
                bagl_element_callback_t prepro) {
     // Adapted from definition of UX_DISPLAY in header file
     timeout_count = 0;
+    ux_step = 0;
     ok_callback = ok_c;
     cxl_callback = cxl_c;
     ux.elements = elems;

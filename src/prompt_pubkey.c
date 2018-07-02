@@ -216,37 +216,16 @@ void prompt_address(bool bake, cx_curve_t curve,
         THROW(EXC_WRONG_VALUES);
     }
 
-    ux_step = 0;
     ux_step_count = 2;
 #ifdef BAKING_APP
     if (bake) {
         ui_prompt(ui_bake_prompt, sizeof(ui_bake_prompt)/sizeof(*ui_bake_prompt),
-                  ok_cb, cxl_cb, prompt_address_prepro);
+                  ok_cb, cxl_cb, two_screens_scroll_second_prepro);
     } else {
 #endif
         ui_prompt(ui_pubkey_prompt, sizeof(ui_pubkey_prompt)/sizeof(*ui_pubkey_prompt),
-                  ok_cb, cxl_cb, prompt_address_prepro);
+                  ok_cb, cxl_cb, two_screens_scroll_second_prepro);
 #ifdef BAKING_APP
     }
 #endif
-}
-
-const struct bagl_element_e *prompt_address_prepro(const struct bagl_element_e *element) {
-    static int count = 0;
-    ux_step_count = 2;
-    if (element->component.userid > 0) {
-        unsigned int display = ux_step == element->component.userid - 1;
-        if (display) {
-            switch (element->component.userid) {
-            case 1:
-                UX_CALLBACK_SET_INTERVAL(2000);
-                break;
-            case 2:
-                UX_CALLBACK_SET_INTERVAL(MAX(2000, 1000 + bagl_label_roundtrip_duration_ms(element, 7)));
-                break;
-            }
-        }
-        return (void*)display;
-    }
-    return (void*)1;
 }
