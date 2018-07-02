@@ -31,7 +31,7 @@ static int provide_pubkey() {
 
 static void pubkey_ok() {
     int tx = provide_pubkey();
-    delay_send(tx);
+    delayed_send(tx);
 }
 
 #ifdef BAKING_APP

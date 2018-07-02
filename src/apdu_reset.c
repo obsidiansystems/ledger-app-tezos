@@ -96,7 +96,7 @@ void reset_ok() {
 
 
     // Send back the response, do not restart the event loop
-    delay_send(tx);
+    delayed_send(tx);
 }
 
 unsigned int handle_apdu_hwm(uint8_t instruction) {

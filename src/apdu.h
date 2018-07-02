@@ -45,14 +45,14 @@ static inline void return_ok(void) {
 }
 
 // Send back response; do not restart the event loop
-static inline void delay_send(uint32_t tx) {
+static inline void delayed_send(uint32_t tx) {
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
 }
 
 static inline void delay_reject(void) {
     G_io_apdu_buffer[0] = EXC_REJECT >> 8;
     G_io_apdu_buffer[1] = EXC_REJECT & 0xFF;
-    delay_send(2);
+    delayed_send(2);
 }
 
 uint32_t handle_apdu_error(uint8_t instruction);

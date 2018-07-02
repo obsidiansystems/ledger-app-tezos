@@ -34,18 +34,18 @@ static int perform_signature(bool hash_first);
 
 static void sign_unsafe_ok(void) {
     int tx = perform_signature(false);
-    delay_send(tx);
+    delayed_send(tx);
 }
 
 static void bake_auth_ok(void) {
     authorize_baking(curve, bip32_path, bip32_path_length);
     int tx = perform_signature(true);
-    delay_send(tx);
+    delayed_send(tx);
 }
 
 static void sign_ok(void) {
     int tx = perform_signature(true);
-    delay_send(tx);
+    delayed_send(tx);
 }
 
 static void clear_data(void) {
