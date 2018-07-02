@@ -232,7 +232,6 @@ void prompt_address(bool bake, cx_curve_t curve,
 }
 
 const struct bagl_element_e *prompt_address_prepro(const struct bagl_element_e *element) {
-    io_seproxyhal_setup_ticker(250);
     static int count = 0;
     ux_step_count = 2;
     if (element->component.userid > 0) {
@@ -240,10 +239,10 @@ const struct bagl_element_e *prompt_address_prepro(const struct bagl_element_e *
         if (display) {
             switch (element->component.userid) {
             case 1:
-                UX_CALLBACK_SET_INTERVAL(1000);
+                UX_CALLBACK_SET_INTERVAL(2000);
                 break;
             case 2:
-                UX_CALLBACK_SET_INTERVAL(MAX(1500, bagl_label_roundtrip_duration_ms(element, 7) / 2));
+                UX_CALLBACK_SET_INTERVAL(MAX(2000, 1000 + bagl_label_roundtrip_duration_ms(element, 7)));
                 break;
             }
         }

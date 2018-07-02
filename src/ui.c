@@ -16,7 +16,10 @@ static unsigned button_handler(unsigned button_mask, unsigned button_mask_counte
 static void do_nothing(void);
 
 uint32_t ux_step, ux_step_count;
-static int switch_event_count = 0;
+
+#define PROMPT_TIMEOUT 300
+#define PROMPT_CYCLES 3
+static uint32_t timeout_count;
 
 static void do_nothing(void) {
 }
@@ -106,6 +109,7 @@ const bagl_element_t ui_idle_screen[] = {
 static const bagl_element_t *idle_prepro(const bagl_element_t *elem);
 
 static void ui_idle(void) {
+    update_auth_text();
     ux_step = 0;
     ux_step_count = 2;
     ui_prompt(ui_idle_screen, sizeof(ui_idle_screen)/sizeof(*ui_idle_screen),
@@ -127,45 +131,48 @@ void ui_initial_screen(void) {
     ui_idle();
 }
 
+static void cancel_pressed(void) {
+    cxl_callback();
+    ui_idle();
+}
+
+static void ok_pressed(void) {
+    ok_callback();
+    ui_idle();
+}
+
 unsigned button_handler(unsigned button_mask, unsigned button_mask_counter) {
     switch (button_mask) {
         case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-            cxl_callback();
+            cancel_pressed();
             break;
         case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
-            ok_callback();
+            ok_pressed();
             break;
         default:
             return 0;
     }
-    update_auth_text();
-    ui_idle(); // display original screen
     return 0; // do not redraw the widget
 }
 
-#ifndef TIMEOUT_SECONDS
-#define TIMEOUT_SECONDS 30
-#endif
-
-const bagl_element_t *timer_setup(const bagl_element_t *elem) {
+// TODO: Rename this
+const bagl_element_t *default_prepro(const bagl_element_t *elem) {
     ux_step_count = 0;
-    io_seproxyhal_setup_ticker(TIMEOUT_SECONDS * 1000);
     return elem;
 }
 
 // TODO: Refactor with prepro code in prompt_pubkey.c
 const bagl_element_t *idle_prepro(const bagl_element_t *element) {
     ux_step_count = 2;
-    io_seproxyhal_setup_ticker(250);
     if (element->component.userid > 0) {
         unsigned int display = ux_step == element->component.userid - 1;
         if (display) {
             switch (element->component.userid) {
             case 1:
-                UX_CALLBACK_SET_INTERVAL(1000);
+                UX_CALLBACK_SET_INTERVAL(2000);
                 break;
             case 2:
-                UX_CALLBACK_SET_INTERVAL(MAX(1500, bagl_label_roundtrip_duration_ms(element, 7) / 2));
+                UX_CALLBACK_SET_INTERVAL(MAX(2000, 1000 + bagl_label_roundtrip_duration_ms(element, 7)));
                 break;
             }
         }
@@ -177,7 +184,7 @@ const bagl_element_t *idle_prepro(const bagl_element_t *element) {
 void ui_prompt(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback_t cxl_c,
                bagl_element_callback_t prepro) {
     // Adapted from definition of UX_DISPLAY in header file
-    switch_event_count = 0;
+    timeout_count = 0;
     ok_callback = ok_c;
     cxl_callback = cxl_c;
     ux.elements = elems;
@@ -206,27 +213,31 @@ unsigned char io_event(unsigned char channel) {
         UX_DISPLAYED_EVENT({});
         break;
     case SEPROXYHAL_TAG_TICKER_EVENT:
-        if (ux_step_count != 0 && switch_event_count < 4) {
+        if (ux_step_count != 0) {
             UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
                 // don't redisplay if UX not allowed (pin locked in the common bolos
                 // ux ?)
                 if (ux_step_count && UX_ALLOWED) {
-                    if (cxl_callback != exit_app) switch_event_count++;
                     // prepare next screen
                     ux_step = (ux_step + 1) % ux_step_count;
+                    if (cxl_callback != exit_app && ux_step == 0) {
+                        timeout_count++;
+                        if (timeout_count == PROMPT_CYCLES) {
+                            cancel_pressed();
+                            break;
+                        }
+                    }
                     // redisplay screen
                     UX_REDISPLAY();
                 }
             });
         } else if (cxl_callback != exit_app) {
-            switch_event_count = 0;
-            cxl_callback();
-            ui_idle();
-        } else if (cxl_callback == exit_app) {
-            switch_event_count = 0;
-            update_auth_text();
+            if (timeout_count == PROMPT_TIMEOUT) {
+                cancel_pressed();
+            }
+            timeout_count++;
+            break;
         }
-        break;
 
     // unknown events are acknowledged
     default:
