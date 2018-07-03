@@ -5,7 +5,7 @@
 #endif
 
 #define MAJOR 1
-#define MINOR 0
+#define MINOR 1
 #define PATCH 0
 
 typedef struct version {
