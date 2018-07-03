@@ -101,6 +101,7 @@ uint32_t baking_sign_complete(void) {
             cx_ecfp_private_key_t priv_key;
             cx_ecfp_public_key_t pub_key;
             generate_key_pair(curve, bip32_path_length, bip32_path, &pub_key, &priv_key);
+            memset(&priv_key, 0, sizeof(priv_key));
             prompt_address(true, curve, &pub_key, bake_auth_ok, sign_reject);
             THROW(ASYNC_EXCEPTION);
 
