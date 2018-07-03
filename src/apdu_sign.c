@@ -11,8 +11,9 @@
 
 #include "sign_screens.h"
 
-#define TEZOS_BUFSIZE 256
+#define TEZOS_BUFSIZE 512
 #define SIGN_HASH_SIZE 32
+#define BLAKE2B_BLOCKBYTES 128
 
 static uint8_t message_data[TEZOS_BUFSIZE];
 static uint32_t message_data_length;
@@ -23,11 +24,34 @@ static uint32_t bip32_path[MAX_BIP32_PATH];
 static blake2s_state hash_state;
 static bool is_hash_state_inited;
 static uint8_t magic_number;
+static bool hash_only;
 
 static void conditional_init_hash_state(void) {
     if (!is_hash_state_inited) {
         blake2b_init(&hash_state, SIGN_HASH_SIZE);
+        is_hash_state_inited = true;
     }
+}
+
+static void hash_buffer(void) {
+    const uint8_t *current = message_data;
+    conditional_init_hash_state();
+    while (message_data_length > BLAKE2B_BLOCKBYTES) {
+        blake2b_update(&hash_state, current, BLAKE2B_BLOCKBYTES);
+        message_data_length -= BLAKE2B_BLOCKBYTES;
+        current += BLAKE2B_BLOCKBYTES;
+    }
+    // XXX use circular buffer at some point
+    memmove(message_data, current, message_data_length);
+}
+
+static void finish_hashing(uint8_t *hash, size_t hash_size) {
+    hash_buffer();
+    conditional_init_hash_state();
+    blake2b_update(&hash_state, message_data, message_data_length);
+    blake2b_final(&hash_state, hash, hash_size);
+    message_data_length = 0;
+    is_hash_state_inited = false;
 }
 
 static int perform_signature(bool hash_first);
@@ -53,6 +77,7 @@ static void clear_data(void) {
     message_data_length = 0;
     is_hash_state_inited = false;
     magic_number = 0;
+    hash_only = false;
 }
 
 static void sign_reject(void) {
@@ -91,6 +116,7 @@ uint32_t baking_sign_complete(void) {
 
 #define P1_FIRST 0x00
 #define P1_NEXT 0x01
+#define P1_HASH_ONLY_NEXT 0x03 // You only need it once
 #define P1_LAST_MARKER 0x80
 
 unsigned int handle_apdu_sign(uint8_t instruction) {
@@ -101,6 +127,7 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
     bool last = (p1 & P1_LAST_MARKER) != 0;
     switch (p1 & ~P1_LAST_MARKER) {
     case P1_FIRST:
+        clear_data();
         os_memset(message_data, 0, TEZOS_BUFSIZE);
         message_data_length = 0;
         bip32_path_length = read_bip32_path(dataLength, bip32_path, dataBuffer);
@@ -118,6 +145,11 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
                 THROW(EXC_WRONG_PARAM);
         }
         return_ok();
+#ifndef BAKING_APP
+    case P1_HASH_ONLY_NEXT:
+        hash_only = true;
+        // FALL THROUGH
+#endif
     case P1_NEXT:
         if (bip32_path_length == 0) {
             THROW(EXC_WRONG_LENGTH_FOR_INS);
@@ -131,16 +163,14 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
         magic_number = get_magic_byte(dataBuffer, dataLength);
     }
 
-    if (message_data_length + dataLength > TEZOS_BUFSIZE) {
-#ifdef BAKING_APP
-        THROW(EXC_PARSE_ERROR);
-#else
-        if (instruction != INS_SIGN) THROW(EXC_PARSE_ERROR);
-
-        conditional_init_hash_state();
-        blake2b_update(&hash_state, message_data, message_data_length);
-        message_data_length = 0;
+#ifndef BAKING_APP
+    if (instruction == INS_SIGN) {
+        hash_buffer();
+    }
 #endif
+
+    if (message_data_length + dataLength > TEZOS_BUFSIZE) {
+        THROW(EXC_PARSE_ERROR);
     }
 
     os_memmove(message_data + message_data_length, dataBuffer, dataLength);
@@ -178,18 +208,31 @@ static int perform_signature(bool hash_first) {
     uint8_t *data = message_data;
     uint32_t datalen = message_data_length;
 
+#ifdef BAKING_APP
+    update_high_water_mark(message_data, message_data_length);
+#endif
+
     if (hash_first) {
-        conditional_init_hash_state();
-        blake2b_update(&hash_state, data, datalen);
-        blake2b_final(&hash_state, hash, SIGN_HASH_SIZE);
-        is_hash_state_inited = false;
+        hash_buffer();
+        finish_hashing(hash, sizeof(hash));
         data = hash;
         datalen = SIGN_HASH_SIZE;
+
+#ifndef BAKING_APP
+        if (hash_only) {
+            memcpy(G_io_apdu_buffer, data, datalen);
+            uint32_t tx = datalen;
+
+            G_io_apdu_buffer[tx++] = 0x90;
+            G_io_apdu_buffer[tx++] = 0x00;
+            return tx;
+        }
+#endif
     }
 
     generate_key_pair(curve, bip32_path_length, bip32_path, &publicKey, &privateKey);
 
-    int tx;
+    uint32_t tx;
     switch (curve) {
     case CX_CURVE_Ed25519: {
         tx = cx_eddsa_sign(&privateKey,
@@ -226,10 +269,6 @@ static int perform_signature(bool hash_first) {
     }
 
     os_memset(&privateKey, 0, sizeof(privateKey));
-
-#ifdef BAKING_APP
-    update_high_water_mark(message_data, message_data_length);
-#endif
 
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;
