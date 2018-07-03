@@ -17,7 +17,7 @@ static void do_nothing(void);
 
 uint32_t ux_step, ux_step_count;
 
-#define PROMPT_TIMEOUT 300
+#define PROMPT_TIMEOUT 300 // 100 ms per tick
 #define PROMPT_CYCLES 3
 static uint32_t timeout_count;
 
@@ -167,7 +167,7 @@ const bagl_element_t *two_screens_scroll_second_prepro(const bagl_element_t *ele
                 UX_CALLBACK_SET_INTERVAL(2000);
                 break;
             case 2:
-                UX_CALLBACK_SET_INTERVAL(MAX(2000, 1000 + bagl_label_roundtrip_duration_ms(element, 7)));
+                UX_CALLBACK_SET_INTERVAL(MAX(2000, 1500 + bagl_label_roundtrip_duration_ms(element, 7)));
                 break;
             }
         }
@@ -210,10 +210,9 @@ unsigned char io_event(unsigned char channel) {
         break;
     case SEPROXYHAL_TAG_TICKER_EVENT:
         if (ux_step_count != 0) {
-            UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
-                // don't redisplay if UX not allowed (pin locked in the common bolos
-                // ux ?)
-                if (UX_ALLOWED) {
+            if (ux.callback_interval_ms != 0) {
+                ux.callback_interval_ms -= MIN(ux.callback_interval_ms, 100);
+                if (ux.callback_interval_ms == 0) {
                     // prepare next screen
                     ux_step = (ux_step + 1) % ux_step_count;
                     if (cxl_callback != exit_app && ux_step == 0) {
@@ -226,14 +225,14 @@ unsigned char io_event(unsigned char channel) {
                     // redisplay screen
                     UX_REDISPLAY();
                 }
-            });
+            }
         } else if (cxl_callback != exit_app) {
             if (timeout_count == PROMPT_TIMEOUT) {
                 cancel_pressed();
             }
             timeout_count++;
-            break;
         }
+        break;
 
     // unknown events are acknowledged
     default:
