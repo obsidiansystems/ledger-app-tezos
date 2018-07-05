@@ -37,7 +37,7 @@ unsigned int handle_apdu_version(uint8_t instruction) {
 
 #define CLA 0x80
 
-void main_loop(apdu_handler handlers[INS_MASK + 1]) {
+void main_loop(apdu_handler handlers[INS_MAX]) {
     volatile uint32_t rx = io_exchange(CHANNEL_APDU, 0);
     while (true) {
         BEGIN_TRY {
@@ -60,7 +60,13 @@ void main_loop(apdu_handler handlers[INS_MASK + 1]) {
                 }
 
                 uint8_t instruction = G_io_apdu_buffer[1];
-                uint32_t tx = handlers[instruction & INS_MASK](instruction);
+                apdu_handler cb;
+                if (instruction >= INS_MAX) {
+                    cb = handle_apdu_error;
+                } else {
+                    cb = handlers[instruction];
+                }
+                uint32_t tx = cb(instruction);
                 rx = io_exchange(CHANNEL_APDU, tx);
             }
             CATCH(ASYNC_EXCEPTION) {

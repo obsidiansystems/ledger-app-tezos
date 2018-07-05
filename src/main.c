@@ -25,10 +25,10 @@ the specific language governing permissions and
 #include "apdu_reset.h"
 
 void app_main(void) {
-    static apdu_handler handlers[INS_MASK + 1];
+    static apdu_handler handlers[INS_MAX];
 
     // TODO: Consider using static initialization of a const, instead of this
-    for (int i = 0; i < INS_MASK + 1; i++) {
+    for (int i = 0; i < INS_MAX; i++) {
         handlers[i] = handle_apdu_error;
     }
     handlers[INS_VERSION] = handle_apdu_version;

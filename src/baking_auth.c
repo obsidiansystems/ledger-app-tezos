@@ -44,7 +44,7 @@ bool is_path_authorized(cx_curve_t curve, uint32_t *bip32_path, uint8_t path_len
         memcmp(bip32_path, N_data.bip32_path, path_length * sizeof(*bip32_path)) == 0;
 }
 
-void check_baking_authorized(cx_curve_t curve, void *data, int datalen, uint32_t *bip32_path,
+void guard_baking_authorized(cx_curve_t curve, void *data, int datalen, uint32_t *bip32_path,
                              uint8_t path_length) {
     if (is_block_valid(data, datalen)) {
         level_t level = get_block_level(data, datalen);

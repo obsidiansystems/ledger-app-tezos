@@ -15,8 +15,8 @@
 #define OFFSET_CDATA 5
 
 #define INS_VERSION 0x00
-#define INS_MASK 0x0F
-#define INS_EXIT 0x0F // Equivalent to 0xFF, it's only significant in the bits in INS_MASK
+#define INS_MAX 0x10
+#define INS_EXIT 0x0F
 
 // Throw this to indicate prompting
 #define ASYNC_EXCEPTION 0x2000
@@ -38,7 +38,7 @@
 // Return number of bytes to transmit (tx)
 typedef uint32_t (*apdu_handler)(uint8_t instruction);
 
-void main_loop(apdu_handler handlers[INS_MASK + 1]);
+void main_loop(apdu_handler handlers[INS_MAX]);
 
 static inline void return_ok(void) {
     THROW(0x9000);

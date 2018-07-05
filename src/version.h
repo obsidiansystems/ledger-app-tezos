@@ -6,7 +6,7 @@
 
 #define MAJOR 1
 #define MINOR 1
-#define PATCH 0
+#define PATCH 1
 
 typedef struct version {
     uint8_t class;
