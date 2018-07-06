@@ -70,7 +70,7 @@ void update_high_water_mark(void *data, int datalen) {
 
 void update_auth_text(void) {
     if (N_data.path_length == 0) {
-        strcpy(baking_auth_text, "Not Baking");
+        strcpy(baking_auth_text, "No Key Authorized");
     } else {
         cx_ecfp_public_key_t pub_key;
         cx_ecfp_private_key_t priv_key;
