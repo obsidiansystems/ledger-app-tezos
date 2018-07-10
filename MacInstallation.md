@@ -96,11 +96,11 @@ This prompt indicates that the application interacting with the Ledger is not th
 
 ### Ledger Prompt: “Open non-genuine app?”
 
-If the ledger says “Open non-genuine app?” then freezes, this is a sign that the install was unsuccessful. You probably need to update your Ledger’s firmware to 1.4.2, then restart the process.
+As these applications are not coming directly from Ledger Live or Ledger Manager, you should expect to see this prompt under all circumstances when following these instructions. If the ledger says “Open non-genuine app?” then freezes, this is a sign that the install was unsuccessful. You probably need to update your Ledger’s firmware to 1.4.2, then restart the process.
 
 ### “Broken certificate chain - loading from user key”
 
-If you are running the installation script and you already have a version of the application on your Ledger, you will see this message. This is normal, and not a cause for concern. 
+If you are running the installation script and you already have a version of the application on your Ledger, you will see this message. This is normal, and not a cause for concern.
 
 ### Removing a virtualenv
 
