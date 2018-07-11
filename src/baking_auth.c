@@ -20,7 +20,7 @@ void write_highest_level(level_t lvl) {
 }
 
 void authorize_baking(cx_curve_t curve, uint32_t *bip32_path, uint8_t path_length) {
-    if (path_length > MAX_BIP32_PATH || path_length == 0) {
+    if (bip32_path == NULL || path_length > MAX_BIP32_PATH || path_length == 0) {
         return;
     }
 
@@ -38,7 +38,8 @@ bool is_level_authorized(level_t level) {
 }
 
 bool is_path_authorized(cx_curve_t curve, uint32_t *bip32_path, uint8_t path_length) {
-    return path_length != 0 &&
+    return bip32_path != NULL &&
+        path_length != 0 &&
         path_length == N_data.path_length &&
         curve == N_data.curve &&
         memcmp(bip32_path, N_data.bip32_path, path_length * sizeof(*bip32_path)) == 0;

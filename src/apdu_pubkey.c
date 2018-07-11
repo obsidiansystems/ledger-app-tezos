@@ -17,7 +17,7 @@ static cx_curve_t curve;
 static uint8_t path_length;
 static uint32_t bip32_path[MAX_BIP32_PATH];
 
-static int provide_pubkey() {
+static int provide_pubkey(void) {
     int tx = 0;
     G_io_apdu_buffer[tx++] = public_key.W_len;
     os_memmove(G_io_apdu_buffer + tx,
@@ -29,13 +29,13 @@ static int provide_pubkey() {
     return tx;
 }
 
-static void pubkey_ok() {
+static void pubkey_ok(void) {
     int tx = provide_pubkey();
     delayed_send(tx);
 }
 
 #ifdef BAKING_APP
-static void baking_ok() {
+static void baking_ok(void) {
     authorize_baking(curve, bip32_path, path_length);
     pubkey_ok();
 }

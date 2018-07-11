@@ -30,6 +30,8 @@
 #define EXC_WRONG_VALUES 0x6A80
 #define EXC_SECURITY 0x6982
 #define EXC_CLASS 0x6E00
+#define EXC_NO_ERROR 0x9000
+#define EXC_MEMORY_ERROR 0x9200
 
 #define ASYNC_PROMPT(screen, ok, cxl) \
     UI_PROMPT(screen, ok, cxl); \
@@ -41,7 +43,7 @@ typedef uint32_t (*apdu_handler)(uint8_t instruction);
 void main_loop(apdu_handler handlers[INS_MASK + 1]);
 
 static inline void return_ok(void) {
-    THROW(0x9000);
+    THROW(EXC_NO_ERROR);
 }
 
 // Send back response; do not restart the event loop

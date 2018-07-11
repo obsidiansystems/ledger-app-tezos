@@ -64,7 +64,7 @@ const bagl_element_t ui_bake_reset_screen[] = {
 
 static level_t reset_level;
 
-static void reset_ok();
+static void reset_ok(void);
 
 unsigned int handle_apdu_reset(uint8_t instruction) {
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
@@ -87,7 +87,7 @@ unsigned int handle_apdu_reset(uint8_t instruction) {
     ASYNC_PROMPT(ui_bake_reset_screen, reset_ok, delay_reject);
 }
 
-void reset_ok() {
+void reset_ok(void) {
     write_highest_level(reset_level);
 
     uint32_t tx = 0;

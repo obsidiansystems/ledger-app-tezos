@@ -13,6 +13,8 @@ struct __attribute__((__packed__)) block {
     // ... beyond this we don't care
 };
 
+#define CHECK_NULL(x) { if (x == NULL) { THROW(EXC_MEMORY_ERROR); } }
+
 #define SUPPORTED_PROTO_VERSION 1
 
 bool is_block_valid(const void *data, size_t length) {
@@ -24,6 +26,8 @@ bool is_block_valid(const void *data, size_t length) {
 }
 
 int32_t read_unaligned_big_endian(const void *in) {
+    CHECK_NULL(in);
+
     const uint8_t *bytes = in;
     uint8_t out_bytes[4];
     int32_t res;
@@ -38,6 +42,7 @@ int32_t read_unaligned_big_endian(const void *in) {
 }
 
 level_t get_block_level(const void *data, size_t length) {
+    CHECK_NULL(data);
     const struct block *blk = data;
     return READ_UNALIGNED_BIG_ENDIAN(level_t, &blk->level);
 }
@@ -46,6 +51,7 @@ level_t get_block_level(const void *data, size_t length) {
 #define PARSE_ERROR(N) THROW(EXC_PARSE_ERROR)
 
 static const void *next_bytes(const void *data, size_t length, size_t *ix, size_t data_len) {
+    CHECK_NULL(ix);
     const uint8_t *bytes = data;
     if (*ix + data_len > length) PARSE_ERROR(16 + data_len);
     const void *res = bytes + *ix;
