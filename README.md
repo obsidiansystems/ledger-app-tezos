@@ -167,6 +167,8 @@ reading at *Using the Ledger apps*.
 The easiest way to obtain the Tezos Ledger apps is to download the `.hex` files
 from the [releases](https://github.com/obsidiansystems/ledger-app-tezos/releases)
 page. After doing so, skip ahead to *Installing the apps onto your Ledger device*.
+You will need to expand the releases tarball somewhere and copy the
+baking.hex and wallet.hex files into the ledger-app-tezos directory.
 If you want to compile the applications yourself, keep reading this section.
 
 ### Compiling the `.hex` files
