@@ -174,7 +174,7 @@ If you want to compile the applications yourself, keep reading this section.
 The first thing you'll need to do is clone this repository:
 
 ```
-$ git clone git@github.com:obsidiansystems/ledger-app-tezos.git
+$ git clone https://github.com/obsidiansystems/ledger-app-tezos.git
 ```
 
 You will need to have the
@@ -312,6 +312,9 @@ before your prompt -- use pip to install the `ledgerblue`
 This will install the Ledger Python packages into the virtualenv; they will be
 available only in a shell where the virtualenv has been activated.
 
+Note: We are installing this python package named "ledgerblue" even though we are working with Ledger Nano S hardware.
+Do not skip this step even though you are not usign Ledger Blue hardware.
+
 ```
 $ pip install ledgerblue
 ```
@@ -346,7 +349,7 @@ the root directory of this very repo, which means that in order to have it, you
 must clone this repo and `cd` into the resulting directory:
 
 ```
-$ git clone git@github.com:obsidiansystems/ledger-app-tezos.git
+$ git clone https://github.com/obsidiansystems/ledger-app-tezos.git
 $ cd ledger-app-tezos/
 ```
 
