@@ -315,7 +315,7 @@ This will install the Ledger Python packages into the virtualenv; they will be
 available only in a shell where the virtualenv has been activated.
 
 Note: We are installing this python package named "ledgerblue" even though we are working with Ledger Nano S hardware.
-Do not skip this step even though you are not usign Ledger Blue hardware.
+Do not skip this step even though you are not using Ledger Blue hardware.
 
 ```
 $ pip install ledgerblue
