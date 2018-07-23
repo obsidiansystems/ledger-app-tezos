@@ -7,6 +7,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#if CX_APILEVEL < 8
+#error "May only compile with API level 8 or higher; requires newer firmware"
+#endif
+
 #define OFFSET_CLA 0
 #define OFFSET_INS 1
 #define OFFSET_P1 2
@@ -33,7 +37,8 @@
 #define EXC_NO_ERROR 0x9000
 #define EXC_MEMORY_ERROR 0x9200
 
-static inline void check_null(void *ptr) {
+// Crashes can be harder to debug than exceptions and latency isn't a big concern
+static inline void check_null(const void *ptr) {
     if (ptr == NULL) {
         THROW(EXC_MEMORY_ERROR);
     }

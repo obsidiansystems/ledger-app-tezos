@@ -2,7 +2,7 @@
 
 #include "os_io_seproxyhal.h"
 
-typedef void (*callback_t)();
+typedef void (*callback_t)(void);
 
 extern uint32_t ux_step, ux_step_count;
 
