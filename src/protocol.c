@@ -18,7 +18,7 @@ struct __attribute__((__packed__)) block {
 bool is_block_valid(const void *data, size_t length) {
     if (length < sizeof(struct block)) return false;
     if (get_magic_byte(data, length) != MAGIC_BYTE_BLOCK) return false;
-    const struct block *blk = data;
+    // TODO: Check chain id
     return true;
 }
 
@@ -64,7 +64,7 @@ static inline uint64_t parse_z(const uint8_t *bytes, size_t length, size_t *pos)
     } \
     val; \
 })
-#define NEXT_BYTE() NEXT_TYPE(uint8_t)
+#define NEXT_BYTE() (*NEXT_TYPE(uint8_t))
 #define PARSE_Z() parse_z(data, length, &ix)
 
 typedef uint32_t (*ops_parser)(const void *data, size_t length, size_t *ix_p, uint8_t tag, uint64_t fee);
@@ -72,24 +72,23 @@ typedef uint32_t (*ops_parser)(const void *data, size_t length, size_t *ix_p, ui
 // Shared state between ops parser and main parser
 static cx_ecfp_public_key_t public_key;
 static cx_ecfp_private_key_t private_key;
+static uint8_t hash[HASH_SIZE];
+static uint8_t curve_code;
 
 // Zero means correct parse, non-zero means problem
 // Specific return code can be used for debugging purposes
 uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
-                          size_t path_length, uint32_t *bip32_path, bool delegation,
-                          ops_parser parser) {
+                          size_t path_length, uint32_t *bip32_path, ops_parser parser) {
     check_null(data);
     check_null(bip32_path);
 
     cx_ecfp_public_key_t public_key_init;
-    uint8_t hash[HASH_SIZE];
 
     generate_key_pair(curve, path_length, bip32_path, &public_key_init, &private_key);
     os_memset(&private_key, 0, sizeof(private_key));
 
     public_key_hash(hash, curve, &public_key_init, &public_key);
 
-    uint8_t curve_code;
     switch (curve) {
         case CX_CURVE_Ed25519:
             curve_code = 0;
@@ -107,38 +106,27 @@ uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
     size_t ix = 0;
 
     // Verify magic byte, ignore block hash
-    struct operation_group_header *ogh = NEXT_TYPE(struct operation_group_header);
+    const struct operation_group_header *ogh = NEXT_TYPE(struct operation_group_header);
     if (ogh->magic_byte != MAGIC_BYTE_UNSAFE_OP) return 15;
 
     while (ix < length) {
-        const struct operation_header *hdr = &NEXT_TYPE(struct operation_header);
+        const struct operation_header *hdr = NEXT_TYPE(struct operation_header);
         if (hdr->contract.curve_code != curve_code) return 13;
         if (hdr->contract.outright != 0) return 12;
         if (memcmp(hdr->contract.pkh, hash, HASH_SIZE) != 0) return 14;
 
         uint64_t fee = PARSE_Z(); // fee
         PARSE_Z(); // counter
-        if (PARSE_Z() != 0) return 1; // gas limit
-        if (PARSE_Z() != 0) return 2; // storage limit
+        PARSE_Z(); // gas limit
+        PARSE_Z(); // storage limit
 
         uint32_t res = parser(data, length, &ix, hdr->tag, fee);
         if (res != 0) return res;
-        switch (hdr->tag) {
-            case OPERATION_TAG_TRANSACTION:
-                if (delegation) return 1000;
-                if (fee > 50000) return 100;
-                uint64_t amount = PARSE_Z();
-                set_prompt_to_amount(amount);
-                break;
-            default:
-                return 8;
-        }
     }
 }
 
 static uint32_t self_delg_parser(const void *data, size_t length, size_t *ix_p, uint8_t tag,
                                  uint64_t fee) {
-    uint32_t res = 0;
     size_t ix = *ix_p;
 
     switch (tag) {
@@ -154,7 +142,7 @@ static uint32_t self_delg_parser(const void *data, size_t length, size_t *ix_p, 
             if (fee > 50000) return 100; // You want a higher fee, use wallet app!
 
             // Delegation up next!
-            const struct delegation_contents *dlg = &NEXT_TYPE(struct delegation_contents);
+            const struct delegation_contents *dlg = NEXT_TYPE(struct delegation_contents);
             if (dlg->curve_code != curve_code) return 5;
             if (dlg->delegate_present != 0xFF) return 6;
             if (memcmp(dlg->hash, hash, HASH_SIZE) != 0) return 7;
@@ -241,6 +229,8 @@ static void set_prompt_to_amount(uint64_t amount) {
 
 static uint32_t transact_parser(const void *data, size_t length, size_t *ix_p, uint8_t tag,
                                 uint64_t fee) {
+    size_t ix = *ix_p;
+
     switch (tag) {
         case OPERATION_TAG_TRANSACTION:
             if (fee > 50000) return 100;
@@ -250,6 +240,9 @@ static uint32_t transact_parser(const void *data, size_t length, size_t *ix_p, u
         default:
             return 8;
     }
+
+    *ix_p = ix;
+    return 0;
 }
 
 // Return false if the transaction isn't easily parseable, otherwise prompt with given callbacks

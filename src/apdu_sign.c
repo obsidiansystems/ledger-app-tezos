@@ -9,8 +9,6 @@
 #include "cx.h"
 #include "ui.h"
 
-#include "sign_screens.h"
-
 #define TEZOS_BUFSIZE 512
 #define SIGN_HASH_SIZE 32
 #define BLAKE2B_BLOCKBYTES 128
