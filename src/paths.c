@@ -59,7 +59,7 @@ static uint32_t path_item_to_string(char *dest, uint32_t input) {
 // This function does output terminating null bytes
 uint32_t path_to_string(char *buf, uint32_t path_length, uint32_t *bip32_path) {
     uint32_t offset = 0;
-    for (uint32_t i = 0; i < path_length; i++) {
+    for (size_t i = 0; i < path_length; i++) {
         offset += path_item_to_string(buf + offset, bip32_path[i]);
         if (i != path_length - 1) {
             buf[offset++] = '/';
@@ -80,7 +80,7 @@ uint32_t read_bip32_path(uint32_t bytes, uint32_t *bip32_path, const uint8_t *bu
         THROW(EXC_WRONG_VALUES);
     }
 
-    for (uint32_t i = 0; i < path_length; i++) {
+    for (size_t i = 0; i < path_length; i++) {
         bip32_path[i] = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3]);
         buf += 4;
     }

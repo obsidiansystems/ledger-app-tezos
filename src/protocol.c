@@ -1,5 +1,7 @@
 #include "protocol.h"
 
+#include "apdu.h"
+
 #include <stdint.h>
 #include <string.h>
 
@@ -13,8 +15,6 @@ struct __attribute__((__packed__)) block {
     // ... beyond this we don't care
 };
 
-#define CHECK_NULL(x) { if (x == NULL) { THROW(EXC_MEMORY_ERROR); } }
-
 #define SUPPORTED_PROTO_VERSION 1
 
 bool is_block_valid(const void *data, size_t length) {
@@ -25,24 +25,8 @@ bool is_block_valid(const void *data, size_t length) {
     return true;
 }
 
-int32_t read_unaligned_big_endian(const void *in) {
-    CHECK_NULL(in);
-
-    const uint8_t *bytes = in;
-    uint8_t out_bytes[4];
-    int32_t res;
-
-    out_bytes[0] = bytes[3];
-    out_bytes[1] = bytes[2];
-    out_bytes[2] = bytes[1];
-    out_bytes[3] = bytes[0];
-    memcpy(&res, out_bytes, 4);
-
-    return res;
-}
-
 level_t get_block_level(const void *data, size_t length) {
-    CHECK_NULL(data);
+    check_null(data);
     const struct block *blk = data;
     return READ_UNALIGNED_BIG_ENDIAN(level_t, &blk->level);
 }
@@ -51,7 +35,7 @@ level_t get_block_level(const void *data, size_t length) {
 #define PARSE_ERROR(N) THROW(EXC_PARSE_ERROR)
 
 static const void *next_bytes(const void *data, size_t length, size_t *ix, size_t data_len) {
-    CHECK_NULL(ix);
+    check_null(ix);
     const uint8_t *bytes = data;
     if (*ix + data_len > length) PARSE_ERROR(16 + data_len);
     const void *res = bytes + *ix;
@@ -60,6 +44,8 @@ static const void *next_bytes(const void *data, size_t length, size_t *ix, size_
 }
 
 static uint64_t parse_z(const uint8_t *bytes, size_t length, size_t *pos) {
+    check_null(bytes);
+    check_null(pos);
     uint64_t acc = 0;
     uint32_t shift = 0;
     while (true) {
@@ -74,6 +60,8 @@ static uint64_t parse_z(const uint8_t *bytes, size_t length, size_t *pos) {
 
 void guard_valid_self_delegation(const void *data, size_t length, cx_curve_t curve,
                                  size_t path_length, uint32_t *bip32_path) {
+    check_null(data);
+    check_null(bip32_path);
     if (length < 33) PARSE_ERROR(0);
 
     cx_ecfp_public_key_t public_key_init;

@@ -33,6 +33,12 @@
 #define EXC_NO_ERROR 0x9000
 #define EXC_MEMORY_ERROR 0x9200
 
+static inline void check_null(void *ptr) {
+    if (ptr == NULL) {
+        THROW(EXC_MEMORY_ERROR);
+    }
+}
+
 #define ASYNC_PROMPT(screen, ok, cxl) \
     UI_PROMPT(screen, ok, cxl); \
     THROW(ASYNC_EXCEPTION)
