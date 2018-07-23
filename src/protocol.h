@@ -38,8 +38,10 @@ level_t get_block_level(const void *data, size_t length); // Precondition: is_bl
         res; \
     })
 
-void guard_valid_self_delegation(const void *data, size_t length, cx_curve_t curve,
-                                 size_t path_length, uint32_t *bip32_path);
+struct operation_group_header {
+    uint8_t magic_byte;
+    uint8_t hash[32];
+} __attribute__((packed));
 
 struct contract {
     uint8_t outright;
@@ -49,6 +51,7 @@ struct contract {
 
 enum operation_tag {
     OPERATION_TAG_REVEAL = 7,
+    OPERATION_TAG_TRANSACTION = 8,
     OPERATION_TAG_DELEGATION = 10,
 };
 
@@ -62,3 +65,12 @@ struct delegation_contents {
     uint8_t curve_code;
     uint8_t hash[HASH_SIZE];
 } __attribute__((packed));
+
+void guard_valid_self_delegation(const void *data, size_t length, cx_curve_t curve,
+                                 size_t path_length, uint32_t *bip32_path);
+
+// Return false if the transaction isn't easily parseable, otherwise prompt with given callbacks
+// and do not return, but rather throw ASYNC.
+bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
+                        size_t path_length, uint32_t *bip32_path,
+                        callback_t ok, callback_t cxl);

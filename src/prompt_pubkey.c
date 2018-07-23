@@ -227,4 +227,5 @@ void prompt_address(bool bake, cx_curve_t curve,
 #ifdef BAKING_APP
     }
 #endif
+    THROW(ASYNC_EXCEPTION);
 }

@@ -28,19 +28,16 @@ level_t get_block_level(const void *data, size_t length) {
     return READ_UNALIGNED_BIG_ENDIAN(level_t, &blk->level);
 }
 
-// Error code can be made to depend on N for debugging
-#define PARSE_ERROR(N) THROW(EXC_PARSE_ERROR)
-
-static const void *next_bytes(const void *data, size_t length, size_t *ix, size_t data_len) {
+static inline const void *next_bytes(const void *data, size_t length, size_t *ix, size_t data_len) {
     check_null(ix);
     const uint8_t *bytes = data;
-    if (*ix + data_len > length) PARSE_ERROR(16 + data_len);
+    if (*ix + data_len > length) return NULL;
     const void *res = bytes + *ix;
     *ix += data_len;
     return res;
 }
 
-static uint64_t parse_z(const uint8_t *bytes, size_t length, size_t *pos) {
+static inline uint64_t parse_z(const uint8_t *bytes, size_t length, size_t *pos) {
     check_null(bytes);
     check_null(pos);
     uint64_t acc = 0;
@@ -55,15 +52,36 @@ static uint64_t parse_z(const uint8_t *bytes, size_t length, size_t *pos) {
     }
 }
 
-void guard_valid_self_delegation(const void *data, size_t length, cx_curve_t curve,
-                                 size_t path_length, uint32_t *bip32_path) {
+// These macros assume:
+// * Beginning of data: const void *data
+// * Total length of data: size_t length
+// * Current index of data: size_t ix
+// Any function that uses these macros should have these as local variables
+#define NEXT_TYPE(type) ({ \
+    const type *val = next_bytes(data, length, &ix, sizeof(type)); \
+    if (val == NULL) { \
+        return sizeof(type); \
+    } \
+    val; \
+})
+#define NEXT_BYTE() NEXT_TYPE(uint8_t)
+#define PARSE_Z() parse_z(data, length, &ix)
+
+typedef uint32_t (*ops_parser)(const void *data, size_t length, size_t *ix_p, uint8_t tag, uint64_t fee);
+
+// Shared state between ops parser and main parser
+static cx_ecfp_public_key_t public_key;
+static cx_ecfp_private_key_t private_key;
+
+// Zero means correct parse, non-zero means problem
+// Specific return code can be used for debugging purposes
+uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
+                          size_t path_length, uint32_t *bip32_path, bool delegation,
+                          ops_parser parser) {
     check_null(data);
     check_null(bip32_path);
-    if (length < 33) PARSE_ERROR(0);
 
     cx_ecfp_public_key_t public_key_init;
-    cx_ecfp_public_key_t public_key;
-    cx_ecfp_private_key_t private_key;
     uint8_t hash[HASH_SIZE];
 
     generate_key_pair(curve, path_length, bip32_path, &public_key_init, &private_key);
@@ -83,55 +101,165 @@ void guard_valid_self_delegation(const void *data, size_t length, cx_curve_t cur
             curve_code = 2;
             break;
         default:
-            PARSE_ERROR(9); // Should not be reached
+            return 9; // Should not be reached
     }
 
     size_t ix = 0;
 
-#define NEXT_TYPE(type) (*(const type*)next_bytes(data, length, &ix, sizeof(type)))
-#define NEXT_BYTE() NEXT_TYPE(uint8_t)
-#define PARSE_Z() parse_z(data, length, &ix)
-
-    // Magic number
-    if (NEXT_BYTE() != MAGIC_BYTE_UNSAFE_OP) PARSE_ERROR(15);
-
-    struct block_hash {
-        uint8_t hash[32];
-    };
-    NEXT_TYPE(struct block_hash);
+    // Verify magic byte, ignore block hash
+    struct operation_group_header *ogh = NEXT_TYPE(struct operation_group_header);
+    if (ogh->magic_byte != MAGIC_BYTE_UNSAFE_OP) return 15;
 
     while (ix < length) {
         const struct operation_header *hdr = &NEXT_TYPE(struct operation_header);
-        if (hdr->contract.curve_code != curve_code) PARSE_ERROR(13);
-        if (hdr->contract.outright != 0) PARSE_ERROR(12);
-        if (memcmp(hdr->contract.pkh, hash, HASH_SIZE) != 0) PARSE_ERROR(14);
+        if (hdr->contract.curve_code != curve_code) return 13;
+        if (hdr->contract.outright != 0) return 12;
+        if (memcmp(hdr->contract.pkh, hash, HASH_SIZE) != 0) return 14;
 
         uint64_t fee = PARSE_Z(); // fee
         PARSE_Z(); // counter
-        if (PARSE_Z() != 0) PARSE_ERROR(1); // gas limit
-        if (PARSE_Z() != 0) PARSE_ERROR(2); // storage limit
+        if (PARSE_Z() != 0) return 1; // gas limit
+        if (PARSE_Z() != 0) return 2; // storage limit
 
+        uint32_t res = parser(data, length, &ix, hdr->tag, fee);
+        if (res != 0) return res;
         switch (hdr->tag) {
-            case OPERATION_TAG_REVEAL:
-                if (fee != 0) PARSE_ERROR(3); // Who sets a fee for reveal?
-
-                // Public key up next!
-                if (NEXT_BYTE() != curve_code) PARSE_ERROR(-2);
-                const uint8_t *pubkey = next_bytes(data, length, &ix, public_key.W_len);
-                if (memcmp(public_key.W, pubkey, public_key.W_len) != 0) PARSE_ERROR(4);
-                break;
-            case OPERATION_TAG_DELEGATION:
-                if (fee > 50000) PARSE_ERROR(-1); // You want a higher fee, use wallet app!
-
-                // Delegation up next!
-                const struct delegation_contents *dlg = &NEXT_TYPE(struct delegation_contents);
-                if (dlg->curve_code != curve_code) PARSE_ERROR(5);
-                if (dlg->delegate_present != 0xFF) PARSE_ERROR(6);
-                if (memcmp(dlg->hash, hash, HASH_SIZE) != 0) PARSE_ERROR(7);
+            case OPERATION_TAG_TRANSACTION:
+                if (delegation) return 1000;
+                if (fee > 50000) return 100;
+                uint64_t amount = PARSE_Z();
+                set_prompt_to_amount(amount);
                 break;
             default:
-                PARSE_ERROR(8);
+                return 8;
         }
     }
-    // Success!
+}
+
+static uint32_t self_delg_parser(const void *data, size_t length, size_t *ix_p, uint8_t tag,
+                                 uint64_t fee) {
+    uint32_t res = 0;
+    size_t ix = *ix_p;
+
+    switch (tag) {
+        case OPERATION_TAG_REVEAL:
+            if (fee != 0) return 3; // Who sets a fee for reveal?
+
+            // Public key up next!
+            if (NEXT_BYTE() != curve_code) return 64;
+            const uint8_t *pubkey = next_bytes(data, length, &ix, public_key.W_len);
+            if (memcmp(public_key.W, pubkey, public_key.W_len) != 0) return 4;
+            break;
+        case OPERATION_TAG_DELEGATION:
+            if (fee > 50000) return 100; // You want a higher fee, use wallet app!
+
+            // Delegation up next!
+            const struct delegation_contents *dlg = &NEXT_TYPE(struct delegation_contents);
+            if (dlg->curve_code != curve_code) return 5;
+            if (dlg->delegate_present != 0xFF) return 6;
+            if (memcmp(dlg->hash, hash, HASH_SIZE) != 0) return 7;
+            break;
+        default:
+            return 8;
+    }
+
+    *ix_p = ix;
+    return 0;
+}
+
+
+void guard_valid_self_delegation(const void *data, size_t length, cx_curve_t curve,
+                                 size_t path_length, uint32_t *bip32_path) {
+    if (parse_operations(data, length, curve, path_length, bip32_path, self_delg_parser) == 0) {
+        return; // Not throwing indicates success
+    } else {
+        THROW(EXC_PARSE_ERROR);
+    }
+}
+
+char transaction_string[80];
+
+const bagl_element_t ui_sign_screen[] = {
+    // type                               userid    x    y   w    h  str rad
+    // fill      fg        bg      fid iid  txt   touchparams...       ]
+    {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
+      0, 0},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x01, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Tezos",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_LABELINE, 0x01, 0, 26, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     transaction_string,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+      BAGL_GLYPH_ICON_CROSS},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+      BAGL_GLYPH_ICON_CHECK},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+};
+
+static void set_prompt_to_amount(uint64_t amount) {
+#define TRANSACTION_BEGIN "Transaction for "
+    strcpy(transaction_string, TRANSACTION_BEGIN);
+    size_t off = sizeof(TRANSACTION_BEGIN);
+    off += number_to_string(transaction_string + off, amount);
+    transaction_string[off] = '\0';
+}
+
+static uint32_t transact_parser(const void *data, size_t length, size_t *ix_p, uint8_t tag,
+                                uint64_t fee) {
+    switch (tag) {
+        case OPERATION_TAG_TRANSACTION:
+            if (fee > 50000) return 100;
+            uint64_t amount = PARSE_Z();
+            set_prompt_to_amount(amount);
+            break;
+        default:
+            return 8;
+    }
+}
+
+// Return false if the transaction isn't easily parseable, otherwise prompt with given callbacks
+// and do not return, but rather throw ASYNC.
+bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
+                        size_t path_length, uint32_t *bip32_path,
+                        callback_t ok, callback_t cxl) {
+    if (parse_operations(data, length, curve, path_length, bip32_path, transact_parser) == 0) {
+        ASYNC_PROMPT(ui_sign_screen, ok, cxl);
+    } else {
+        return false;
+    }
 }

@@ -100,6 +100,5 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
         }
 #endif
         prompt_address(bake, curve, &public_key, cb, delay_reject);
-        THROW(ASYNC_EXCEPTION);
     }
 }

@@ -23,6 +23,7 @@ static uint32_t bip32_path[MAX_BIP32_PATH];
 
 static blake2s_state hash_state;
 static bool is_hash_state_inited;
+static bool started_hashing;
 static uint8_t magic_number;
 static bool hash_only;
 
@@ -38,6 +39,7 @@ static void hash_buffer(void) {
     conditional_init_hash_state();
     while (message_data_length > BLAKE2B_BLOCKBYTES) {
         blake2b_update(&hash_state, current, BLAKE2B_BLOCKBYTES);
+        started_hashing = true;
         message_data_length -= BLAKE2B_BLOCKBYTES;
         current += BLAKE2B_BLOCKBYTES;
     }
@@ -51,6 +53,7 @@ static void finish_hashing(uint8_t *hash, size_t hash_size) {
     blake2b_final(&hash_state, hash, hash_size);
     message_data_length = 0;
     is_hash_state_inited = false;
+    started_hashing = false;
 }
 
 static int perform_signature(bool hash_first);
@@ -77,6 +80,7 @@ static void clear_data(void) {
     is_hash_state_inited = false;
     magic_number = 0;
     hash_only = false;
+    started_hashing = false;
 }
 
 static void sign_reject(void) {
@@ -102,7 +106,6 @@ uint32_t baking_sign_complete(void) {
             generate_key_pair(curve, bip32_path_length, bip32_path, &pub_key, &priv_key);
             memset(&priv_key, 0, sizeof(priv_key));
             prompt_address(true, curve, &pub_key, bake_auth_ok, sign_reject);
-            THROW(ASYNC_EXCEPTION);
 
         case MAGIC_BYTE_UNSAFE_OP2:
         case MAGIC_BYTE_UNSAFE_OP3:
@@ -110,7 +113,83 @@ uint32_t baking_sign_complete(void) {
             THROW(EXC_PARSE_ERROR);
     }
 }
+#else
 
+const bagl_element_t ui_sign_unsafe_screen[] = {
+    // type                               userid    x    y   w    h  str rad
+    // fill      fg        bg      fid iid  txt   touchparams...       ]
+    {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
+      0, 0},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x01, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Tezos",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_LABELINE, 0x01, 0, 26, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Sign Prehashed Data?",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+      BAGL_GLYPH_ICON_CROSS},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+    {{BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+      BAGL_GLYPH_ICON_CHECK},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+};
+
+uint32_t wallet_sign_complete(uint8_t instruction) {
+    if (instruction == INS_SIGN_UNSAFE) {
+        ASYNC_PROMPT(ui_sign_unsafe_screen, sign_unsafe_ok, delay_reject);
+    } else {
+        switch (magic_number) {
+            case MAGIC_BYTE_BLOCK:
+            case MAGIC_BYTE_BAKING_OP:
+            default:
+                THROW(EXC_PARSE_ERROR);
+            case MAGIC_BYTE_UNSAFE_OP:
+                if (started_hashing) goto unsafe;
+                if (!prompt_transaction(message_data, message_data_length, curve,
+                                        bip32_path_length, bip32_path, sign_ok, delay_reject)) {
+                    goto unsafe;
+                }
+            case MAGIC_BYTE_UNSAFE_OP2:
+            case MAGIC_BYTE_UNSAFE_OP3:
+                goto unsafe;
+        }
+unsafe:
+        ASYNC_PROMPT(ui_sign_unsafe_screen, sign_ok, delay_reject);
+    }
+}
 #endif
 
 #define P1_FIRST 0x00
@@ -183,20 +262,7 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
 #ifdef BAKING_APP
     return baking_sign_complete();
 #else
-    if (instruction == INS_SIGN_UNSAFE) {
-        ASYNC_PROMPT(ui_sign_unsafe_screen, sign_unsafe_ok, delay_reject);
-    } else {
-        switch (magic_number) {
-            case MAGIC_BYTE_BLOCK:
-            case MAGIC_BYTE_BAKING_OP:
-            default:
-                THROW(EXC_PARSE_ERROR);
-            case MAGIC_BYTE_UNSAFE_OP:
-            case MAGIC_BYTE_UNSAFE_OP2:
-            case MAGIC_BYTE_UNSAFE_OP3:
-                ASYNC_PROMPT(ui_sign_screen, sign_ok, delay_reject);
-        }
-    }
+    return wallet_sign_complete(instruction);
 #endif
 }
 
