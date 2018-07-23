@@ -47,7 +47,6 @@ static void hash_buffer(void) {
 
 static void finish_hashing(uint8_t *hash, size_t hash_size) {
     hash_buffer();
-    conditional_init_hash_state();
     blake2b_update(&hash_state, message_data, message_data_length);
     blake2b_final(&hash_state, hash, hash_size);
     message_data_length = 0;
@@ -91,7 +90,7 @@ uint32_t baking_sign_complete(void) {
     switch (magic_number) {
         case MAGIC_BYTE_BLOCK:
         case MAGIC_BYTE_BAKING_OP:
-            check_baking_authorized(curve, message_data, message_data_length,
+            guard_baking_authorized(curve, message_data, message_data_length,
                                     bip32_path, bip32_path_length);
             return perform_signature(true);
 
@@ -101,13 +100,13 @@ uint32_t baking_sign_complete(void) {
             cx_ecfp_private_key_t priv_key;
             cx_ecfp_public_key_t pub_key;
             generate_key_pair(curve, bip32_path_length, bip32_path, &pub_key, &priv_key);
+            memset(&priv_key, 0, sizeof(priv_key));
             prompt_address(true, curve, &pub_key, bake_auth_ok, sign_reject);
             THROW(ASYNC_EXCEPTION);
 
         case MAGIC_BYTE_UNSAFE_OP2:
         case MAGIC_BYTE_UNSAFE_OP3:
         default:
-
             THROW(EXC_PARSE_ERROR);
     }
 }
@@ -147,6 +146,7 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
         return_ok();
 #ifndef BAKING_APP
     case P1_HASH_ONLY_NEXT:
+        // This is a debugging Easter egg
         hash_only = true;
         // FALL THROUGH
 #endif
@@ -199,7 +199,6 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
     }
 #endif
 }
-
 
 static int perform_signature(bool hash_first) {
     cx_ecfp_private_key_t privateKey;

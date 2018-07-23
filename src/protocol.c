@@ -15,13 +15,10 @@ struct __attribute__((__packed__)) block {
     // ... beyond this we don't care
 };
 
-#define SUPPORTED_PROTO_VERSION 1
-
 bool is_block_valid(const void *data, size_t length) {
     if (length < sizeof(struct block)) return false;
     if (get_magic_byte(data, length) != MAGIC_BYTE_BLOCK) return false;
     const struct block *blk = data;
-    if (blk->proto != SUPPORTED_PROTO_VERSION) return false;
     return true;
 }
 

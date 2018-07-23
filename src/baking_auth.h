@@ -21,7 +21,7 @@ extern WIDE nvram_data N_data_real;
 
 void authorize_baking(cx_curve_t curve, uint32_t *bip32_path, uint8_t pathLength);
 void write_highest_level(level_t level);
-void check_baking_authorized(cx_curve_t curve, void *data, int datalen, uint32_t *bip32_path,
+void guard_baking_authorized(cx_curve_t curve, void *data, int datalen, uint32_t *bip32_path,
                              uint8_t path_length);
 bool is_path_authorized(cx_curve_t curve, uint32_t *bip32_path, uint8_t path_length);
 void update_high_water_mark(void *data, int datalen);
