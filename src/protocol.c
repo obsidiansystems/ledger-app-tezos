@@ -7,6 +7,8 @@
 
 #include "os.h"
 
+#define DEBUG
+
 struct __attribute__((__packed__)) block {
     char magic_byte;
     uint32_t chain_id;
@@ -28,45 +30,34 @@ level_t get_block_level(const void *data, size_t length) {
     return READ_UNALIGNED_BIG_ENDIAN(level_t, &blk->level);
 }
 
-static inline const void *next_bytes(const void *data, size_t length, size_t *ix, size_t data_len) {
-    check_null(ix);
-    check_null(data);
-    const uint8_t *bytes = data;
-    if (*ix + data_len > length) return NULL;
-    const void *res = bytes + *ix;
-    *ix += data_len;
-    return res;
-}
-
-static inline uint64_t parse_z(const uint8_t *bytes, size_t length, size_t *pos) {
-    check_null(bytes);
-    check_null(pos);
-    uint64_t acc = 0;
-    uint32_t shift = 0;
-    while (true) {
-        uint8_t next_byte = *(uint8_t*)next_bytes(bytes, length, pos, 1);
-        acc |= (next_byte & 0x7F) << shift;
-        shift += 7;
-        if (!(next_byte & 0x80)) { // last byte has no high bit set
-            return acc;
-        }
-    }
-}
-
 // These macros assume:
 // * Beginning of data: const void *data
 // * Total length of data: size_t length
 // * Current index of data: size_t ix
 // Any function that uses these macros should have these as local variables
 #define NEXT_TYPE(type) ({ \
-    const type *val = next_bytes(data, length, &ix, sizeof(type)); \
-    if (val == NULL) { /* Error */ \
-        return sizeof(type) + length; \
-    } \
+    if (ix + sizeof(type) > length) return sizeof(type); \
+    const type *val = data + ix; \
+    ix += sizeof(type); \
     val; \
 })
+
 #define NEXT_BYTE() (*NEXT_TYPE(uint8_t))
-#define PARSE_Z() parse_z(data, length, &ix)
+
+#define PARSE_Z() ({ \
+    uint64_t acc = 0; \
+    uint64_t shift = 0; \
+    while (true) { \
+        if (ix >= length) return 23; \
+        uint8_t next_byte = NEXT_BYTE(); \
+        acc |= (next_byte & 0x7F) << shift; \
+        shift += 7; \
+        if (!(next_byte & 0x80)) { \
+            break; \
+        } \
+    } \
+    acc; \
+})
 
 typedef uint32_t (*ops_parser)(const void *data, size_t length, size_t *ix_p, uint8_t tag, uint64_t fee);
 
@@ -136,8 +127,12 @@ static uint32_t self_delg_parser(const void *data, size_t length, size_t *ix_p, 
 
             // Public key up next!
             if (NEXT_BYTE() != curve_code) return 64;
-            const uint8_t *pubkey = next_bytes(data, length, &ix, public_key.W_len);
-            if (memcmp(public_key.W, pubkey, public_key.W_len) != 0) return 4;
+
+            size_t klen = public_key.W_len;
+            if (ix + klen > length) return klen;
+            if (memcmp(public_key.W, data + ix, klen) != 0) return 4;
+            ix += klen;
+
             break;
         case OPERATION_TAG_DELEGATION:
             if (fee > 50000) return 100; // You want a higher fee, use wallet app!

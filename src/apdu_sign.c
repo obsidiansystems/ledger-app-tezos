@@ -113,6 +113,11 @@ uint32_t baking_sign_complete(void) {
 }
 #else
 
+#define PREHASH_STRING "Sign unsafe data?"
+#define UNKNOWN_STRING "Sign unknown data?"
+
+char sign_prompt[MAX(sizeof(PREHASH_STRING), sizeof(UNKNOWN_STRING))];
+
 const bagl_element_t ui_sign_unsafe_screen[] = {
     // type                               userid    x    y   w    h  str rad
     // fill      fg        bg      fid iid  txt   touchparams...       ]
@@ -137,7 +142,7 @@ const bagl_element_t ui_sign_unsafe_screen[] = {
      NULL},
     {{BAGL_LABELINE, 0x01, 0, 26, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Sign Prehashed Data?",
+     sign_prompt,
      0,
      0,
      0,
@@ -167,6 +172,7 @@ const bagl_element_t ui_sign_unsafe_screen[] = {
 
 uint32_t wallet_sign_complete(uint8_t instruction) {
     if (instruction == INS_SIGN_UNSAFE) {
+        strcpy(sign_prompt, PREHASH_STRING);
         ASYNC_PROMPT(ui_sign_unsafe_screen, sign_unsafe_ok, delay_reject);
     } else {
         switch (magic_number) {
@@ -185,6 +191,7 @@ uint32_t wallet_sign_complete(uint8_t instruction) {
                 goto unsafe;
         }
 unsafe:
+        strcpy(sign_prompt, UNKNOWN_STRING);
         ASYNC_PROMPT(ui_sign_unsafe_screen, sign_ok, delay_reject);
     }
 }
