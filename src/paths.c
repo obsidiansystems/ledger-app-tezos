@@ -105,7 +105,8 @@ void generate_key_pair(cx_curve_t curve, uint32_t path_length, uint32_t *bip32_p
 void public_key_hash(uint8_t output[HASH_SIZE], cx_curve_t curve,
                      const cx_ecfp_public_key_t *restrict public_key,
                      cx_ecfp_public_key_t *restrict pubkey_out) {
-    if (pubkey_out == NULL) pubkey_out = alloca(sizeof(*pubkey_out));
+    cx_ecfp_public_key_t temp;
+    if (pubkey_out == NULL) pubkey_out = &temp;
     switch (curve) {
         case CX_CURVE_Ed25519:
             {

@@ -7,8 +7,6 @@
 
 #include "os.h"
 
-#define DEBUG
-
 struct __attribute__((__packed__)) block {
     char magic_byte;
     uint32_t chain_id;
@@ -77,6 +75,7 @@ uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
     cx_ecfp_public_key_t public_key_init;
 
     generate_key_pair(curve, path_length, bip32_path, &public_key_init, &private_key);
+
     os_memset(&private_key, 0, sizeof(private_key));
 
     public_key_hash(hash, curve, &public_key_init, &public_key);
@@ -115,6 +114,8 @@ uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
         uint32_t res = parser(data, length, &ix, hdr->tag, fee);
         if (res != 0) return res;
     }
+
+    return 0; // Success
 }
 
 static uint32_t self_delg_parser(const void *data, size_t length, size_t *ix_p, uint8_t tag,
@@ -166,7 +167,9 @@ void guard_valid_self_delegation(const void *data, size_t length, cx_curve_t cur
     }
 }
 
-char transaction_string[80];
+#define TRANSACTION_BEGIN "Pay "
+#define MAX_NUMBER_CHARS 21
+char transaction_string[sizeof(TRANSACTION_BEGIN) + MAX_NUMBER_CHARS];
 
 const bagl_element_t ui_sign_screen[] = {
     // type                               userid    x    y   w    h  str rad
@@ -221,9 +224,8 @@ const bagl_element_t ui_sign_screen[] = {
 };
 
 static void set_prompt_to_amount(uint64_t amount) {
-#define TRANSACTION_BEGIN "Transaction for "
     strcpy(transaction_string, TRANSACTION_BEGIN);
-    size_t off = sizeof(TRANSACTION_BEGIN);
+    size_t off = sizeof(TRANSACTION_BEGIN) - 1;
     off += number_to_string(transaction_string + off, amount);
     transaction_string[off] = '\0';
 }
@@ -237,6 +239,9 @@ static uint32_t transact_parser(const void *data, size_t length, size_t *ix_p, u
             if (fee > 50000) return 100;
             uint64_t amount = PARSE_Z();
             set_prompt_to_amount(amount);
+            (void) NEXT_TYPE(struct contract);
+            uint8_t params = NEXT_BYTE();
+            if (params) return 101;
             break;
         default:
             return 8;
@@ -251,9 +256,14 @@ static uint32_t transact_parser(const void *data, size_t length, size_t *ix_p, u
 bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
                         size_t path_length, uint32_t *bip32_path,
                         callback_t ok, callback_t cxl) {
-    if (parse_operations(data, length, curve, path_length, bip32_path, transact_parser) == 0) {
+    uint32_t res = parse_operations(data, length, curve, path_length, bip32_path, transact_parser);
+    if (res == 0) {
         ASYNC_PROMPT(ui_sign_screen, ok, cxl);
     } else {
+#ifdef DEBUG
+        THROW(0x9000 + res);
+#else
         return false;
+#endif
     }
 }

@@ -34,24 +34,23 @@ static void conditional_init_hash_state(void) {
 
 static void hash_buffer(void) {
     const uint8_t *current = message_data;
-    conditional_init_hash_state();
     while (message_data_length > BLAKE2B_BLOCKBYTES) {
+        conditional_init_hash_state();
         blake2b_update(&hash_state, current, BLAKE2B_BLOCKBYTES);
-        started_hashing = true;
         message_data_length -= BLAKE2B_BLOCKBYTES;
         current += BLAKE2B_BLOCKBYTES;
     }
-    // XXX use circular buffer at some point
+    // TODO use circular buffer at some point
     memmove(message_data, current, message_data_length);
 }
 
 static void finish_hashing(uint8_t *hash, size_t hash_size) {
     hash_buffer();
+    conditional_init_hash_state();
     blake2b_update(&hash_state, message_data, message_data_length);
     blake2b_final(&hash_state, hash, hash_size);
     message_data_length = 0;
     is_hash_state_inited = false;
-    started_hashing = false;
 }
 
 static int perform_signature(bool hash_first);
@@ -78,7 +77,6 @@ static void clear_data(void) {
     is_hash_state_inited = false;
     magic_number = 0;
     hash_only = false;
-    started_hashing = false;
 }
 
 static void sign_reject(void) {
@@ -181,7 +179,9 @@ uint32_t wallet_sign_complete(uint8_t instruction) {
             default:
                 THROW(EXC_PARSE_ERROR);
             case MAGIC_BYTE_UNSAFE_OP:
-                if (started_hashing) goto unsafe;
+                if (is_hash_state_inited) {
+                    goto unsafe;
+                }
                 if (!prompt_transaction(message_data, message_data_length, curve,
                                         bip32_path_length, bip32_path, sign_ok, delay_reject)) {
                     goto unsafe;
