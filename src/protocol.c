@@ -30,6 +30,7 @@ level_t get_block_level(const void *data, size_t length) {
 
 static inline const void *next_bytes(const void *data, size_t length, size_t *ix, size_t data_len) {
     check_null(ix);
+    check_null(data);
     const uint8_t *bytes = data;
     if (*ix + data_len > length) return NULL;
     const void *res = bytes + *ix;
@@ -59,8 +60,8 @@ static inline uint64_t parse_z(const uint8_t *bytes, size_t length, size_t *pos)
 // Any function that uses these macros should have these as local variables
 #define NEXT_TYPE(type) ({ \
     const type *val = next_bytes(data, length, &ix, sizeof(type)); \
-    if (val == NULL) { \
-        return sizeof(type); \
+    if (val == NULL) { /* Error */ \
+        return sizeof(type) + length; \
     } \
     val; \
 })
@@ -158,10 +159,15 @@ static uint32_t self_delg_parser(const void *data, size_t length, size_t *ix_p, 
 
 void guard_valid_self_delegation(const void *data, size_t length, cx_curve_t curve,
                                  size_t path_length, uint32_t *bip32_path) {
-    if (parse_operations(data, length, curve, path_length, bip32_path, self_delg_parser) == 0) {
+    uint32_t res = parse_operations(data, length, curve, path_length, bip32_path, self_delg_parser);
+    if (res == 0) {
         return; // Not throwing indicates success
     } else {
+#ifdef DEBUG
+        THROW(0x9000 + res);
+#else
         THROW(EXC_PARSE_ERROR);
+#endif
     }
 }
 
