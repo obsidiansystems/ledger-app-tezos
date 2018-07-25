@@ -273,25 +273,25 @@ void ui_init(void) {
 
 #define MAX_INT_DIGITS 20
 
-// This function fills all possible digits, potentially with many leading zeroes
-// This is intended to be used with a temporary buffer
-// Returns offset of where non-zero digits begin
-static inline size_t number_full_size(char dest[MAX_INT_DIGITS], uint64_t number) {
+// This function fills digits, potentially with all leading zeroes, from the end of the buffer backwards
+// This is intended to be used with a temporary buffer of length MAX_INT_DIGITS
+// Returns offset of where it stopped filling in
+static inline size_t convert_number(char dest[MAX_INT_DIGITS], uint64_t number, bool leading_zeroes) {
     size_t res = 0;
     char *const end = dest + MAX_INT_DIGITS;
     for (char *ptr = end - 1; ptr >= dest; ptr--) {
         *ptr = '0' + number % 10;
         number /= 10;
-        if (number == 0 && res == 0) { // TODO: This is ugly
-            res = ptr - dest;
+        if (!leading_zeroes && number == 0) { // TODO: This is ugly
+            return ptr - dest;
         }
     }
-    return res;
+    return 0;
 }
 
 size_t number_to_string(char *dest, uint64_t number) {
     char tmp[MAX_INT_DIGITS];
-    size_t off = number_full_size(tmp, number);
+    size_t off = convert_number(tmp, number, false);
 
     // Copy without leading 0s
     size_t length = sizeof(tmp) - off;
@@ -313,7 +313,7 @@ size_t microtez_to_string(char *dest, uint64_t number) {
     dest[off++] = '.';
 
     char tmp[MAX_INT_DIGITS];
-    number_full_size(tmp, number);
+    convert_number(tmp, number, true);
 
     // Eliminate trailing 0s
     char *start = tmp + MAX_INT_DIGITS - DECIMAL_DIGITS;
