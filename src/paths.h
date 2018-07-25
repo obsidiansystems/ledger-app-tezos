@@ -8,9 +8,6 @@
 
 #define MAX_BIP32_PATH 10
 
-// This function does not output terminating null bytes.
-uint32_t number_to_string(char *dest, uint64_t number);
-
 // Throws upon error
 uint32_t read_bip32_path(uint32_t bytes, uint32_t *bip32_path, const uint8_t *buf);
 

@@ -268,3 +268,65 @@ void ui_init(void) {
     cxl_callback = NULL;
     idle_text[0] = '\0';
 }
+
+// These functions do not output terminating null bytes.
+
+#define MAX_INT_DIGITS 20
+
+// This function fills all possible digits, potentially with many leading zeroes
+// This is intended to be used with a temporary buffer
+// Returns offset of where non-zero digits begin
+static inline size_t number_full_size(char dest[MAX_INT_DIGITS], uint64_t number) {
+    size_t res = 0;
+    char *const end = dest + MAX_INT_DIGITS;
+    for (char *ptr = end - 1; ptr >= dest; ptr--) {
+        *ptr = '0' + number % 10;
+        number /= 10;
+        if (number == 0 && res == 0) { // TODO: This is ugly
+            res = ptr - dest;
+        }
+    }
+    return res;
+}
+
+size_t number_to_string(char *dest, uint64_t number) {
+    char tmp[MAX_INT_DIGITS];
+    size_t off = number_full_size(tmp, number);
+
+    // Copy without leading 0s
+    size_t length = sizeof(tmp) - off;
+    memcpy(dest, tmp + off, length);
+    return length;
+}
+
+// Microtez are in millionths
+#define TEZ_SCALE 1000000
+#define DECIMAL_DIGITS 6
+
+size_t microtez_to_string(char *dest, uint64_t number) {
+    uint64_t whole_tez = number / TEZ_SCALE;
+    uint64_t fractional = number % TEZ_SCALE;
+    size_t off = number_to_string(dest, whole_tez);
+    if (fractional == 0) {
+        return off;
+    }
+    dest[off++] = '.';
+
+    char tmp[MAX_INT_DIGITS];
+    number_full_size(tmp, number);
+
+    // Eliminate trailing 0s
+    char *start = tmp + MAX_INT_DIGITS - DECIMAL_DIGITS;
+    char *end;
+    for (end = tmp + MAX_INT_DIGITS - 1; end >= start; end--) {
+        if (*end != '0') {
+            end++;
+            break;
+        }
+    }
+
+    size_t length = end - start;
+    memcpy(dest + off, start, length);
+    off += length;
+    return off;
+}

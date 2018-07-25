@@ -1,6 +1,7 @@
 #include "protocol.h"
 
 #include "apdu.h"
+#include "ui.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -61,21 +62,13 @@ typedef uint32_t (*ops_parser)(const void *data, size_t length, size_t *ix_p, ui
 
 // Shared state between ops parser and main parser
 static cx_ecfp_public_key_t public_key;
-static cx_ecfp_private_key_t private_key;
 static uint8_t hash[HASH_SIZE];
 static uint8_t curve_code;
 
-// Zero means correct parse, non-zero means problem
-// Specific return code can be used for debugging purposes
-uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
-                          size_t path_length, uint32_t *bip32_path, ops_parser parser) {
-    check_null(data);
-    check_null(bip32_path);
-
+static void compute_pkh(cx_curve_t curve, size_t path_length, uint32_t *bip32_path) {
     cx_ecfp_public_key_t public_key_init;
-
+    cx_ecfp_private_key_t private_key;
     generate_key_pair(curve, path_length, bip32_path, &public_key_init, &private_key);
-
     os_memset(&private_key, 0, sizeof(private_key));
 
     public_key_hash(hash, curve, &public_key_init, &public_key);
@@ -91,8 +84,18 @@ uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
             curve_code = 2;
             break;
         default:
-            return 9; // Should not be reached
+            THROW(EXC_MEMORY_ERROR);
     }
+}
+
+// Zero means correct parse, non-zero means problem
+// Specific return code can be used for debugging purposes
+uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
+                          size_t path_length, uint32_t *bip32_path, ops_parser parser) {
+    check_null(data);
+    check_null(bip32_path);
+
+    compute_pkh(curve, path_length, bip32_path);
 
     size_t ix = 0;
 
@@ -225,8 +228,8 @@ const bagl_element_t ui_sign_screen[] = {
 
 static void set_prompt_to_amount(uint64_t amount) {
     strcpy(transaction_string, TRANSACTION_BEGIN);
-    size_t off = sizeof(TRANSACTION_BEGIN) - 1;
-    off += number_to_string(transaction_string + off, amount);
+    size_t off = sizeof(TRANSACTION_BEGIN) - 1; // simulate strlen
+    off += microtez_to_string(transaction_string + off, amount);
     transaction_string[off] = '\0';
 }
 

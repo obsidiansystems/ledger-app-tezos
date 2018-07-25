@@ -1,9 +1,11 @@
 #include "apdu.h"
 #include "baking_auth.h"
+#include "paths.h"
+#include "prompt_pubkey.h"
+#include "protocol.h"
+
 #include "cx.h"
 #include "os.h"
-#include "paths.h"
-#include "protocol.h"
 
 #include <string.h>
 

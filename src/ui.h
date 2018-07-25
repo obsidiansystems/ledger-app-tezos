@@ -6,6 +6,10 @@ typedef void (*callback_t)(void);
 
 extern uint32_t ux_step, ux_step_count;
 
+// These functions do not output terminating null bytes.
+size_t number_to_string(char *dest, uint64_t number);
+size_t microtez_to_string(char *dest, uint64_t number);
+
 void ui_initial_screen(void);
 void ui_init(void);
 void exit_app(void);

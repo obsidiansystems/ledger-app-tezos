@@ -25,50 +25,6 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define MAX_INT_DIGITS 21
-
-// This function does not output terminating null bytes.
-uint32_t number_to_string(char *dest, uint64_t number) {
-    char tmp[MAX_INT_DIGITS];
-    char *const tmp_end = tmp + MAX_INT_DIGITS;
-    char *ptr;
-    for (ptr = tmp_end - 1; ptr >= tmp; ptr--) {
-        *ptr = '0' + number % 10;
-        number /= 10;
-        if (number == 0) {
-            break;
-        }
-    }
-    int length = tmp_end - ptr;
-    memcpy(dest, ptr, length);
-    return length;
-}
-
-#define HARDENING_BIT (1u << 31)
-
-// This function does not output terminating null bytes
-static uint32_t path_item_to_string(char *dest, uint32_t input) {
-    int length = number_to_string(dest, input & ~HARDENING_BIT);
-    if (input & HARDENING_BIT) {
-        dest[length] = '\'';
-        length++;
-    }
-    return length;
-}
-
-// This function does output terminating null bytes
-uint32_t path_to_string(char *buf, uint32_t path_length, uint32_t *bip32_path) {
-    uint32_t offset = 0;
-    for (size_t i = 0; i < path_length; i++) {
-        offset += path_item_to_string(buf + offset, bip32_path[i]);
-        if (i != path_length - 1) {
-            buf[offset++] = '/';
-        }
-    }
-    buf[offset++] = '\0';
-    return offset;
-}
-
 uint32_t read_bip32_path(uint32_t bytes, uint32_t *bip32_path, const uint8_t *buf) {
     uint32_t path_length = *buf;
     if (bytes < path_length * sizeof(uint32_t) + 1) THROW(EXC_WRONG_LENGTH_FOR_INS);
