@@ -6,10 +6,6 @@ typedef void (*callback_t)(void);
 
 extern uint32_t ux_step, ux_step_count;
 
-// These functions do not output terminating null bytes.
-size_t number_to_string(char *dest, uint64_t number);
-size_t microtez_to_string(char *dest, uint64_t number);
-
 void ui_initial_screen(void);
 void ui_init(void);
 void exit_app(void);
@@ -23,7 +19,7 @@ void change_idle_display(uint32_t new);
 const bagl_element_t *default_prepro(const bagl_element_t *elem);
 const bagl_element_t *two_screens_scroll_second_prepro(const bagl_element_t *elem);
 
-extern char baking_auth_text[40];
+extern char baking_auth_text[40]; // TODO: Is this the right name?
 
 // Helper for simple situations
 #define UI_PROMPT(elems, ok_c, cxl_c) \

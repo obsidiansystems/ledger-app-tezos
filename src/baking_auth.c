@@ -1,8 +1,8 @@
 #include "apdu.h"
 #include "baking_auth.h"
 #include "paths.h"
-#include "prompt_pubkey.h"
 #include "protocol.h"
+#include "to_string.h"
 
 #include "cx.h"
 #include "os.h"
@@ -80,6 +80,6 @@ void update_auth_text(void) {
         generate_key_pair(N_data.curve, N_data.path_length, N_data.bip32_path,
                           &pub_key, &priv_key);
         os_memset(&priv_key, 0, sizeof(priv_key));
-        convert_address(baking_auth_text, sizeof(baking_auth_text), N_data.curve, &pub_key);
+        pubkey_to_pkh_string(baking_auth_text, sizeof(baking_auth_text), N_data.curve, &pub_key);
     }
 }

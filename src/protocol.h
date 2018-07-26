@@ -38,36 +38,20 @@ level_t get_block_level(const void *data, size_t length); // Precondition: is_bl
         res; \
     })
 
-struct operation_group_header {
-    uint8_t magic_byte;
-    uint8_t hash[32];
-} __attribute__((packed));
-
-struct contract {
-    uint8_t outright;
+struct parsed_operation_data {
+    int transaction_count;
+    bool contains_self_delegation;
+    uint64_t amount;
+    uint64_t total_fee;
+    cx_ecfp_public_key_t public_key;
+    uint8_t hash[HASH_SIZE];
     uint8_t curve_code;
-    uint8_t pkh[HASH_SIZE];
-} __attribute__((packed));
-
-enum operation_tag {
-    OPERATION_TAG_REVEAL = 7,
-    OPERATION_TAG_TRANSACTION = 8,
-    OPERATION_TAG_DELEGATION = 10,
 };
 
-struct operation_header {
-    uint8_t tag;
-    struct contract contract;
-} __attribute__((packed));
-
-struct delegation_contents {
-    uint8_t delegate_present;
-    uint8_t curve_code;
-    uint8_t hash[HASH_SIZE];
-} __attribute__((packed));
-
-void guard_valid_self_delegation(const void *data, size_t length, cx_curve_t curve,
-                                 size_t path_length, uint32_t *bip32_path);
+// Zero means correct parse, non-zero means problem
+// Specific return code can be used for debugging purposes
+uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve, size_t path_length,
+                          uint32_t *bip32_path, struct parsed_operation_data *out);
 
 // Return false if the transaction isn't easily parseable, otherwise prompt with given callbacks
 // and do not return, but rather throw ASYNC.

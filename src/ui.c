@@ -1,7 +1,8 @@
 #include "ui.h"
-#include "baking_auth.h"
 
+#include "baking_auth.h"
 #include "paths.h"
+#include "to_string.h"
 
 #include <stdbool.h>
 #include <string.h>
@@ -287,46 +288,4 @@ static inline size_t convert_number(char dest[MAX_INT_DIGITS], uint64_t number, 
         }
     }
     return 0;
-}
-
-size_t number_to_string(char *dest, uint64_t number) {
-    char tmp[MAX_INT_DIGITS];
-    size_t off = convert_number(tmp, number, false);
-
-    // Copy without leading 0s
-    size_t length = sizeof(tmp) - off;
-    memcpy(dest, tmp + off, length);
-    return length;
-}
-
-// Microtez are in millionths
-#define TEZ_SCALE 1000000
-#define DECIMAL_DIGITS 6
-
-size_t microtez_to_string(char *dest, uint64_t number) {
-    uint64_t whole_tez = number / TEZ_SCALE;
-    uint64_t fractional = number % TEZ_SCALE;
-    size_t off = number_to_string(dest, whole_tez);
-    if (fractional == 0) {
-        return off;
-    }
-    dest[off++] = '.';
-
-    char tmp[MAX_INT_DIGITS];
-    convert_number(tmp, number, true);
-
-    // Eliminate trailing 0s
-    char *start = tmp + MAX_INT_DIGITS - DECIMAL_DIGITS;
-    char *end;
-    for (end = tmp + MAX_INT_DIGITS - 1; end >= start; end--) {
-        if (*end != '0') {
-            end++;
-            break;
-        }
-    }
-
-    size_t length = end - start;
-    memcpy(dest + off, start, length);
-    off += length;
-    return off;
 }

@@ -4,6 +4,7 @@
 #include "cx.h"
 #include "os.h"
 #include "protocol.h"
+#include "to_string.h"
 
 #include <string.h>
 
@@ -66,7 +67,7 @@ static level_t reset_level;
 
 static void reset_ok(void);
 
-unsigned int handle_apdu_reset(uint8_t instruction) {
+unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
     uint32_t dataLength = G_io_apdu_buffer[OFFSET_LC];
     if (dataLength != sizeof(int)) {

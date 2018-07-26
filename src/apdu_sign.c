@@ -9,6 +9,8 @@
 #include "cx.h"
 #include "ui.h"
 
+#include <string.h>
+
 #define TEZOS_BUFSIZE 512
 #define SIGN_HASH_SIZE 32
 #define BLAKE2B_BLOCKBYTES 128
@@ -19,7 +21,7 @@ static cx_curve_t curve;
 static uint8_t bip32_path_length;
 static uint32_t bip32_path[MAX_BIP32_PATH];
 
-static blake2s_state hash_state;
+static blake2b_state hash_state;
 static bool is_hash_state_inited;
 static bool started_hashing;
 static uint8_t magic_number;
@@ -95,14 +97,23 @@ uint32_t baking_sign_complete(void) {
             return perform_signature(true);
 
         case MAGIC_BYTE_UNSAFE_OP:
-            guard_valid_self_delegation(message_data, message_data_length, curve,
-                                        bip32_path_length, bip32_path);
-            cx_ecfp_private_key_t priv_key;
-            cx_ecfp_public_key_t pub_key;
-            generate_key_pair(curve, bip32_path_length, bip32_path, &pub_key, &priv_key);
-            memset(&priv_key, 0, sizeof(priv_key));
-            prompt_address(true, curve, &pub_key, bake_auth_ok, sign_reject);
+            {
+                struct parsed_operation_data ops;
+                uint32_t res = parse_operations(message_data, message_data_length, curve,
+                                                bip32_path_length, bip32_path, &ops);
+                if (res != 0) {
+#ifdef DEBUG
+                    THROW(0x9000 + res);
+#else
+                    THROW(EXC_PARSE_ERROR);
+#endif
+                }
+                if (ops.transaction_count > 0) THROW(EXC_PARSE_ERROR);
+                if (ops.total_fee > 50000) THROW(EXC_PARSE_ERROR);
+                if (!ops.contains_self_delegation) THROW(EXC_PARSE_ERROR);
 
+                prompt_address(true, curve, &ops.public_key, bake_auth_ok, sign_reject);
+            }
         case MAGIC_BYTE_UNSAFE_OP2:
         case MAGIC_BYTE_UNSAFE_OP3:
         default:

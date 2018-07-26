@@ -5,11 +5,11 @@
 #include <stdint.h>
 #include <string.h>
 
-unsigned int handle_apdu_error(uint8_t instruction) {
+unsigned int handle_apdu_error(uint8_t __attribute__((unused)) instruction) {
     THROW(EXC_INVALID_INS);
 }
 
-unsigned int handle_apdu_exit(uint8_t instruction) {
+unsigned int handle_apdu_exit(uint8_t __attribute__((unused)) instruction) {
     os_sched_exit(-1);
     THROW(EXC_INVALID_INS); // avoid warning
 }
@@ -26,7 +26,7 @@ uint32_t send_word_big_endian(uint32_t word) {
     return tx;
 }
 
-unsigned int handle_apdu_version(uint8_t instruction) {
+unsigned int handle_apdu_version(uint8_t __attribute__((unused)) instruction) {
     int tx = 0;
     memcpy(G_io_apdu_buffer, &version, sizeof(version_t));
     tx += sizeof(version_t);
