@@ -52,9 +52,3 @@ struct parsed_operation_data {
 // Specific return code can be used for debugging purposes
 uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve, size_t path_length,
                           uint32_t *bip32_path, struct parsed_operation_data *out);
-
-// Return false if the transaction isn't easily parseable, otherwise prompt with given callbacks
-// and do not return, but rather throw ASYNC.
-bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
-                        size_t path_length, uint32_t *bip32_path,
-                        callback_t ok, callback_t cxl);

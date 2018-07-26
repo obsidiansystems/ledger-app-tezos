@@ -100,7 +100,7 @@ void reset_ok(void) {
     delayed_send(tx);
 }
 
-unsigned int handle_apdu_hwm(uint8_t instruction) {
+unsigned int handle_apdu_hwm(__attribute__((unused)) uint8_t instruction) {
     level_t level = N_data.highest_level;
     return send_word_big_endian(level);
 }

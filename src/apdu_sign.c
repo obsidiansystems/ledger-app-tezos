@@ -4,7 +4,7 @@
 #include "baking_auth.h"
 #include "blake2.h"
 #include "protocol.h"
-#include "prompt_pubkey.h"
+#include "prompts.h"
 
 #include "cx.h"
 #include "ui.h"
@@ -23,7 +23,6 @@ static uint32_t bip32_path[MAX_BIP32_PATH];
 
 static blake2b_state hash_state;
 static bool is_hash_state_inited;
-static bool started_hashing;
 static uint8_t magic_number;
 static bool hash_only;
 
@@ -62,11 +61,13 @@ static void sign_unsafe_ok(void) {
     delayed_send(tx);
 }
 
+#ifdef BAKING_APP
 static void bake_auth_ok(void) {
     authorize_baking(curve, bip32_path, bip32_path_length);
     int tx = perform_signature(true);
     delayed_send(tx);
 }
+#endif
 
 static void sign_ok(void) {
     int tx = perform_signature(true);
@@ -182,7 +183,7 @@ const bagl_element_t ui_sign_unsafe_screen[] = {
 uint32_t wallet_sign_complete(uint8_t instruction) {
     if (instruction == INS_SIGN_UNSAFE) {
         strcpy(sign_prompt, PREHASH_STRING);
-        ASYNC_PROMPT(ui_sign_unsafe_screen, sign_unsafe_ok, delay_reject);
+        ASYNC_PROMPT(ui_sign_unsafe_screen, sign_unsafe_ok, sign_reject);
     } else {
         switch (magic_number) {
             case MAGIC_BYTE_BLOCK:
@@ -194,7 +195,7 @@ uint32_t wallet_sign_complete(uint8_t instruction) {
                     goto unsafe;
                 }
                 if (!prompt_transaction(message_data, message_data_length, curve,
-                                        bip32_path_length, bip32_path, sign_ok, delay_reject)) {
+                                        bip32_path_length, bip32_path, sign_ok, sign_reject)) {
                     goto unsafe;
                 }
             case MAGIC_BYTE_UNSAFE_OP2:
@@ -203,7 +204,7 @@ uint32_t wallet_sign_complete(uint8_t instruction) {
         }
 unsafe:
         strcpy(sign_prompt, UNKNOWN_STRING);
-        ASYNC_PROMPT(ui_sign_unsafe_screen, sign_ok, delay_reject);
+        ASYNC_PROMPT(ui_sign_unsafe_screen, sign_ok, sign_reject);
     }
 }
 #endif
