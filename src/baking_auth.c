@@ -1,6 +1,6 @@
 #include "apdu.h"
 #include "baking_auth.h"
-#include "paths.h"
+#include "keys.h"
 #include "protocol.h"
 #include "to_string.h"
 

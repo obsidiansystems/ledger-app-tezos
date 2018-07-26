@@ -2,7 +2,7 @@
 
 #include "apdu.h"
 #include "base58.h"
-#include "paths.h"
+#include "keys.h"
 
 #include <string.h>
 

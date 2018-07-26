@@ -3,7 +3,7 @@
 #include "apdu.h"
 #include "base58.h"
 #include "blake2.h"
-#include "paths.h"
+#include "keys.h"
 #include "protocol.h"
 #include "to_string.h"
 

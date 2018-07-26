@@ -3,7 +3,7 @@
 #include "apdu.h"
 #include "baking_auth.h"
 #include "prompts.h"
-#include "paths.h"
+#include "keys.h"
 
 #include "cx.h"
 #include "ui.h"

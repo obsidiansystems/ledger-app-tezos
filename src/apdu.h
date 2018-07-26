@@ -2,7 +2,7 @@
 
 #include "ui.h"
 #include "os.h"
-#include "paths.h"
+#include "keys.h"
 
 #include <stdbool.h>
 #include <stdint.h>

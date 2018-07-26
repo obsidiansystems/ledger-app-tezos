@@ -1,7 +1,7 @@
 #include "ui.h"
 
 #include "baking_auth.h"
-#include "paths.h"
+#include "keys.h"
 #include "to_string.h"
 
 #include <stdbool.h>
@@ -268,24 +268,4 @@ void ui_init(void) {
     ok_callback = NULL;
     cxl_callback = NULL;
     idle_text[0] = '\0';
-}
-
-// These functions do not output terminating null bytes.
-
-#define MAX_INT_DIGITS 20
-
-// This function fills digits, potentially with all leading zeroes, from the end of the buffer backwards
-// This is intended to be used with a temporary buffer of length MAX_INT_DIGITS
-// Returns offset of where it stopped filling in
-static inline size_t convert_number(char dest[MAX_INT_DIGITS], uint64_t number, bool leading_zeroes) {
-    size_t res = 0;
-    char *const end = dest + MAX_INT_DIGITS;
-    for (char *ptr = end - 1; ptr >= dest; ptr--) {
-        *ptr = '0' + number % 10;
-        number /= 10;
-        if (!leading_zeroes && number == 0) { // TODO: This is ugly
-            return ptr - dest;
-        }
-    }
-    return 0;
 }

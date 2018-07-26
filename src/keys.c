@@ -15,7 +15,7 @@
 *  limitations under the License.
 ********************************************************************************/
 
-#include "paths.h"
+#include "keys.h"
 
 #include "apdu.h"
 #include "os.h"
