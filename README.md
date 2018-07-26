@@ -113,17 +113,22 @@ on your Linux system.
 
 LedgerHQ provides a
 [script](https://raw.githubusercontent.com/LedgerHQ/udev-rules/master/add_udev_rules.sh)
-for this purpose. Download this script, read it, and run it as root:
+for this purpose. Download this script, read it, customize it, and run it as root:
 
 ```
 $ wget https://raw.githubusercontent.com/LedgerHQ/udev-rules/master/add_udev_rules.sh
 $ chmod +x add_udev_rules.sh
-$ sudo ./add_udev_rules.sh
 ```
 
-You might have to adjust which group this script uses, and modify the script for that
-purpose. We recommend against piping `wget` into `sudo bash` without adjusting
-the script to your computer's configuration.
+At this point, please use your favorite editor to modify
+`add_udev_rules.sh` to your configuration, e.g., by replacing `plugdev` with an
+appropriate group for your system configuration. We recommend against
+running the next command without reviewing the script and modifying it
+to match your configuration.
+
+```
+$ sudo ./add_udev_rules.sh
+```
 
 Subsequently, unplug your ledger, and plug it in again for the changes to take
 effect.
