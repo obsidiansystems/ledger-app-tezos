@@ -24,16 +24,24 @@ int pkh_to_string(char *buff, uint32_t buff_size, cx_curve_t curve, uint8_t hash
     } data;
 
     // prefix
-    data.prefix[0] = 6;
-    data.prefix[1] = 161;
     switch (curve) {
+        case CX_CURVE_NONE:
+            data.prefix[0] = 2;
+            data.prefix[1] = 90;
+            data.prefix[2] = 121;
         case CX_CURVE_Ed25519: // Ed25519
+            data.prefix[0] = 6;
+            data.prefix[1] = 161;
             data.prefix[2] = 159;
             break;
         case CX_CURVE_SECP256K1: // Secp256k1
+            data.prefix[0] = 6;
+            data.prefix[1] = 161;
             data.prefix[2] = 161;
             break;
         case CX_CURVE_SECP256R1: // Secp256r1
+            data.prefix[0] = 6;
+            data.prefix[1] = 161;
             data.prefix[2] = 164;
             break;
         default:

@@ -311,16 +311,16 @@ Your terminal session -- and only that terminal session -- will now be in the
 virtual env. To have a new terminal session enter the virtualenv, run the above
 `source` command only in the same directory in the new terminal session.
 
-### ledgerblue
+### ledgerblue: The Python Module for Ledger Nano S
+
+We can now install `ledgerblue`, which is the Python module designed originally for
+Ledger Blue, but also is needed for the Ledger Nano S.
 
 Within the virtualenv environment -- making sure that `(ledger)` is showing up
 before your prompt -- use pip to install the `ledgerblue`
 [Python package](https://pypi.org/project/ledgerblue/).
 This will install the Ledger Python packages into the virtualenv; they will be
 available only in a shell where the virtualenv has been activated.
-
-Note: We are installing this python package named "ledgerblue" even though we are working with Ledger Nano S hardware.
-Do not skip this step even though you are not using Ledger Blue hardware.
 
 ```
 $ pip install ledgerblue
