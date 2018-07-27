@@ -42,10 +42,11 @@ static inline void delayed_send(uint32_t tx) {
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
 }
 
-static inline void delay_reject(void) {
+static inline bool delay_reject(void) {
     G_io_apdu_buffer[0] = EXC_REJECT >> 8;
     G_io_apdu_buffer[1] = EXC_REJECT & 0xFF;
     delayed_send(2);
+    return true;
 }
 
 uint32_t handle_apdu_error(uint8_t instruction);

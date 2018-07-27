@@ -29,15 +29,17 @@ static int provide_pubkey(void) {
     return tx;
 }
 
-static void pubkey_ok(void) {
+static bool pubkey_ok(void) {
     int tx = provide_pubkey();
     delayed_send(tx);
+    return true;
 }
 
 #ifdef BAKING_APP
-static void baking_ok(void) {
+static bool baking_ok(void) {
     authorize_baking(curve, bip32_path, path_length);
     pubkey_ok();
+    return true;
 }
 #endif
 

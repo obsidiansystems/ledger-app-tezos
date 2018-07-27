@@ -12,9 +12,10 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 static callback_t ok_callback;
 static callback_t cxl_callback;
+static callback_t both_callback;
 
 static unsigned button_handler(unsigned button_mask, unsigned button_mask_counter);
-static void do_nothing(void);
+static bool do_nothing(void);
 
 uint32_t ux_step, ux_step_count;
 
@@ -22,7 +23,8 @@ uint32_t ux_step, ux_step_count;
 #define PROMPT_CYCLES 3
 static uint32_t timeout_count;
 
-static void do_nothing(void) {
+static bool do_nothing(void) {
+    return false;
 }
 
 static char idle_text[16];
@@ -127,26 +129,27 @@ void ui_initial_screen(void) {
     ui_idle();
 }
 
-static void cancel_pressed(void) {
-    cxl_callback();
-    ui_idle();
-}
-
-static void ok_pressed(void) {
-    ok_callback();
-    ui_idle();
+void cancel_pressed(void) {
+    (void) button_handler(BUTTON_EVT_RELEASED | BUTTON_RIGHT, 0);
 }
 
 unsigned button_handler(unsigned button_mask, __attribute__((unused)) unsigned button_mask_counter) {
+    callback_t callback;
     switch (button_mask) {
         case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-            cancel_pressed();
+            callback = cxl_callback;
             break;
         case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
-            ok_pressed();
+            callback = ok_callback;
+            break;
+        case BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT:
+            callback = both_callback;
             break;
         default:
             return 0;
+    }
+    if (callback()) {
+        ui_idle();
     }
     return 0; // do not redraw the widget
 }
@@ -183,12 +186,17 @@ void ui_prompt(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback
     ux_step = 0;
     ok_callback = ok_c;
     cxl_callback = cxl_c;
+    both_callback = do_nothing;
     ux.elements = elems;
     ux.elements_count = sz;
     ux.button_push_handler = button_handler;
     ux.elements_preprocessor = prepro;
     UX_WAKE_UP();
     UX_REDISPLAY();
+}
+
+void set_both_callback(callback_t cb) {
+    both_callback = cb;
 }
 
 unsigned char io_event(__attribute__((unused)) unsigned char channel) {
@@ -251,7 +259,8 @@ void io_seproxyhal_display(const bagl_element_t *element) {
     return io_seproxyhal_display_default((bagl_element_t *)element);
 }
 
-void exit_app(void) {
+__attribute__((noreturn))
+bool exit_app(void) {
     BEGIN_TRY_L(exit) {
         TRY_L(exit) {
             os_sched_exit(-1);
@@ -260,6 +269,8 @@ void exit_app(void) {
         }
     }
     END_TRY_L(exit);
+
+    THROW(0); // Suppress warning
 }
 
 void ui_init(void) {
