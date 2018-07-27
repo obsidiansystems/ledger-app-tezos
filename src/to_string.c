@@ -6,8 +6,16 @@
 
 #include <string.h>
 
+
+
 int pubkey_to_pkh_string(char *buff, uint32_t buff_size, cx_curve_t curve,
                          const cx_ecfp_public_key_t *public_key) {
+    uint8_t hash[HASH_SIZE];
+    public_key_hash(hash, curve, public_key, NULL);
+    return pkh_to_string(buff, buff_size, curve, hash);
+}
+
+int pkh_to_string(char *buff, uint32_t buff_size, cx_curve_t curve, uint8_t hash[HASH_SIZE]) {
     // Data to encode
     struct __attribute__((packed)) {
         char prefix[3];
@@ -33,7 +41,7 @@ int pubkey_to_pkh_string(char *buff, uint32_t buff_size, cx_curve_t curve,
     }
 
     // hash
-    public_key_hash(data.hash, curve, public_key, NULL);
+    memcpy(data.hash, hash, sizeof(data.hash));
 
     // checksum -- twice because them's the rules
     uint8_t checksum[32];
@@ -71,6 +79,7 @@ size_t number_to_string(char *dest, uint64_t number) {
     // Copy without leading 0s
     size_t length = sizeof(tmp) - off;
     memcpy(dest, tmp + off, length);
+    dest[length] = '\0';
     return length;
 }
 
@@ -103,5 +112,6 @@ size_t microtez_to_string(char *dest, uint64_t number) {
     size_t length = end - start;
     memcpy(dest + off, start, length);
     off += length;
+    dest[off] = '\0';
     return off;
 }

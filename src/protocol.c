@@ -96,19 +96,7 @@ static void compute_pkh(cx_curve_t curve, size_t path_length, uint32_t *bip32_pa
 
     public_key_hash(out->hash, curve, &public_key_init, &out->public_key);
 
-    switch (curve) {
-        case CX_CURVE_Ed25519:
-            out->curve_code = 0;
-            break;
-        case CX_CURVE_SECP256K1:
-            out->curve_code = 1;
-            break;
-        case CX_CURVE_SECP256R1:
-            out->curve_code = 2;
-            break;
-        default:
-            THROW(EXC_MEMORY_ERROR);
-    }
+    out->curve_code = curve_to_curve_code(curve);
 }
 
 uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
@@ -159,9 +147,12 @@ uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
             case OPERATION_TAG_TRANSACTION:
                 out->transaction_count++;
                 out->amount += PARSE_Z();
-                (void) NEXT_TYPE(struct contract);
+                const struct contract *destination = NEXT_TYPE(struct contract);
+                if (destination->outright != 0) return 102; // TODO: Support outright dests
+                out->destination_curve_code = destination->curve_code;
+                memcpy(out->destination_hash, destination->pkh, sizeof(out->destination_hash));
                 uint8_t params = NEXT_BYTE();
-                if (params) return 101;
+                if (params) return 101; // TODO: Support params
                 break;
             default:
                 return 8;

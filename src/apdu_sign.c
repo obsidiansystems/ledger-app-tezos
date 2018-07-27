@@ -56,23 +56,23 @@ static void finish_hashing(uint8_t *hash, size_t hash_size) {
 
 static int perform_signature(bool hash_first);
 
-static void sign_unsafe_ok(void) {
-    int tx = perform_signature(false);
-    delayed_send(tx);
-}
-
 #ifdef BAKING_APP
 static void bake_auth_ok(void) {
     authorize_baking(curve, bip32_path, bip32_path_length);
     int tx = perform_signature(true);
     delayed_send(tx);
 }
-#endif
-
+#else
 static void sign_ok(void) {
     int tx = perform_signature(true);
     delayed_send(tx);
 }
+
+static void sign_unsafe_ok(void) {
+    int tx = perform_signature(false);
+    delayed_send(tx);
+}
+#endif
 
 static void clear_data(void) {
     bip32_path_length = 0;

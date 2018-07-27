@@ -43,9 +43,11 @@ struct parsed_operation_data {
     bool contains_self_delegation;
     uint64_t amount;
     uint64_t total_fee;
+    uint8_t curve_code;
     cx_ecfp_public_key_t public_key;
     uint8_t hash[HASH_SIZE];
-    uint8_t curve_code;
+    uint8_t destination_curve_code;
+    uint8_t destination_hash[HASH_SIZE];
 };
 
 // Zero means correct parse, non-zero means problem

@@ -116,8 +116,7 @@ static void ui_idle(void) {
 }
 
 void change_idle_display(uint32_t new) {
-    uint32_t it = number_to_string(idle_text, new);
-    idle_text[it] = '\0';
+    number_to_string(idle_text, new);
     update_auth_text();
 }
 
@@ -138,7 +137,7 @@ static void ok_pressed(void) {
     ui_idle();
 }
 
-unsigned button_handler(unsigned button_mask, unsigned button_mask_counter) {
+unsigned button_handler(unsigned button_mask, __attribute__((unused)) unsigned button_mask_counter) {
     switch (button_mask) {
         case BUTTON_EVT_RELEASED | BUTTON_LEFT:
             cancel_pressed();
@@ -192,7 +191,7 @@ void ui_prompt(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback
     UX_REDISPLAY();
 }
 
-unsigned char io_event(unsigned char channel) {
+unsigned char io_event(__attribute__((unused)) unsigned char channel) {
     // nothing done with the event, throw an error on the transport layer if
     // needed
 
