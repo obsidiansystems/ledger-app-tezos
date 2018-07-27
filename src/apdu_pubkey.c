@@ -49,19 +49,7 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
     if (G_io_apdu_buffer[OFFSET_P1] != 0)
         THROW(EXC_WRONG_PARAM);
 
-    switch(G_io_apdu_buffer[OFFSET_CURVE]) {
-        case 0:
-            curve = CX_CURVE_Ed25519;
-            break;
-        case 1:
-            curve = CX_CURVE_SECP256K1;
-            break;
-        case 2:
-            curve = CX_CURVE_SECP256R1;
-            break;
-        default:
-            THROW(EXC_WRONG_PARAM);
-    }
+    curve = curve_code_to_curve(G_io_apdu_buffer[OFFSET_CURVE]);
 
 #ifdef BAKING_APP
     if (G_io_apdu_buffer[OFFSET_LC] == 0 && instruction == INS_AUTHORIZE_BAKING) {

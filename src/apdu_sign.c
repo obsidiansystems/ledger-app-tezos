@@ -226,19 +226,7 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
         os_memset(message_data, 0, TEZOS_BUFSIZE);
         message_data_length = 0;
         bip32_path_length = read_bip32_path(dataLength, bip32_path, dataBuffer);
-        switch(G_io_apdu_buffer[OFFSET_CURVE]) {
-            case 0:
-                curve = CX_CURVE_Ed25519;
-                break;
-            case 1:
-                curve = CX_CURVE_SECP256K1;
-                break;
-            case 2:
-                curve = CX_CURVE_SECP256R1;
-                break;
-            default:
-                THROW(EXC_WRONG_PARAM);
-        }
+        curve = curve_code_to_curve(G_io_apdu_buffer[OFFSET_CURVE]);
         return_ok();
 #ifndef BAKING_APP
     case P1_HASH_ONLY_NEXT:

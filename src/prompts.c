@@ -193,10 +193,10 @@ void prompt_address(
 }
 
 
-#define MAX_NUMBER_CHARS 21
-char origin_string[80];
-char destination_string[80];
-char amount_string[MAX_NUMBER_CHARS + 1];
+#define MAX_NUMBER_CHARS 21 // include decimmal point
+char origin_string[40];
+char destination_string[40];
+char amount_string[MAX_NUMBER_CHARS + 1]; // include terminating null
 char fee_string[MAX_NUMBER_CHARS + 1];
 
 const bagl_element_t ui_sign_screen[] = {
@@ -236,15 +236,15 @@ const bagl_element_t ui_sign_screen[] = {
     //0, NULL, NULL, NULL },
     {{BAGL_LABELINE, 0x01, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Authorize transfer from:",
+     "Transaction From:",
      0,
      0,
      0,
      NULL,
      NULL,
      NULL},
-    {{BAGL_LABELINE, 0x01, 0, 26, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+    {{BAGL_LABELINE, 0x01, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
      origin_string,
      0,
      0,
@@ -255,15 +255,15 @@ const bagl_element_t ui_sign_screen[] = {
 
     {{BAGL_LABELINE, 0x02, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Authorize transfer to:",
+     "To:",
      0,
      0,
      0,
      NULL,
      NULL,
      NULL},
-    {{BAGL_LABELINE, 0x02, 0, 26, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+    {{BAGL_LABELINE, 0x02, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
      destination_string,
      0,
      0,
@@ -292,7 +292,7 @@ const bagl_element_t ui_sign_screen[] = {
      NULL,
      NULL},
 
-    {{BAGL_LABELINE, 0x03, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+    {{BAGL_LABELINE, 0x04, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
      "With Fee",
      0,
@@ -302,7 +302,7 @@ const bagl_element_t ui_sign_screen[] = {
      NULL,
      NULL},
 
-    {{BAGL_LABELINE, 0x03, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+    {{BAGL_LABELINE, 0x04, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
      fee_string,
      0,
@@ -363,7 +363,7 @@ bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
     pkh_to_string(destination_string, sizeof(destination_string),
                   curve_code_to_curve(ops.destination_curve_code), ops.destination_hash);
 
-    ui_prompt(ui_pubkey_prompt, sizeof(ui_pubkey_prompt)/sizeof(*ui_pubkey_prompt),
+    ui_prompt(ui_sign_screen, sizeof(ui_sign_screen)/sizeof(*ui_sign_screen),
               ok, cxl, transaction_prepro);
     THROW(ASYNC_EXCEPTION);
 }
