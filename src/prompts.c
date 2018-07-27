@@ -360,8 +360,13 @@ bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
     microtez_to_string(fee_string, ops.total_fee);
     pkh_to_string(origin_string, sizeof(origin_string),
                   curve_code_to_curve(ops.curve_code), ops.hash);
-    pkh_to_string(destination_string, sizeof(destination_string),
-                  curve_code_to_curve(ops.destination_curve_code), ops.destination_hash);
+
+    cx_curve_t destination_curve = ops.destination_originated ?
+        CX_CURVE_NONE :
+        curve_code_to_curve(ops.destination_curve_code);
+
+    pkh_to_string(destination_string, sizeof(destination_string), destination_curve,
+                  ops.destination_hash);
 
     ui_prompt(ui_sign_screen, sizeof(ui_sign_screen)/sizeof(*ui_sign_screen),
               ok, cxl, transaction_prepro);

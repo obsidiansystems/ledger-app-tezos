@@ -29,6 +29,7 @@ int pkh_to_string(char *buff, uint32_t buff_size, cx_curve_t curve, uint8_t hash
             data.prefix[0] = 2;
             data.prefix[1] = 90;
             data.prefix[2] = 121;
+            break;
         case CX_CURVE_Ed25519: // Ed25519
             data.prefix[0] = 6;
             data.prefix[1] = 161;

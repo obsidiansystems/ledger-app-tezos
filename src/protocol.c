@@ -36,9 +36,17 @@ struct operation_group_header {
 } __attribute__((packed));
 
 struct contract {
-    uint8_t outright;
-    uint8_t curve_code;
-    uint8_t pkh[HASH_SIZE];
+    uint8_t originated;
+    union {
+        struct {
+            uint8_t curve_code;
+            uint8_t pkh[HASH_SIZE];
+        } implicit;
+        struct {
+            uint8_t pkh[HASH_SIZE];
+            uint8_t padding;
+        } originated;
+    } u;
 } __attribute__((packed));
 
 enum operation_tag {
@@ -116,9 +124,9 @@ uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
 
     while (ix < length) {
         const struct operation_header *hdr = NEXT_TYPE(struct operation_header);
-        if (hdr->contract.curve_code != out->curve_code) return 13;
-        if (hdr->contract.outright != 0) return 12;
-        if (memcmp(hdr->contract.pkh, out->hash, HASH_SIZE) != 0) return 14;
+        if (hdr->contract.originated != 0) return 12;
+        if (hdr->contract.u.implicit.curve_code != out->curve_code) return 13;
+        if (memcmp(hdr->contract.u.implicit.pkh, out->hash, HASH_SIZE) != 0) return 14;
 
         out->total_fee = PARSE_Z(); // fee
         PARSE_Z(); // counter
@@ -148,9 +156,16 @@ uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
                 out->transaction_count++;
                 out->amount += PARSE_Z();
                 const struct contract *destination = NEXT_TYPE(struct contract);
-                if (destination->outright != 0) return 102; // TODO: Support outright dests
-                out->destination_curve_code = destination->curve_code;
-                memcpy(out->destination_hash, destination->pkh, sizeof(out->destination_hash));
+                out->destination_originated = destination->originated;
+                if (destination->originated == 0) { // implicit
+                    out->destination_curve_code = destination->u.implicit.curve_code;
+                    memcpy(out->destination_hash, destination->u.implicit.pkh,
+                           sizeof(out->destination_hash));
+                } else { // originated
+                    out->destination_curve_code = TEZOS_NO_CURVE;
+                    memcpy(out->destination_hash, destination->u.originated.pkh,
+                           sizeof(out->destination_hash));
+                }
                 uint8_t params = NEXT_BYTE();
                 if (params) return 101; // TODO: Support params
                 break;

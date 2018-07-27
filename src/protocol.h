@@ -46,6 +46,7 @@ struct parsed_operation_data {
     uint8_t curve_code;
     cx_ecfp_public_key_t public_key;
     uint8_t hash[HASH_SIZE];
+    uint8_t destination_originated;
     uint8_t destination_curve_code;
     uint8_t destination_hash[HASH_SIZE];
 };
