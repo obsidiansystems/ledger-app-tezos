@@ -113,9 +113,16 @@ uint32_t baking_sign_complete(void) {
                     THROW(EXC_PARSE_ERROR);
 #endif
                 }
+                // One delegation only (and possibly reveal)
                 if (ops.transaction_count > 0) THROW(EXC_PARSE_ERROR);
+                if (ops.delegation_count != 1) THROW(EXC_PARSE_ERROR);
+
+                // With < nickel fee
                 if (ops.total_fee > 50000) THROW(EXC_PARSE_ERROR);
-                if (!ops.contains_self_delegation) THROW(EXC_PARSE_ERROR);
+
+                // Must be self-delegation signed by the same key
+                if (memcmp(&ops.source, &ops.signing, sizeof(ops.signing))) THROW(EXC_PARSE_ERROR);
+                if (memcmp(&ops.destination, &ops.signing, sizeof(ops.signing))) THROW(EXC_PARSE_ERROR);
 
                 prompt_address(true, curve, &ops.public_key, bake_auth_ok, sign_reject);
             }

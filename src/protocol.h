@@ -38,17 +38,21 @@ level_t get_block_level(const void *data, size_t length); // Precondition: is_bl
         res; \
     })
 
-struct parsed_operation_data {
-    int transaction_count;
-    bool contains_self_delegation;
-    uint64_t amount;
-    uint64_t total_fee;
-    uint8_t curve_code;
-    cx_ecfp_public_key_t public_key;
+struct parsed_contract {
+    uint8_t originated;
+    uint8_t curve_code; // TEZOS_NO_CURVE in originated case
     uint8_t hash[HASH_SIZE];
-    uint8_t destination_originated;
-    uint8_t destination_curve_code;
-    uint8_t destination_hash[HASH_SIZE];
+};
+
+struct parsed_operation_data {
+    cx_ecfp_public_key_t public_key; // compressed
+    struct parsed_contract signing;
+    struct parsed_contract source;
+    struct parsed_contract destination;
+    uint32_t transaction_count;
+    uint32_t delegation_count;
+    uint64_t total_amount;
+    uint64_t total_fee;
 };
 
 // Zero means correct parse, non-zero means problem

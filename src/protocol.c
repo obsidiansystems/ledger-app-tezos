@@ -102,9 +102,29 @@ static void compute_pkh(cx_curve_t curve, size_t path_length, uint32_t *bip32_pa
     generate_key_pair(curve, path_length, bip32_path, &public_key_init, &private_key);
     os_memset(&private_key, 0, sizeof(private_key));
 
-    public_key_hash(out->hash, curve, &public_key_init, &out->public_key);
+    public_key_hash(out->signing.hash, curve, &public_key_init, &out->public_key);
+    out->signing.curve_code = curve_to_curve_code(curve);
+    out->signing.originated = 0;
+}
 
-    out->curve_code = curve_to_curve_code(curve);
+static uint32_t parse_implicit(struct parsed_contract *out, uint8_t curve_code,
+                               const uint8_t hash[HASH_SIZE]) {
+    out->originated = 0;
+    out->curve_code = curve_code;
+    memcpy(out->hash, hash, sizeof(out->hash));
+    return 0;
+}
+
+static uint32_t parse_contract(struct parsed_contract *out, const struct contract *in) {
+    out->originated = in->originated;
+    if (out->originated == 0) { // implicit
+        out->curve_code = in->u.implicit.curve_code;
+        memcpy(out->hash, in->u.implicit.pkh, sizeof(out->hash));
+    } else { // originated
+        out->curve_code = TEZOS_NO_CURVE;
+        memcpy(out->hash, in->u.originated.pkh, sizeof(out->hash));
+    }
+    return 0;
 }
 
 uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
@@ -114,7 +134,7 @@ uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
     check_null(out);
     memset(out, 0, sizeof(*out));
 
-    compute_pkh(curve, path_length, bip32_path, out);
+    compute_pkh(curve, path_length, bip32_path, out); // sets up "signing" and "public_key" members
 
     size_t ix = 0;
 
@@ -124,19 +144,19 @@ uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
 
     while (ix < length) {
         const struct operation_header *hdr = NEXT_TYPE(struct operation_header);
-        if (hdr->contract.originated != 0) return 12;
-        if (hdr->contract.u.implicit.curve_code != out->curve_code) return 13;
-        if (memcmp(hdr->contract.u.implicit.pkh, out->hash, HASH_SIZE) != 0) return 14;
+        uint32_t res = parse_contract(&out->source, &hdr->contract);
+        if (res != 0) return res;
 
-        out->total_fee = PARSE_Z(); // fee
+        out->total_fee += PARSE_Z(); // fee
         PARSE_Z(); // counter
         PARSE_Z(); // gas limit
         PARSE_Z(); // storage limit
         switch (hdr->tag) {
             case OPERATION_TAG_REVEAL:
-                // Public key up next!
-                if (NEXT_BYTE() != out->curve_code) return 64;
+                // Public key up next! Ensure it matches signing key and source key.
+                if (memcmp(&out->signing, &out->source, sizeof(out->signing))) return 63;
 
+                if (NEXT_BYTE() != out->signing.curve_code) return 64;
                 size_t klen = out->public_key.W_len;
                 if (ix + klen > length) return klen;
                 if (memcmp(out->public_key.W, data + ix, klen) != 0) return 4;
@@ -146,26 +166,20 @@ uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
                 {
                     // Delegation up next!
                     const struct delegation_contents *dlg = NEXT_TYPE(struct delegation_contents);
-                    if (dlg->curve_code != out->curve_code) return 5;
-                    if (dlg->delegate_present != 0xFF) return 6;
-                    if (memcmp(dlg->hash, out->hash, HASH_SIZE) != 0) return 7;
-                    out->contains_self_delegation = true;
+                    uint32_t res = parse_implicit(&out->destination, dlg->curve_code, dlg->hash);
+                    if (res != 0) return res;
+
+                    out->delegation_count++;
                 }
                 break;
             case OPERATION_TAG_TRANSACTION:
                 out->transaction_count++;
-                out->amount += PARSE_Z();
+                out->total_amount += PARSE_Z();
+
                 const struct contract *destination = NEXT_TYPE(struct contract);
-                out->destination_originated = destination->originated;
-                if (destination->originated == 0) { // implicit
-                    out->destination_curve_code = destination->u.implicit.curve_code;
-                    memcpy(out->destination_hash, destination->u.implicit.pkh,
-                           sizeof(out->destination_hash));
-                } else { // originated
-                    out->destination_curve_code = TEZOS_NO_CURVE;
-                    memcpy(out->destination_hash, destination->u.originated.pkh,
-                           sizeof(out->destination_hash));
-                }
+                uint32_t res = parse_contract(&out->destination, destination);
+                if (res != 0) return res;
+
                 uint8_t params = NEXT_BYTE();
                 if (params) return 101; // TODO: Support params
                 break;

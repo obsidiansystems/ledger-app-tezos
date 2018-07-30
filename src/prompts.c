@@ -354,19 +354,22 @@ bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
 #endif
     }
 
+    // Ensure we have one transaction (and possibly a reveal).
     if (ops.transaction_count != 1) return false;
-    if (ops.contains_self_delegation) return false;
-    microtez_to_string(amount_string, ops.amount);
+    if (ops.delegation_count != 0) return false;
+
+    // If the source is an implicit contract,...
+    if (ops.source.originated == 0) {
+        // ... it had better match our key, otherwise why are we signing it?
+        if (memcmp(&ops.source, &ops.signing, sizeof(ops.source))) return false;
+    }
+    // OK, it passes muster.
+
+    // Now to display it to make sure it's what the user intended.
+    microtez_to_string(amount_string, ops.total_amount);
     microtez_to_string(fee_string, ops.total_fee);
-    pkh_to_string(origin_string, sizeof(origin_string),
-                  curve_code_to_curve(ops.curve_code), ops.hash);
-
-    cx_curve_t destination_curve = ops.destination_originated ?
-        CX_CURVE_NONE :
-        curve_code_to_curve(ops.destination_curve_code);
-
-    pkh_to_string(destination_string, sizeof(destination_string), destination_curve,
-                  ops.destination_hash);
+    parsed_contract_to_string(origin_string, sizeof(origin_string), &ops.source);
+    parsed_contract_to_string(destination_string, sizeof(destination_string), &ops.destination);
 
     ui_prompt(ui_sign_screen, sizeof(ui_sign_screen)/sizeof(*ui_sign_screen),
               ok, cxl, transaction_prepro);

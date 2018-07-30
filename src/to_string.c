@@ -6,7 +6,15 @@
 
 #include <string.h>
 
-
+int parsed_contract_to_string(char *buff, uint32_t buff_size, struct parsed_contract *contract) {
+    cx_curve_t curve;
+    if (contract->originated != 0) {
+        curve = CX_CURVE_NONE;
+    } else {
+        curve = curve_code_to_curve(contract->curve_code);
+    }
+    return pkh_to_string(buff, buff_size, curve, contract->hash);
+}
 
 int pubkey_to_pkh_string(char *buff, uint32_t buff_size, cx_curve_t curve,
                          const cx_ecfp_public_key_t *public_key) {
