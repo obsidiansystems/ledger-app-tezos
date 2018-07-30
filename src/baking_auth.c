@@ -15,9 +15,13 @@ bool is_valid_level(level_t lvl) {
     return !(lvl & 0xC0000000);
 }
 
-void write_highest_level(level_t lvl) {
+void write_highest_level(level_t lvl, bool is_endorsement) {
     if (!is_valid_level(lvl)) return;
-    nvm_write((void*)&N_data.highest_level, &lvl, sizeof(lvl));
+    nvram_data new_data;
+    memcpy(&new_data, &N_data, sizeof(new_data));
+    new_data.highest_level = lvl;
+    new_data.had_endorsement = is_endorsement;
+    nvm_write((void*)&N_data, &new_data, sizeof(N_data));
     change_idle_display(N_data.highest_level);
 }
 
@@ -35,8 +39,13 @@ void authorize_baking(cx_curve_t curve, uint32_t *bip32_path, uint8_t path_lengt
     change_idle_display(N_data.highest_level);
 }
 
-bool is_level_authorized(level_t level) {
-    return is_valid_level(level) && level > N_data.highest_level;
+bool is_level_authorized(level_t level, bool is_endorsement) {
+    if (!is_valid_level(level)) return false;
+    if (level > N_data.highest_level) return true;
+
+    // Levels are tied. In order for this to be OK, this must be an endorsement, and we must not
+    // have previously seen an endorsement.
+    return is_endorsement && !N_data.had_endorsement;
 }
 
 bool is_path_authorized(cx_curve_t curve, uint32_t *bip32_path, uint8_t path_length) {
@@ -49,26 +58,19 @@ bool is_path_authorized(cx_curve_t curve, uint32_t *bip32_path, uint8_t path_len
 
 void guard_baking_authorized(cx_curve_t curve, void *data, int datalen, uint32_t *bip32_path,
                              uint8_t path_length) {
-    if (is_block_valid(data, datalen)) {
-        level_t level = get_block_level(data, datalen);
-        if (!is_level_authorized(level)) {
-            THROW(EXC_SECURITY);
-        }
-    } else if (get_magic_byte(data, datalen) == MAGIC_BYTE_BLOCK) {
-        THROW(EXC_SECURITY);
-    }
-    if (!is_path_authorized(curve, bip32_path, path_length)) {
-        THROW(EXC_SECURITY);
-    }
+    if (!is_path_authorized(curve, bip32_path, path_length)) THROW(EXC_SECURITY);
+
+    struct parsed_baking_data baking_info;
+    if (!parse_baking_data(data, datalen, &baking_info)) THROW(EXC_SECURITY);
+
+    if (!is_level_authorized(baking_info.level, baking_info.is_endorsement)) THROW(EXC_SECURITY);
 }
 
 void update_high_water_mark(void *data, int datalen) {
-    if (is_block_valid(data, datalen)) {
-        level_t level = get_block_level(data, datalen);
-        if (is_valid_level(level) && level > N_data.highest_level) {
-            write_highest_level(level);
-        }
-    }
+    struct parsed_baking_data baking_info;
+    if (!parse_baking_data(data, datalen, &baking_info)) THROW(EXC_SECURITY);
+
+    write_highest_level(baking_info.level, baking_info.is_endorsement);
 }
 
 void update_auth_text(void) {

@@ -9,7 +9,7 @@
 
 #include "os.h"
 
-struct __attribute__((__packed__)) block {
+struct __attribute__((packed)) block {
     char magic_byte;
     uint32_t chain_id;
     level_t level;
@@ -17,17 +17,34 @@ struct __attribute__((__packed__)) block {
     // ... beyond this we don't care
 };
 
-bool is_block_valid(const void *data, size_t length) {
-    if (length < sizeof(struct block)) return false;
-    if (get_magic_byte(data, length) != MAGIC_BYTE_BLOCK) return false;
-    // TODO: Check chain id
-    return true;
-}
+struct __attribute__((packed)) endorsement {
+    uint8_t magic_byte;
+    uint32_t chain_id;
+    uint8_t branch[32];
+    uint8_t tag;
+    uint32_t level;
+};
 
-level_t get_block_level(const void *data, __attribute__((unused)) size_t length) {
-    check_null(data);
-    const struct block *blk = data;
-    return READ_UNALIGNED_BIG_ENDIAN(level_t, &blk->level);
+bool parse_baking_data(const void *data, size_t length, struct parsed_baking_data *out) {
+    switch (get_magic_byte(data, length)) {
+        case MAGIC_BYTE_BAKING_OP:
+            if (length != sizeof(struct endorsement)) return false;
+            const struct endorsement *endorsement = data;
+            // TODO: Check chain ID
+            out->is_endorsement = true;
+            out->level = READ_UNALIGNED_BIG_ENDIAN(level_t, &endorsement->level);
+            return true;
+        case MAGIC_BYTE_BLOCK:
+            if (length < sizeof(struct block)) return false;
+            // TODO: Check chain ID
+            out->is_endorsement = false;
+            const struct block *block = data;
+            out->level = READ_UNALIGNED_BIG_ENDIAN(level_t, &block->level);
+            return true;
+        case MAGIC_BYTE_INVALID:
+        default:
+            return false;
+    }
 }
 
 struct operation_group_header {

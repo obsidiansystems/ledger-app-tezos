@@ -20,9 +20,12 @@ static inline uint8_t get_magic_byte(const uint8_t *data, size_t length) {
     else return *data;
 }
 
-bool is_block_valid(const void *data, size_t length);
-
-level_t get_block_level(const void *data, size_t length); // Precondition: is_block_valid returns true
+struct parsed_baking_data {
+    bool is_endorsement;
+    level_t level;
+};
+// Return false if it is invalid
+bool parse_baking_data(const void *data, size_t length, struct parsed_baking_data *out);
 
 #define READ_UNALIGNED_BIG_ENDIAN(type, in) \
     ({ \

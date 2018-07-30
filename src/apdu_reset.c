@@ -88,7 +88,7 @@ unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
 }
 
 bool reset_ok(void) {
-    write_highest_level(reset_level);
+    write_highest_level(reset_level, false); // We have not yet had an endorsement at this level
 
     uint32_t tx = 0;
     G_io_apdu_buffer[tx++] = 0x90;
