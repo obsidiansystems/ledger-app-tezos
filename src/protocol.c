@@ -144,7 +144,8 @@ uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
 
     while (ix < length) {
         const struct operation_header *hdr = NEXT_TYPE(struct operation_header);
-        uint32_t res = parse_contract(&out->source, &hdr->contract);
+        struct parsed_contract source;
+        uint32_t res = parse_contract(&source, &hdr->contract);
         if (res != 0) return res;
 
         out->total_fee += PARSE_Z(); // fee
@@ -153,9 +154,8 @@ uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
         PARSE_Z(); // storage limit
         switch (hdr->tag) {
             case OPERATION_TAG_REVEAL:
-                // Public key up next! Ensure it matches signing key and source key.
-                if (memcmp(&out->signing, &out->source, sizeof(out->signing))) return 63;
-
+                // Public key up next! Ensure it matches signing key.
+                // Ignore source :-)
                 if (NEXT_BYTE() != out->signing.curve_code) return 64;
                 size_t klen = out->public_key.W_len;
                 if (ix + klen > length) return klen;
@@ -169,6 +169,8 @@ uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
                     uint32_t res = parse_implicit(&out->destination, dlg->curve_code, dlg->hash);
                     if (res != 0) return res;
 
+                    memcpy(&out->source, &source, sizeof(out->source));
+
                     out->delegation_count++;
                 }
                 break;
@@ -179,6 +181,8 @@ uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
                 const struct contract *destination = NEXT_TYPE(struct contract);
                 uint32_t res = parse_contract(&out->destination, destination);
                 if (res != 0) return res;
+
+                memcpy(&out->source, &source, sizeof(out->source));
 
                 uint8_t params = NEXT_BYTE();
                 if (params) return 101; // TODO: Support params

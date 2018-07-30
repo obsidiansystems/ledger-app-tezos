@@ -165,21 +165,34 @@ const bagl_element_t ui_bake_prompt[] = {
      NULL,
      NULL},
 };
+
+// TODO: Unshare code with next function
+void prompt_contract_for_baking(struct parsed_contract *contract, callback_t ok_cb, callback_t cxl_cb) {
+    if (!parsed_contract_to_string(address_display_data, sizeof(address_display_data), contract)) {
+        THROW(EXC_WRONG_VALUES);
+    }
+
+    ux_step_count = 2;
+    ui_prompt(ui_bake_prompt, sizeof(ui_bake_prompt)/sizeof(*ui_bake_prompt),
+              ok_cb, cxl_cb, two_screens_scroll_second_prepro);
+    THROW(ASYNC_EXCEPTION);
+}
 #endif
 
 void prompt_address(
 #ifndef BAKING_APP
-                    __attribute__((unused))
+    __attribute__((unused))
 #endif
-                    bool bake, cx_curve_t curve,
-                    const cx_ecfp_public_key_t *key, callback_t ok_cb, callback_t cxl_cb) {
+    bool baking,
+                    cx_curve_t curve, const cx_ecfp_public_key_t *key, callback_t ok_cb,
+                    callback_t cxl_cb) {
     if (!pubkey_to_pkh_string(address_display_data, sizeof(address_display_data), curve, key)) {
         THROW(EXC_WRONG_VALUES);
     }
 
     ux_step_count = 2;
 #ifdef BAKING_APP
-    if (bake) {
+    if (baking) {
         ui_prompt(ui_bake_prompt, sizeof(ui_bake_prompt)/sizeof(*ui_bake_prompt),
                   ok_cb, cxl_cb, two_screens_scroll_second_prepro);
     } else {
@@ -368,8 +381,10 @@ bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
     // Now to display it to make sure it's what the user intended.
     microtez_to_string(amount_string, ops.total_amount);
     microtez_to_string(fee_string, ops.total_fee);
-    parsed_contract_to_string(origin_string, sizeof(origin_string), &ops.source);
-    parsed_contract_to_string(destination_string, sizeof(destination_string), &ops.destination);
+    if (!parsed_contract_to_string(origin_string, sizeof(origin_string),
+                                   &ops.source)) return false;
+    if (!parsed_contract_to_string(destination_string, sizeof(destination_string),
+                                   &ops.destination)) return false;
 
     ui_prompt(ui_sign_screen, sizeof(ui_sign_screen)/sizeof(*ui_sign_screen),
               ok, cxl, transaction_prepro);

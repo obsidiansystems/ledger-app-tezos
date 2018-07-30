@@ -124,7 +124,7 @@ uint32_t baking_sign_complete(void) {
                 if (memcmp(&ops.source, &ops.signing, sizeof(ops.signing))) THROW(EXC_PARSE_ERROR);
                 if (memcmp(&ops.destination, &ops.signing, sizeof(ops.signing))) THROW(EXC_PARSE_ERROR);
 
-                prompt_address(true, curve, &ops.public_key, bake_auth_ok, sign_reject);
+                prompt_contract_for_baking(&ops.signing, bake_auth_ok, sign_reject);
             }
         case MAGIC_BYTE_UNSAFE_OP2:
         case MAGIC_BYTE_UNSAFE_OP3:
