@@ -14,13 +14,10 @@ __attribute__((noreturn))
 bool exit_app(void);
 
 void ui_prompt(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback_t cxl_c,
-               bagl_element_callback_t prepro);
+               uint32_t step_count);
 unsigned char io_event(unsigned char channel);
 void io_seproxyhal_display(const bagl_element_t *element);
 void change_idle_display(uint32_t new);
-
-const bagl_element_t *default_prepro(const bagl_element_t *elem);
-const bagl_element_t *two_screens_scroll_second_prepro(const bagl_element_t *elem);
 
 extern char baking_auth_text[40]; // TODO: Is this the right name?
 
@@ -29,4 +26,4 @@ extern char baking_auth_text[40]; // TODO: Is this the right name?
     ux_step = 0; \
     ui_prompt(elems, \
               sizeof(elems) / sizeof(elems[0]), \
-              ok_c, cxl_c, default_prepro)
+              ok_c, cxl_c, 0)

@@ -17,7 +17,7 @@ static callback_t both_callback;
 static unsigned button_handler(unsigned button_mask, unsigned button_mask_counter);
 static bool do_nothing(void);
 
-uint32_t ux_step, ux_step_count;
+uint32_t ux_step, ux_step_count, ux_planned_step_count;
 
 #define PROMPT_TIMEOUT 300 // 100 ms per tick
 #define PROMPT_CYCLES 3
@@ -114,7 +114,7 @@ static void ui_idle(void) {
     update_auth_text();
 #endif
     ui_prompt(ui_idle_screen, sizeof(ui_idle_screen)/sizeof(*ui_idle_screen),
-              do_nothing, exit_app, two_screens_scroll_second_prepro);
+              do_nothing, exit_app, 2);
 }
 
 void change_idle_display(uint32_t new) {
@@ -151,36 +151,25 @@ unsigned button_handler(unsigned button_mask, __attribute__((unused)) unsigned b
     if (callback()) {
         ui_idle();
     }
-    return 0; // do not redraw the widget
+    return 0;
 }
 
-// TODO: Rename this
-const bagl_element_t *default_prepro(const bagl_element_t *elem) {
-    ux_step_count = 0;
-    return elem;
-}
+const bagl_element_t *prepro(const bagl_element_t *element) {
+    ux_step_count = ux_planned_step_count;
 
-const bagl_element_t *two_screens_scroll_second_prepro(const bagl_element_t *element) {
-    ux_step_count = 2;
-    if (element->component.userid > 0) {
-        unsigned int display = ux_step == element->component.userid - 1;
-        if (display) {
-            switch (element->component.userid) {
-            case 1:
-                UX_CALLBACK_SET_INTERVAL(2000);
-                break;
-            case 2:
-                UX_CALLBACK_SET_INTERVAL(MAX(2000, 1500 + bagl_label_roundtrip_duration_ms(element, 7)));
-                break;
-            }
-        }
-        return (void*)display;
+    // Always display elements with userid 0
+    if (element->component.userid == 0) return element;
+
+    if (ux_step == element->component.userid - 1) {
+        UX_CALLBACK_SET_INTERVAL(MAX(2000, 1500 + bagl_label_roundtrip_duration_ms(element, 7)));
+        return element;
+    } else {
+        return NULL;
     }
-    return (void*)1;
 }
 
 void ui_prompt(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback_t cxl_c,
-               bagl_element_callback_t prepro) {
+               uint32_t step_count) {
     // Adapted from definition of UX_DISPLAY in header file
     timeout_count = 0;
     ux_step = 0;
@@ -191,6 +180,7 @@ void ui_prompt(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback
     ux.elements_count = sz;
     ux.button_push_handler = button_handler;
     ux.elements_preprocessor = prepro;
+    ux_planned_step_count = step_count;
     UX_WAKE_UP();
     UX_REDISPLAY();
 }

@@ -68,7 +68,9 @@ void guard_baking_authorized(cx_curve_t curve, void *data, int datalen, uint32_t
 
 void update_high_water_mark(void *data, int datalen) {
     struct parsed_baking_data baking_info;
-    if (!parse_baking_data(data, datalen, &baking_info)) THROW(EXC_SECURITY);
+    if (!parse_baking_data(data, datalen, &baking_info)) {
+        return; // Must be signing a delegation
+    }
 
     write_highest_level(baking_info.level, baking_info.is_endorsement);
 }
