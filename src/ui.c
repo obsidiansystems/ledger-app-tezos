@@ -17,7 +17,7 @@ static callback_t both_callback;
 static unsigned button_handler(unsigned button_mask, unsigned button_mask_counter);
 static bool do_nothing(void);
 
-uint32_t ux_step, ux_step_count, ux_planned_step_count;
+static uint32_t ux_step, ux_step_count, ux_planned_step_count;
 
 #define PROMPT_TIMEOUT 300 // 100 ms per tick
 #define PROMPT_CYCLES 3

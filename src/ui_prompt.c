@@ -32,7 +32,7 @@ static char values[MAX_SCREEN_COUNT][VALUE_WIDTH + 1];   // and null they shall 
 #define INITIAL_ELEMENTS_COUNT 3
 #define ELEMENTS_PER_SCREEN 2
 
-const bagl_element_t ui_multi_screen[] = {
+static const bagl_element_t ui_multi_screen[] = {
     {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
       0, 0},
      NULL,
