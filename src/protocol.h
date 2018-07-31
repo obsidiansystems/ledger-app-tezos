@@ -47,18 +47,48 @@ struct parsed_contract {
     uint8_t hash[HASH_SIZE];
 };
 
-struct parsed_operation_data {
-    cx_ecfp_public_key_t public_key; // compressed
-    struct parsed_contract signing;
+enum operation_tag {
+    OPERATION_TAG_NONE = -1,
+    OPERATION_TAG_REVEAL = 7,
+    OPERATION_TAG_TRANSACTION = 8,
+    OPERATION_TAG_DELEGATION = 10,
+};
+
+#define MAX_OPERATIONS_PER_GROUP 4
+
+struct parsed_operation {
+    enum operation_tag tag;
     struct parsed_contract source;
     struct parsed_contract destination;
-    uint32_t transaction_count;
-    uint32_t delegation_count;
-    uint64_t total_amount;
-    uint64_t total_fee;
+    uint64_t amount; // 0 where inappropriate
 };
+
+static inline bool is_safe_operation(const struct parsed_operation *op) {
+    return op->tag == OPERATION_TAG_NONE || op->tag == OPERATION_TAG_REVEAL;
+}
+
+struct parsed_operation_group {
+    cx_ecfp_public_key_t public_key; // compressed
+    uint64_t total_fee;
+    struct parsed_contract signing;
+    struct parsed_operation operations[MAX_OPERATIONS_PER_GROUP];
+};
+
+static inline const struct parsed_operation *
+find_sole_unsafe_operation(const struct parsed_operation_group *ops, enum operation_tag key) {
+    const struct parsed_operation *res = NULL;
+    for (size_t i = 0; i < MAX_OPERATIONS_PER_GROUP; i++) {
+        if (is_safe_operation(&ops->operations[i])) continue;
+        if (ops->operations[i].tag == key) {
+            res = &ops->operations[i];
+        } else {
+            return NULL;
+        }
+    }
+    return res;
+}
 
 // Zero means correct parse, non-zero means problem
 // Specific return code can be used for debugging purposes
 uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve, size_t path_length,
-                          uint32_t *bip32_path, struct parsed_operation_data *out);
+                          uint32_t *bip32_path, struct parsed_operation_group *out);

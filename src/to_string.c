@@ -6,7 +6,7 @@
 
 #include <string.h>
 
-int parsed_contract_to_string(char *buff, uint32_t buff_size, struct parsed_contract *contract) {
+int parsed_contract_to_string(char *buff, uint32_t buff_size, const struct parsed_contract *contract) {
     cx_curve_t curve;
     if (contract->originated != 0) {
         curve = CX_CURVE_NONE;
@@ -23,7 +23,7 @@ int pubkey_to_pkh_string(char *buff, uint32_t buff_size, cx_curve_t curve,
     return pkh_to_string(buff, buff_size, curve, hash);
 }
 
-int pkh_to_string(char *buff, uint32_t buff_size, cx_curve_t curve, uint8_t hash[HASH_SIZE]) {
+int pkh_to_string(char *buff, uint32_t buff_size, cx_curve_t curve, const uint8_t hash[HASH_SIZE]) {
     // Data to encode
     struct __attribute__((packed)) {
         char prefix[3];

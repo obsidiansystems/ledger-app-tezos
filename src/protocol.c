@@ -66,12 +66,6 @@ struct contract {
     } u;
 } __attribute__((packed));
 
-enum operation_tag {
-    OPERATION_TAG_REVEAL = 7,
-    OPERATION_TAG_TRANSACTION = 8,
-    OPERATION_TAG_DELEGATION = 10,
-};
-
 struct operation_header {
     uint8_t tag;
     struct contract contract;
@@ -113,7 +107,7 @@ struct delegation_contents {
 })
 
 static void compute_pkh(cx_curve_t curve, size_t path_length, uint32_t *bip32_path,
-                        struct parsed_operation_data *out) {
+                        struct parsed_operation_group *out) {
     cx_ecfp_public_key_t public_key_init;
     cx_ecfp_private_key_t private_key;
     generate_key_pair(curve, path_length, bip32_path, &public_key_init, &private_key);
@@ -145,11 +139,14 @@ static uint32_t parse_contract(struct parsed_contract *out, const struct contrac
 }
 
 uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
-                          size_t path_length, uint32_t *bip32_path, struct parsed_operation_data *out) {
+                          size_t path_length, uint32_t *bip32_path, struct parsed_operation_group *out) {
     check_null(data);
     check_null(bip32_path);
     check_null(out);
     memset(out, 0, sizeof(*out));
+    for (size_t i = 0; i < MAX_OPERATIONS_PER_GROUP; i++) {
+        out->operations[i].tag = OPERATION_TAG_NONE;
+    }
 
     compute_pkh(curve, path_length, bip32_path, out); // sets up "signing" and "public_key" members
 
@@ -159,17 +156,23 @@ uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
     const struct operation_group_header *ogh = NEXT_TYPE(struct operation_group_header);
     if (ogh->magic_byte != MAGIC_BYTE_UNSAFE_OP) return 15;
 
+    size_t op_index = 0;
+
     while (ix < length) {
+        if (op_index >= MAX_OPERATIONS_PER_GROUP) return 55;
+        struct parsed_operation *cur = &out->operations[op_index];
+
         const struct operation_header *hdr = NEXT_TYPE(struct operation_header);
-        struct parsed_contract source;
-        uint32_t res = parse_contract(&source, &hdr->contract);
+        uint32_t res = parse_contract(&cur->source, &hdr->contract);
         if (res != 0) return res;
 
         out->total_fee += PARSE_Z(); // fee
         PARSE_Z(); // counter
         PARSE_Z(); // gas limit
         PARSE_Z(); // storage limit
-        switch (hdr->tag) {
+        cur->tag = hdr->tag;
+
+        switch (cur->tag) {
             case OPERATION_TAG_REVEAL:
                 // Public key up next! Ensure it matches signing key.
                 // Ignore source :-)
@@ -181,32 +184,28 @@ uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
                 break;
             case OPERATION_TAG_DELEGATION:
                 {
-                    // Delegation up next!
                     const struct delegation_contents *dlg = NEXT_TYPE(struct delegation_contents);
-                    uint32_t res = parse_implicit(&out->destination, dlg->curve_code, dlg->hash);
+                    uint32_t res = parse_implicit(&cur->destination, dlg->curve_code, dlg->hash);
                     if (res != 0) return res;
-
-                    memcpy(&out->source, &source, sizeof(out->source));
-
-                    out->delegation_count++;
                 }
                 break;
             case OPERATION_TAG_TRANSACTION:
-                out->transaction_count++;
-                out->total_amount += PARSE_Z();
+                {
+                    cur->amount = PARSE_Z();
 
-                const struct contract *destination = NEXT_TYPE(struct contract);
-                uint32_t res = parse_contract(&out->destination, destination);
-                if (res != 0) return res;
+                    const struct contract *destination = NEXT_TYPE(struct contract);
+                    uint32_t res = parse_contract(&cur->destination, destination);
+                    if (res != 0) return res;
 
-                memcpy(&out->source, &source, sizeof(out->source));
-
-                uint8_t params = NEXT_BYTE();
-                if (params) return 101; // TODO: Support params
+                    uint8_t params = NEXT_BYTE();
+                    if (params) return 101; // TODO: Support params
+                }
                 break;
             default:
                 return 8;
         }
+
+        op_index++;
     }
 
     return 0; // Success

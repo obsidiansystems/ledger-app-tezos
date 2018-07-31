@@ -103,7 +103,7 @@ uint32_t baking_sign_complete(void) {
 
         case MAGIC_BYTE_UNSAFE_OP:
             {
-                struct parsed_operation_data ops;
+                struct parsed_operation_group ops;
                 uint32_t res = parse_operations(message_data, message_data_length, curve,
                                                 bip32_path_length, bip32_path, &ops);
                 if (res != 0) {
@@ -113,16 +113,22 @@ uint32_t baking_sign_complete(void) {
                     THROW(EXC_PARSE_ERROR);
 #endif
                 }
+
                 // One delegation only (and possibly reveal)
-                if (ops.transaction_count > 0) THROW(EXC_PARSE_ERROR);
-                if (ops.delegation_count != 1) THROW(EXC_PARSE_ERROR);
+                const struct parsed_operation *delegation =
+                    find_sole_unsafe_operation(&ops, OPERATION_TAG_DELEGATION);
+                if (delegation == NULL) THROW(EXC_PARSE_ERROR);
 
                 // With < nickel fee
                 if (ops.total_fee > 50000) THROW(EXC_PARSE_ERROR);
 
                 // Must be self-delegation signed by the same key
-                if (memcmp(&ops.source, &ops.signing, sizeof(ops.signing))) THROW(EXC_PARSE_ERROR);
-                if (memcmp(&ops.destination, &ops.signing, sizeof(ops.signing))) THROW(EXC_PARSE_ERROR);
+                if (memcmp(&delegation->source, &ops.signing, sizeof(ops.signing))) {
+                    THROW(EXC_PARSE_ERROR);
+                }
+                if (memcmp(&delegation->destination, &ops.signing, sizeof(ops.signing))) {
+                    THROW(EXC_PARSE_ERROR);
+                }
 
                 prompt_contract_for_baking(&ops.signing, bake_auth_ok, sign_reject);
             }
