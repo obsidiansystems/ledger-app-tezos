@@ -72,8 +72,6 @@ int pkh_to_string(char *buff, uint32_t buff_size, cx_curve_t curve, const uint8_
 
 // These functions do not output terminating null bytes.
 
-#define MAX_INT_DIGITS 20
-
 // This function fills digits, potentially with all leading zeroes, from the end of the buffer backwards
 // This is intended to be used with a temporary buffer of length MAX_INT_DIGITS
 // Returns offset of where it stopped filling in

@@ -5,65 +5,23 @@
 #include "os.h"
 #include "protocol.h"
 #include "to_string.h"
+#include "ui_prompt.h"
 
 #include <string.h>
 
-#define RESET_STRING "Reset HWM: "
-char reset_string[sizeof(RESET_STRING) + 10]; // 10 is max number of digits in 32-bit number
+static level_t reset_level;
 
-const bagl_element_t ui_bake_reset_screen[] = {
-    // type                               userid    x    y   w    h  str rad
-    // fill      fg        bg      fid iid  txt   touchparams...       ]
-    {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
-      0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    {{BAGL_LABELINE, 0x01, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Tezos",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x01, 0, 26, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     reset_string,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    {{BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
-      BAGL_GLYPH_ICON_CROSS},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
-      BAGL_GLYPH_ICON_CHECK},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+const char *const reset_prompts[] = {
+    "Reset HWM",
+    NULL,
 };
 
-static level_t reset_level;
+char reset_string[21];
+
+const char *const reset_values[] = {
+    reset_string,
+    NULL,
+};
 
 static bool reset_ok(void);
 
@@ -80,11 +38,8 @@ unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
     }
     reset_level = lvl;
 
-    strcpy(reset_string, RESET_STRING);
-    char *number_field = reset_string + sizeof(RESET_STRING) - 1;
-    number_to_string(number_field, reset_level);
-
-    UI_PROMPT(ui_bake_reset_screen, reset_ok, delay_reject);
+    number_to_string(reset_string, reset_level);
+    ui_prompt_multiple(reset_prompts, reset_values, reset_ok, delay_reject);
 }
 
 bool reset_ok(void) {

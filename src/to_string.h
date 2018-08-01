@@ -16,5 +16,6 @@ int pkh_to_string(char *buff, uint32_t buff_size, cx_curve_t curve, const uint8_
 int parsed_contract_to_string(char *buff, uint32_t buff_size, const struct parsed_contract *contract);
 
 // These functions output terminating null bytes, and return the ending offset.
+#define MAX_INT_DIGITS 20
 size_t number_to_string(char *dest, uint64_t number);
 size_t microtez_to_string(char *dest, uint64_t number);

@@ -18,10 +18,3 @@ void io_seproxyhal_display(const bagl_element_t *element);
 void change_idle_display(uint32_t new);
 
 extern char baking_auth_text[40]; // TODO: Is this the right name?
-
-// Helper for simple situations
-#define UI_PROMPT(elems, ok_c, cxl_c) \
-    ui_prompt(elems, \
-              sizeof(elems) / sizeof(elems[0]), \
-              ok_c, cxl_c, 0); \
-    THROW(ASYNC_EXCEPTION)
