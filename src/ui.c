@@ -130,7 +130,7 @@ void ui_initial_screen(void) {
 }
 
 void cancel_pressed(void) {
-    (void) button_handler(BUTTON_EVT_RELEASED | BUTTON_RIGHT, 0);
+    (void) button_handler(BUTTON_EVT_RELEASED | BUTTON_LEFT, 0);
 }
 
 unsigned button_handler(unsigned button_mask, __attribute__((unused)) unsigned button_mask_counter) {
