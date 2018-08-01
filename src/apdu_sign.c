@@ -104,22 +104,23 @@ uint32_t baking_sign_complete(void) {
         case MAGIC_BYTE_UNSAFE_OP:
             {
                 struct parsed_operation_group ops;
-                parse_operations(message_data, message_data_length, curve,
-                                 bip32_path_length, bip32_path, &ops);
 
-                // One delegation only (and possibly reveal)
-                const struct parsed_operation *delegation =
-                    find_sole_unsafe_operation(&ops, OPERATION_TAG_DELEGATION);
-                if (delegation == NULL) THROW(EXC_PARSE_ERROR);
+                allowed_operation_set allowed;
+                clear_operation_set(&allowed);
+                allow_operation(&allowed, OPERATION_TAG_DELEGATION);
+                allow_operation(&allowed, OPERATION_TAG_REVEAL);
+
+                parse_operations(message_data, message_data_length, curve,
+                                 bip32_path_length, bip32_path, allowed, &ops);
 
                 // With < nickel fee
                 if (ops.total_fee > 50000) THROW(EXC_PARSE_ERROR);
 
                 // Must be self-delegation signed by the same key
-                if (memcmp(&delegation->source, &ops.signing, sizeof(ops.signing))) {
+                if (memcmp(&ops.operation.source, &ops.signing, sizeof(ops.signing))) {
                     THROW(EXC_PARSE_ERROR);
                 }
-                if (memcmp(&delegation->destination, &ops.signing, sizeof(ops.signing))) {
+                if (memcmp(&ops.operation.destination, &ops.signing, sizeof(ops.signing))) {
                     THROW(EXC_PARSE_ERROR);
                 }
 

@@ -101,28 +101,32 @@ bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
                         size_t path_length, uint32_t *bip32_path,
                         callback_t ok, callback_t cxl) {
     struct parsed_operation_group ops;
-    parse_operations(data, length, curve, path_length, bip32_path, &ops);
-    // XXX TODO: Catch exceptions and fall back, potentially
 
-    // Ensure we have one transaction (and possibly a reveal).
-    const struct parsed_operation *transaction =
-        find_sole_unsafe_operation(&ops, OPERATION_TAG_TRANSACTION);
-    if (transaction == NULL) return false;
+    allowed_operation_set allowed;
+    clear_operation_set(&allowed);
+    // TODO: allow_operation(&allowed, OPERATION_TAG_DELEGATION);
+    // TODO: Add other operations
+    allow_operation(&allowed, OPERATION_TAG_REVEAL);
+    allow_operation(&allowed, OPERATION_TAG_TRANSACTION);
+
+    parse_operations(data, length, curve, path_length, bip32_path, allowed, &ops);
+
+    // XXX TODO: Catch exceptions and fall back to "unsafe" signing
 
     // If the source is an implicit contract,...
-    if (transaction->source.originated == 0) {
+    if (ops.operation.source.originated == 0) {
         // ... it had better match our key, otherwise why are we signing it?
-        if (memcmp(&transaction->source, &ops.signing, sizeof(ops.signing))) return false;
+        if (memcmp(&ops.operation.source, &ops.signing, sizeof(ops.signing))) return false;
     }
     // OK, it passes muster.
 
     // Now to display it to make sure it's what the user intended.
-    microtez_to_string(amount_string, transaction->amount);
+    microtez_to_string(amount_string, ops.operation.amount);
     microtez_to_string(fee_string, ops.total_fee);
     if (!parsed_contract_to_string(origin_string, sizeof(origin_string),
-                                   &transaction->source)) return false;
+                                   &ops.operation.source)) return false;
     if (!parsed_contract_to_string(destination_string, sizeof(destination_string),
-                                   &transaction->destination)) return false;
+                                   &ops.operation.destination)) return false;
 
     ui_prompt_multiple(transaction_prompts, transaction_values, ok, cxl);
 }
