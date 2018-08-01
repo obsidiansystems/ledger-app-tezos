@@ -84,7 +84,7 @@ unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
     char *number_field = reset_string + sizeof(RESET_STRING) - 1;
     number_to_string(number_field, reset_level);
 
-    ASYNC_PROMPT(ui_bake_reset_screen, reset_ok, delay_reject);
+    UI_PROMPT(ui_bake_reset_screen, reset_ok, delay_reject);
 }
 
 bool reset_ok(void) {

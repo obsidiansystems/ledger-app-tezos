@@ -73,7 +73,7 @@ void main_loop(apdu_handler handlers[INS_MAX]) {
                 rx = io_exchange(CHANNEL_APDU | IO_ASYNCH_REPLY, 0);
             }
             CATCH_OTHER(e) {
-                unsigned short sw = e;
+                uint16_t sw = e;
                 switch (sw) {
                 default:
                     sw = 0x6800 | (e & 0x7FF);

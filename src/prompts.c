@@ -102,16 +102,28 @@ bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
                         callback_t ok, callback_t cxl) {
     struct parsed_operation_group ops;
 
-    allowed_operation_set allowed;
-    clear_operation_set(&allowed);
-    // TODO: allow_operation(&allowed, OPERATION_TAG_DELEGATION);
-    // TODO: Add other operations
-    allow_operation(&allowed, OPERATION_TAG_REVEAL);
-    allow_operation(&allowed, OPERATION_TAG_TRANSACTION);
-
-    parse_operations(data, length, curve, path_length, bip32_path, allowed, &ops);
-
-    // XXX TODO: Catch exceptions and fall back to "unsafe" signing
+#ifndef DEBUG
+    BEGIN_TRY { // TODO: Eventually, "unsafe" operations will be another APDU,
+                //       and we will parse enough operations that it will rarely need to be used,
+                //       hopefully ultimately never.
+        TRY {
+#endif
+            allowed_operation_set allowed;
+            clear_operation_set(&allowed);
+            // TODO: allow_operation(&allowed, OPERATION_TAG_DELEGATION);
+            // TODO: Add other operations
+            allow_operation(&allowed, OPERATION_TAG_REVEAL);
+            allow_operation(&allowed, OPERATION_TAG_TRANSACTION);
+            parse_operations(data, length, curve, path_length, bip32_path, allowed, &ops);
+#ifndef DEBUG
+        }
+        CATCH_OTHER(e) {
+            return false;
+        }
+        FINALLY { }
+    }
+    END_TRY;
+#endif
 
     // If the source is an implicit contract,...
     if (ops.operation.source.originated == 0) {

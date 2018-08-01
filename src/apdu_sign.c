@@ -5,6 +5,7 @@
 #include "blake2.h"
 #include "protocol.h"
 #include "prompts.h"
+#include "ui_prompt.h"
 
 #include "cx.h"
 #include "ui.h"
@@ -132,69 +133,27 @@ uint32_t baking_sign_complete(void) {
             THROW(EXC_PARSE_ERROR);
     }
 }
+
 #else
 
-#define PREHASH_STRING "Sign unsafe data?"
-#define UNKNOWN_STRING "Sign unknown data?"
+const char *const sign_prompts[] = {
+    "Sign",
+    NULL,
+};
 
-char sign_prompt[MAX(sizeof(PREHASH_STRING), sizeof(UNKNOWN_STRING))];
+const char *const hash_values[] = {
+    "Unsafe Data",
+    NULL,
+};
 
-const bagl_element_t ui_sign_unsafe_screen[] = {
-    // type                               userid    x    y   w    h  str rad
-    // fill      fg        bg      fid iid  txt   touchparams...       ]
-    {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
-      0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    {{BAGL_LABELINE, 0x01, 0, 12, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Tezos",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_LABELINE, 0x01, 0, 26, 128, 32, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     sign_prompt,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-
-    {{BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
-      BAGL_GLYPH_ICON_CROSS},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
-    {{BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
-      BAGL_GLYPH_ICON_CHECK},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+const char *const parse_fail_values[] = {
+    "Unparsed Data",
+    NULL,
 };
 
 uint32_t wallet_sign_complete(uint8_t instruction) {
     if (instruction == INS_SIGN_UNSAFE) {
-        strcpy(sign_prompt, PREHASH_STRING);
-        ASYNC_PROMPT(ui_sign_unsafe_screen, sign_unsafe_ok, sign_reject);
+        ui_prompt_multiple(sign_prompts, hash_values, sign_unsafe_ok, sign_reject);
     } else {
         switch (magic_number) {
             case MAGIC_BYTE_BLOCK:
@@ -214,8 +173,7 @@ uint32_t wallet_sign_complete(uint8_t instruction) {
                 goto unsafe;
         }
 unsafe:
-        strcpy(sign_prompt, UNKNOWN_STRING);
-        ASYNC_PROMPT(ui_sign_unsafe_screen, sign_ok, sign_reject);
+        ui_prompt_multiple(sign_prompts, parse_fail_values, sign_ok, sign_reject);
     }
 }
 #endif

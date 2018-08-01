@@ -24,10 +24,6 @@
 #define INS_MAX 0x10
 #define INS_EXIT 0x0F
 
-#define ASYNC_PROMPT(screen, ok, cxl) \
-    UI_PROMPT(screen, ok, cxl); \
-    THROW(ASYNC_EXCEPTION)
-
 // Return number of bytes to transmit (tx)
 typedef uint32_t (*apdu_handler)(uint8_t instruction);
 
