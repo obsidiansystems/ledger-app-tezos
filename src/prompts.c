@@ -101,15 +101,8 @@ bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
                         size_t path_length, uint32_t *bip32_path,
                         callback_t ok, callback_t cxl) {
     struct parsed_operation_group ops;
-    uint32_t res = parse_operations(data, length, curve, path_length, bip32_path, &ops);
-
-    if (res != 0) {
-#ifdef DEBUG
-        THROW(0x9000 + res);
-#else
-        return false;
-#endif
-    }
+    parse_operations(data, length, curve, path_length, bip32_path, &ops);
+    // XXX TODO: Catch exceptions and fall back, potentially
 
     // Ensure we have one transaction (and possibly a reveal).
     const struct parsed_operation *transaction =

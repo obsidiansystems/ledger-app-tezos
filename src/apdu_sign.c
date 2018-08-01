@@ -104,15 +104,8 @@ uint32_t baking_sign_complete(void) {
         case MAGIC_BYTE_UNSAFE_OP:
             {
                 struct parsed_operation_group ops;
-                uint32_t res = parse_operations(message_data, message_data_length, curve,
-                                                bip32_path_length, bip32_path, &ops);
-                if (res != 0) {
-#ifdef DEBUG
-                    THROW(0x9000 + res);
-#else
-                    THROW(EXC_PARSE_ERROR);
-#endif
-                }
+                parse_operations(message_data, message_data_length, curve,
+                                 bip32_path_length, bip32_path, &ops);
 
                 // One delegation only (and possibly reveal)
                 const struct parsed_operation *delegation =

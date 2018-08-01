@@ -90,5 +90,5 @@ find_sole_unsafe_operation(const struct parsed_operation_group *ops, enum operat
 
 // Zero means correct parse, non-zero means problem
 // Specific return code can be used for debugging purposes
-uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve, size_t path_length,
-                          uint32_t *bip32_path, struct parsed_operation_group *out);
+void parse_operations(const void *data, size_t length, cx_curve_t curve, size_t path_length,
+                      uint32_t *bip32_path, struct parsed_operation_group *out);

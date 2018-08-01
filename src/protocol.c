@@ -77,33 +77,55 @@ struct delegation_contents {
     uint8_t hash[HASH_SIZE];
 } __attribute__((packed));
 
-// These macros assume:
+__attribute__((noreturn))
+static void parse_error(
+#ifndef DEBUG
+    __attribute__((unused))
+#endif
+    uint32_t code) {
+#ifdef DEBUG
+    THROW(0x9000 + code);
+#else
+    THROW(EXC_PARSE_ERROR);
+#endif
+}
+
+static void advance_ix(size_t *ix, size_t length, size_t amount) {
+    if (*ix + amount > length) parse_error(length);
+
+    *ix += amount;
+}
+
+static uint8_t next_byte(const void *data, size_t *ix, size_t length) {
+    if (*ix == length) parse_error(1);
+    uint8_t res = ((const char *)data)[*ix];
+    (*ix)++;
+    return res;
+}
+
+static uint64_t parse_z(const void *data, size_t *ix, size_t length) {
+    uint64_t acc = 0;
+    uint64_t shift = 0;
+    while (true) {
+        uint8_t byte = next_byte(data, ix, length);
+        acc |= (byte & 0x7F) << shift;
+        shift += 7;
+        if (!(byte & 0x80)) {
+            break;
+        }
+    }
+    return acc;
+}
+
+// This macro assumes:
 // * Beginning of data: const void *data
 // * Total length of data: size_t length
 // * Current index of data: size_t ix
 // Any function that uses these macros should have these as local variables
 #define NEXT_TYPE(type) ({ \
-    if (ix + sizeof(type) > length) return sizeof(type); \
     const type *val = data + ix; \
-    ix += sizeof(type); \
+    advance_ix(&ix, length, sizeof(type)); \
     val; \
-})
-
-#define NEXT_BYTE() (*NEXT_TYPE(uint8_t))
-
-#define PARSE_Z() ({ \
-    uint64_t acc = 0; \
-    uint64_t shift = 0; \
-    while (true) { \
-        if (ix >= length) return 23; \
-        uint8_t next_byte = NEXT_BYTE(); \
-        acc |= (next_byte & 0x7F) << shift; \
-        shift += 7; \
-        if (!(next_byte & 0x80)) { \
-            break; \
-        } \
-    } \
-    acc; \
 })
 
 static void compute_pkh(cx_curve_t curve, size_t path_length, uint32_t *bip32_path,
@@ -118,15 +140,14 @@ static void compute_pkh(cx_curve_t curve, size_t path_length, uint32_t *bip32_pa
     out->signing.originated = 0;
 }
 
-static uint32_t parse_implicit(struct parsed_contract *out, uint8_t curve_code,
+static void parse_implicit(struct parsed_contract *out, uint8_t curve_code,
                                const uint8_t hash[HASH_SIZE]) {
     out->originated = 0;
     out->curve_code = curve_code;
     memcpy(out->hash, hash, sizeof(out->hash));
-    return 0;
 }
 
-static uint32_t parse_contract(struct parsed_contract *out, const struct contract *in) {
+static void parse_contract(struct parsed_contract *out, const struct contract *in) {
     out->originated = in->originated;
     if (out->originated == 0) { // implicit
         out->curve_code = in->u.implicit.curve_code;
@@ -135,11 +156,10 @@ static uint32_t parse_contract(struct parsed_contract *out, const struct contrac
         out->curve_code = TEZOS_NO_CURVE;
         memcpy(out->hash, in->u.originated.pkh, sizeof(out->hash));
     }
-    return 0;
 }
 
-uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
-                          size_t path_length, uint32_t *bip32_path, struct parsed_operation_group *out) {
+void parse_operations(const void *data, size_t length, cx_curve_t curve,
+                      size_t path_length, uint32_t *bip32_path, struct parsed_operation_group *out) {
     check_null(data);
     check_null(bip32_path);
     check_null(out);
@@ -154,59 +174,52 @@ uint32_t parse_operations(const void *data, size_t length, cx_curve_t curve,
 
     // Verify magic byte, ignore block hash
     const struct operation_group_header *ogh = NEXT_TYPE(struct operation_group_header);
-    if (ogh->magic_byte != MAGIC_BYTE_UNSAFE_OP) return 15;
+    if (ogh->magic_byte != MAGIC_BYTE_UNSAFE_OP) parse_error(15);
 
-    size_t op_index = 0;
-
-    while (ix < length) {
-        if (op_index >= MAX_OPERATIONS_PER_GROUP) return 55;
+    for (size_t op_index = 0; op_index < MAX_OPERATIONS_PER_GROUP; op_index++) {
         struct parsed_operation *cur = &out->operations[op_index];
 
         const struct operation_header *hdr = NEXT_TYPE(struct operation_header);
-        uint32_t res = parse_contract(&cur->source, &hdr->contract);
-        if (res != 0) return res;
+        parse_contract(&cur->source, &hdr->contract);
 
-        out->total_fee += PARSE_Z(); // fee
-        PARSE_Z(); // counter
-        PARSE_Z(); // gas limit
-        PARSE_Z(); // storage limit
+        out->total_fee += parse_z(data, &ix, length); // fee
+        parse_z(data, &ix, length); // counter
+        parse_z(data, &ix, length); // gas limit
+        parse_z(data, &ix, length); // storage limit
         cur->tag = hdr->tag;
 
         switch (cur->tag) {
             case OPERATION_TAG_REVEAL:
                 // Public key up next! Ensure it matches signing key.
                 // Ignore source :-)
-                if (NEXT_BYTE() != out->signing.curve_code) return 64;
+                if (next_byte(data, &ix, length) != out->signing.curve_code) parse_error(64);
                 size_t klen = out->public_key.W_len;
-                if (ix + klen > length) return klen;
-                if (memcmp(out->public_key.W, data + ix, klen) != 0) return 4;
+                if (ix + klen > length) parse_error(klen);
+                if (memcmp(out->public_key.W, data + ix, klen) != 0) parse_error(4);
                 ix += klen;
                 break;
             case OPERATION_TAG_DELEGATION:
                 {
                     const struct delegation_contents *dlg = NEXT_TYPE(struct delegation_contents);
-                    uint32_t res = parse_implicit(&cur->destination, dlg->curve_code, dlg->hash);
-                    if (res != 0) return res;
+                    parse_implicit(&cur->destination, dlg->curve_code, dlg->hash);
                 }
                 break;
             case OPERATION_TAG_TRANSACTION:
                 {
-                    cur->amount = PARSE_Z();
+                    cur->amount = parse_z(data, &ix, length);
 
                     const struct contract *destination = NEXT_TYPE(struct contract);
-                    uint32_t res = parse_contract(&cur->destination, destination);
-                    if (res != 0) return res;
+                    parse_contract(&cur->destination, destination);
 
-                    uint8_t params = NEXT_BYTE();
-                    if (params) return 101; // TODO: Support params
+                    uint8_t params = next_byte(data, &ix, length);
+                    if (params) parse_error(101); // TODO: Support params
                 }
                 break;
             default:
-                return 8;
+                parse_error(8);
         }
 
-        op_index++;
+        if (ix == length) return; // We're done parsing!
     }
-
-    return 0; // Success
+    parse_error(67); // Too many operations
 }
