@@ -160,17 +160,17 @@ static void parse_contract(struct parsed_contract *out, const struct contract *i
     }
 }
 
-void parse_operations(const void *data, size_t length, cx_curve_t curve,
-                      size_t path_length, uint32_t *bip32_path, allowed_operation_set ops,
-                      struct parsed_operation_group *out) {
+struct parsed_operation_group *parse_operations(const void *data, size_t length, cx_curve_t curve,
+                                                size_t path_length, uint32_t *bip32_path,
+                                                allowed_operation_set ops) {
+    static struct parsed_operation_group out;
     check_null(data);
     check_null(bip32_path);
-    check_null(out);
-    memset(out, 0, sizeof(*out));
+    memset(&out, 0, sizeof(out));
 
-    out->operation.tag = OPERATION_TAG_NONE;
+    out.operation.tag = OPERATION_TAG_NONE;
 
-    compute_pkh(curve, path_length, bip32_path, out); // sets up "signing" and "public_key" members
+    compute_pkh(curve, path_length, bip32_path, &out); // sets up "signing" and "public_key" members
 
     size_t ix = 0;
 
@@ -181,7 +181,7 @@ void parse_operations(const void *data, size_t length, cx_curve_t curve,
     while (ix < length) {
         const struct operation_header *hdr = NEXT_TYPE(struct operation_header);
 
-        out->total_fee += parse_z(data, &ix, length); // fee
+        out.total_fee += parse_z(data, &ix, length); // fee
         parse_z(data, &ix, length); // counter
         parse_z(data, &ix, length); // gas limit
         parse_z(data, &ix, length); // storage limit
@@ -194,38 +194,38 @@ void parse_operations(const void *data, size_t length, cx_curve_t curve,
             // Ignore source :-) and do not parse it from hdr
             // We don't much care about reveals, they have very little in the way of bad security
             // implementations and any fees have already been accounted for
-            if (next_byte(data, &ix, length) != out->signing.curve_code) parse_error(64);
+            if (next_byte(data, &ix, length) != out.signing.curve_code) parse_error(64);
 
-            size_t klen = out->public_key.W_len;
+            size_t klen = out.public_key.W_len;
             advance_ix(&ix, length, klen);
-            if (memcmp(out->public_key.W, data + ix - klen, klen) != 0) parse_error(4);
+            if (memcmp(out.public_key.W, data + ix - klen, klen) != 0) parse_error(4);
 
             continue;
         }
 
-        if (out->operation.tag != OPERATION_TAG_NONE) {
+        if (out.operation.tag != OPERATION_TAG_NONE) {
             // We are only currently allowing one non-reveal operation
             parse_error(90);
         }
 
         // This is the one allowable non-reveal operation.
 
-        out->operation.tag = (uint8_t)tag;
-        parse_contract(&out->operation.source, &hdr->contract);
+        out.operation.tag = (uint8_t)tag;
+        parse_contract(&out.operation.source, &hdr->contract);
 
         switch (tag) {
             case OPERATION_TAG_DELEGATION:
                 {
                     const struct delegation_contents *dlg = NEXT_TYPE(struct delegation_contents);
-                    parse_implicit(&out->operation.destination, dlg->curve_code, dlg->hash);
+                    parse_implicit(&out.operation.destination, dlg->curve_code, dlg->hash);
                 }
                 break;
             case OPERATION_TAG_TRANSACTION:
                 {
-                    out->operation.amount = parse_z(data, &ix, length);
+                    out.operation.amount = parse_z(data, &ix, length);
 
                     const struct contract *destination = NEXT_TYPE(struct contract);
-                    parse_contract(&out->operation.destination, destination);
+                    parse_contract(&out.operation.destination, destination);
 
                     uint8_t params = next_byte(data, &ix, length);
                     if (params) parse_error(101); // TODO: Support params
@@ -236,7 +236,7 @@ void parse_operations(const void *data, size_t length, cx_curve_t curve,
         }
     }
 
-    if (out->operation.tag == OPERATION_TAG_NONE) parse_error(13); // Must have one non-reveal op
+    if (out.operation.tag == OPERATION_TAG_NONE) parse_error(13); // Must have one non-reveal op
 
-    return; // Success!
+    return &out; // Success!
 }

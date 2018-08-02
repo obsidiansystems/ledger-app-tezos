@@ -104,28 +104,28 @@ uint32_t baking_sign_complete(void) {
 
         case MAGIC_BYTE_UNSAFE_OP:
             {
-                struct parsed_operation_group ops;
 
                 allowed_operation_set allowed;
                 clear_operation_set(&allowed);
                 allow_operation(&allowed, OPERATION_TAG_DELEGATION);
                 allow_operation(&allowed, OPERATION_TAG_REVEAL);
 
-                parse_operations(message_data, message_data_length, curve,
-                                 bip32_path_length, bip32_path, allowed, &ops);
+                struct parsed_operation_group *ops =
+                    parse_operations(message_data, message_data_length, curve,
+                                     bip32_path_length, bip32_path, allowed);
 
                 // With < nickel fee
-                if (ops.total_fee > 50000) THROW(EXC_PARSE_ERROR);
+                if (ops->total_fee > 50000) THROW(EXC_PARSE_ERROR);
 
                 // Must be self-delegation signed by the same key
-                if (memcmp(&ops.operation.source, &ops.signing, sizeof(ops.signing))) {
+                if (memcmp(&ops->operation.source, &ops->signing, sizeof(ops->signing))) {
                     THROW(EXC_PARSE_ERROR);
                 }
-                if (memcmp(&ops.operation.destination, &ops.signing, sizeof(ops.signing))) {
+                if (memcmp(&ops->operation.destination, &ops->signing, sizeof(ops->signing))) {
                     THROW(EXC_PARSE_ERROR);
                 }
 
-                prompt_contract_for_baking(&ops.signing, bake_auth_ok, sign_reject);
+                prompt_contract_for_baking(&ops->signing, bake_auth_ok, sign_reject);
             }
         case MAGIC_BYTE_UNSAFE_OP2:
         case MAGIC_BYTE_UNSAFE_OP3:

@@ -80,7 +80,7 @@ void prompt_address(
 bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
                         size_t path_length, uint32_t *bip32_path,
                         callback_t ok, callback_t cxl) {
-    struct parsed_operation_group ops;
+    struct parsed_operation_group *ops;
 
 #ifndef DEBUG
     BEGIN_TRY { // TODO: Eventually, "unsafe" operations will be another APDU,
@@ -95,7 +95,7 @@ bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
             allow_operation(&allowed, OPERATION_TAG_TRANSACTION);
             // TODO: Add other operations
 
-            parse_operations(data, length, curve, path_length, bip32_path, allowed, &ops);
+            ops = parse_operations(data, length, curve, path_length, bip32_path, allowed);
 #ifndef DEBUG
         }
         CATCH_OTHER(e) {
@@ -107,9 +107,9 @@ bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
 #endif
 
     // If the source is an implicit contract,...
-    if (ops.operation.source.originated == 0) {
+    if (ops->operation.source.originated == 0) {
         // ... it had better match our key, otherwise why are we signing it?
-        if (memcmp(&ops.operation.source, &ops.signing, sizeof(ops.signing))) return false;
+        if (memcmp(&ops->operation.source, &ops->signing, sizeof(ops->signing))) return false;
     }
     // OK, it passes muster.
 
@@ -118,13 +118,13 @@ bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
     static char destination_string[40];
     static char fee_string[MAX_NUMBER_CHARS];
 
-    microtez_to_string(fee_string, ops.total_fee);
+    microtez_to_string(fee_string, ops->total_fee);
     if (!parsed_contract_to_string(origin_string, sizeof(origin_string),
-                                   &ops.operation.source)) return false;
+                                   &ops->operation.source)) return false;
     if (!parsed_contract_to_string(destination_string, sizeof(destination_string),
-                                   &ops.operation.destination)) return false;
+                                   &ops->operation.destination)) return false;
 
-    switch (ops.operation.tag) {
+    switch (ops->operation.tag) {
         default:
             THROW(EXC_PARSE_ERROR);
 
@@ -167,7 +167,7 @@ bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
                     NULL,
                 };
 
-                microtez_to_string(amount_string, ops.operation.amount);
+                microtez_to_string(amount_string, ops->operation.amount);
                 ui_prompt_multiple(transaction_prompts, transaction_values, ok, cxl);
             }
     }
