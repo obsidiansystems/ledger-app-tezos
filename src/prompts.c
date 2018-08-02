@@ -82,7 +82,7 @@ bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
                         callback_t ok, callback_t cxl) {
     struct parsed_operation_group *ops;
 
-#ifndef DEBUG
+#ifndef TEZOS_DEBUG
     BEGIN_TRY { // TODO: Eventually, "unsafe" operations will be another APDU,
                 //       and we will parse enough operations that it will rarely need to be used,
                 //       hopefully ultimately never.
@@ -92,11 +92,12 @@ bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
             clear_operation_set(&allowed);
             allow_operation(&allowed, OPERATION_TAG_DELEGATION);
             allow_operation(&allowed, OPERATION_TAG_REVEAL);
+            allow_operation(&allowed, OPERATION_TAG_ORIGINATION);
             allow_operation(&allowed, OPERATION_TAG_TRANSACTION);
             // TODO: Add other operations
 
             ops = parse_operations(data, length, curve, path_length, bip32_path, allowed);
-#ifndef DEBUG
+#ifndef TEZOS_DEBUG
         }
         CATCH_OTHER(e) {
             return false;
@@ -128,9 +129,38 @@ bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
         default:
             THROW(EXC_PARSE_ERROR);
 
+        case OPERATION_TAG_ORIGINATION:
+            {
+                static char delegate_string[40];
+                static const char *const origination_prompts[] = {
+                    "Approve",
+                    "Source",
+                    "Manager",
+                    "Fee",
+                    "Delegatable?",
+                    NULL,
+                };
+
+                static const char *const origination_values[] = {
+                    "Origination?",
+                    origin_string,
+                    destination_string,
+                    fee_string,
+                    delegate_string,
+                    NULL,
+                };
+
+                if (!(ops->operation.flags & ORIGINATION_FLAG_SPENDABLE)) return false;
+                bool delegatable = ops->operation.flags & ORIGINATION_FLAG_DELEGATABLE;
+
+                strcpy(delegate_string, delegatable ? "Yes" : "No");
+
+                ui_prompt_multiple(origination_prompts, origination_values, ok, cxl);
+            }
         case OPERATION_TAG_DELEGATION:
             {
                 static const char *const delegation_prompts[] = {
+                    "Approve",
                     "Source",
                     "Delegate",
                     "Fee",
@@ -138,6 +168,7 @@ bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
                 };
 
                 static const char *const delegation_values[] = {
+                    "Delegation?",
                     origin_string,
                     destination_string,
                     fee_string,
@@ -152,6 +183,7 @@ bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
                 static char amount_string[MAX_NUMBER_CHARS];
 
                 static const char *const transaction_prompts[] = {
+                    "Approve",
                     "Source",
                     "Destination",
                     "Amount",
@@ -160,6 +192,7 @@ bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
                 };
 
                 static const char *const transaction_values[] = {
+                    "Transaction?",
                     origin_string,
                     destination_string,
                     amount_string,

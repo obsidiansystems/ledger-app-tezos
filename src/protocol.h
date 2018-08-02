@@ -51,6 +51,7 @@ enum operation_tag {
     OPERATION_TAG_NONE = -1, // Sentinal value, as 0 is possibly used for something
     OPERATION_TAG_REVEAL = 7,
     OPERATION_TAG_TRANSACTION = 8,
+    OPERATION_TAG_ORIGINATION = 9,
     OPERATION_TAG_DELEGATION = 10,
 };
 
@@ -68,11 +69,15 @@ static inline void clear_operation_set(allowed_operation_set *ops) {
     *ops = 0;
 }
 
+#define ORIGINATION_FLAG_SPENDABLE 1
+#define ORIGINATION_FLAG_DELEGATABLE 2
+
 struct parsed_operation {
     enum operation_tag tag;
     struct parsed_contract source;
     struct parsed_contract destination;
     uint64_t amount; // 0 where inappropriate
+    uint32_t flags;  // Interpretation depends on operation type
 };
 
 struct parsed_operation_group {

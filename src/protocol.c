@@ -77,39 +77,48 @@ struct delegation_contents {
     uint8_t hash[HASH_SIZE];
 } __attribute__((packed));
 
+struct origination_header {
+    uint8_t curve_code;
+    uint8_t hash[HASH_SIZE];
+} __attribute__((packed));
+
 __attribute__((noreturn))
 
 // Argument is to distinguish between different parse errors for debugging purposes only
 static void parse_error(
-#ifndef DEBUG
+#ifndef TEZOS_DEBUG
     __attribute__((unused))
 #endif
-    uint32_t code) {
-#ifdef DEBUG
-    THROW(0x9000 + code);
+    uint32_t lineno) {
+#ifdef TEZOS_DEBUG
+    THROW(0x9000 + lineno);
 #else
     THROW(EXC_PARSE_ERROR);
 #endif
 }
 
+#define PARSE_ERROR() parse_error(__LINE__)
+
 static void advance_ix(size_t *ix, size_t length, size_t amount) {
-    if (*ix + amount > length) parse_error(length);
+    if (*ix + amount > length) PARSE_ERROR();
 
     *ix += amount;
 }
 
-static uint8_t next_byte(const void *data, size_t *ix, size_t length) {
-    if (*ix == length) parse_error(1);
+static uint8_t next_byte(const void *data, size_t *ix, size_t length, uint32_t lineno) {
+    if (*ix == length) parse_error(lineno);
     uint8_t res = ((const char *)data)[*ix];
     (*ix)++;
     return res;
 }
 
-static uint64_t parse_z(const void *data, size_t *ix, size_t length) {
+#define NEXT_BYTE(data, ix, length) next_byte(data, ix, length, __LINE__)
+
+static uint64_t parse_z(const void *data, size_t *ix, size_t length, uint32_t lineno) {
     uint64_t acc = 0;
     uint64_t shift = 0;
     while (true) {
-        uint8_t byte = next_byte(data, ix, length);
+        uint8_t byte = next_byte(data, ix, length, lineno);
         acc |= (byte & 0x7F) << shift;
         shift += 7;
         if (!(byte & 0x80)) {
@@ -118,6 +127,8 @@ static uint64_t parse_z(const void *data, size_t *ix, size_t length) {
     }
     return acc;
 }
+
+#define PARSE_Z(data, ix, length) parse_z(data, ix, length, __LINE__)
 
 // This macro assumes:
 // * Beginning of data: const void *data
@@ -176,67 +187,86 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
 
     // Verify magic byte, ignore block hash
     const struct operation_group_header *ogh = NEXT_TYPE(struct operation_group_header);
-    if (ogh->magic_byte != MAGIC_BYTE_UNSAFE_OP) parse_error(15);
+    if (ogh->magic_byte != MAGIC_BYTE_UNSAFE_OP) PARSE_ERROR();
 
     while (ix < length) {
         const struct operation_header *hdr = NEXT_TYPE(struct operation_header);
 
-        out.total_fee += parse_z(data, &ix, length); // fee
-        parse_z(data, &ix, length); // counter
-        parse_z(data, &ix, length); // gas limit
-        parse_z(data, &ix, length); // storage limit
+        out.total_fee += PARSE_Z(data, &ix, length); // fee
+        PARSE_Z(data, &ix, length); // counter
+        PARSE_Z(data, &ix, length); // gas limit
+        PARSE_Z(data, &ix, length); // storage limit
 
         enum operation_tag tag = hdr->tag;
-        if (!is_operation_allowed(ops, tag)) parse_error(44);
+        if (!is_operation_allowed(ops, tag)) PARSE_ERROR();
 
         if (tag == OPERATION_TAG_REVEAL) {
             // Public key up next! Ensure it matches signing key.
             // Ignore source :-) and do not parse it from hdr.
             // We don't much care about reveals, they have very little in the way of bad security
             // implications and any fees have already been accounted for
-            if (next_byte(data, &ix, length) != out.signing.curve_code) parse_error(64);
+            if (NEXT_BYTE(data, &ix, length) != out.signing.curve_code) PARSE_ERROR();
 
             size_t klen = out.public_key.W_len;
             advance_ix(&ix, length, klen);
-            if (memcmp(out.public_key.W, data + ix - klen, klen) != 0) parse_error(4);
+            if (memcmp(out.public_key.W, data + ix - klen, klen) != 0) PARSE_ERROR();
 
             continue;
         }
 
         if (out.operation.tag != OPERATION_TAG_NONE) {
             // We are only currently allowing one non-reveal operation
-            parse_error(90);
+            PARSE_ERROR();
         }
 
         // This is the one allowable non-reveal operation.
 
         out.operation.tag = (uint8_t)tag;
         parse_contract(&out.operation.source, &hdr->contract);
+        if (out.operation.source.originated == 0) {
+            if (memcmp(&out.operation.source, &out.signing, sizeof(out.signing))) PARSE_ERROR();
+        }
 
         switch (tag) {
             case OPERATION_TAG_DELEGATION:
                 {
                     const struct delegation_contents *dlg = NEXT_TYPE(struct delegation_contents);
+                    if (!dlg->delegate_present) PARSE_ERROR();
                     parse_implicit(&out.operation.destination, dlg->curve_code, dlg->hash);
+                }
+                break;
+            case OPERATION_TAG_ORIGINATION:
+                {
+                    const struct origination_header *hdr = NEXT_TYPE(struct origination_header);
+                    parse_implicit(&out.operation.destination, hdr->curve_code, hdr->hash);
+                    out.operation.amount = PARSE_Z(data, &ix, length);
+                    if (NEXT_BYTE(data, &ix, length) != 0) {
+                        out.operation.flags |= ORIGINATION_FLAG_SPENDABLE;
+                    }
+                    if (NEXT_BYTE(data, &ix, length) != 0) {
+                        out.operation.flags |= ORIGINATION_FLAG_DELEGATABLE;
+                    }
+                    if (NEXT_BYTE(data, &ix, length) != 0) PARSE_ERROR();  // Has delegate
+                    if (NEXT_BYTE(data, &ix, length) != 0) PARSE_ERROR(); // Has script
                 }
                 break;
             case OPERATION_TAG_TRANSACTION:
                 {
-                    out.operation.amount = parse_z(data, &ix, length);
+                    out.operation.amount = PARSE_Z(data, &ix, length);
 
                     const struct contract *destination = NEXT_TYPE(struct contract);
                     parse_contract(&out.operation.destination, destination);
 
-                    uint8_t params = next_byte(data, &ix, length);
-                    if (params) parse_error(101); // TODO: Support params
+                    uint8_t params = NEXT_BYTE(data, &ix, length);
+                    if (params) PARSE_ERROR(); // TODO: Support params
                 }
                 break;
             default:
-                parse_error(8);
+                PARSE_ERROR();
         }
     }
 
-    if (out.operation.tag == OPERATION_TAG_NONE) parse_error(13); // Must have one non-reveal op
+    if (out.operation.tag == OPERATION_TAG_NONE) PARSE_ERROR(); // Must have one non-reveal op
 
     return &out; // Success!
 }
