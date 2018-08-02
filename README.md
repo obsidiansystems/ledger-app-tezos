@@ -33,11 +33,26 @@ and which commands are most appropriate to your situation. This will require
 judgment on how best to meet your needs, and this document will also provide
 context to help you understand that.
 
+This document is also not a guide on how to use Linux. It assumes you
+know how to install and configure a Linux system to your general needs,
+use the command line, or configure GitHub access. Occasionally, it will
+recommend things like editing a script to match your configuration.
+Learning how to run commands on Linux, edit scripts, or configure your
+user accounts to enable groups, is outside the scope of this document,
+but resources for all of those things are available on the Internet.
+
 The commands in these instructions have only been tested on Linux. If
 you use any form of virtualization, e.g. docker or VirtualBox, please
 consult the documentation of that virtualization system to determine
 how to access USB from inside the virtualization, as that can be a
 complicated and difficult process.
+
+The commands in this document have been tested as is, and have the correct
+privileges. If you find yourself using `sudo` to run commands that are not
+listed as requiring `sudo`, that likely indicates a problem with your
+configuration, most often the `udev` configuration. Using `sudo` for commands
+that should not require it can create security vulnerabilities and corrupt
+your configuration.
 
 ## Set up your Ledger device
 
