@@ -1,12 +1,11 @@
 #pragma once
 
-#include "os.h"
 #include <stdbool.h>
 #include <stdint.h>
 
 #include "apdu.h"
-
-typedef uint32_t level_t;
+#include "protocol.h"
+#include "operations.h"
 
 #define MAX_BIP32_PATH 10
 
@@ -29,3 +28,16 @@ void write_highest_level(level_t level, bool is_endorsement);
 bool is_level_authorized(level_t level, bool is_endorsement);
 bool is_valid_level(level_t level);
 void update_auth_text(void);
+
+void prompt_contract_for_baking(struct parsed_contract *contract, callback_t ok_cb, callback_t cxl_cb);
+void prompt_address(bool bake, cx_curve_t curve,
+                    const cx_ecfp_public_key_t *key,
+                    callback_t ok_cb, callback_t cxl_cb) __attribute__((noreturn));
+
+
+struct parsed_baking_data {
+    bool is_endorsement;
+    level_t level;
+};
+// Return false if it is invalid
+bool parse_baking_data(const void *data, size_t length, struct parsed_baking_data *out);

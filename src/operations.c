@@ -1,4 +1,4 @@
-#include "protocol.h"
+#include "operations.h"
 
 #include "apdu.h"
 #include "ui.h"
@@ -6,46 +6,6 @@
 
 #include <stdint.h>
 #include <string.h>
-
-#include "os.h"
-
-struct __attribute__((packed)) block {
-    char magic_byte;
-    uint32_t chain_id;
-    level_t level;
-    uint8_t proto;
-    // ... beyond this we don't care
-};
-
-struct __attribute__((packed)) endorsement {
-    uint8_t magic_byte;
-    uint32_t chain_id;
-    uint8_t branch[32];
-    uint8_t tag;
-    uint32_t level;
-};
-
-bool parse_baking_data(const void *data, size_t length, struct parsed_baking_data *out) {
-    switch (get_magic_byte(data, length)) {
-        case MAGIC_BYTE_BAKING_OP:
-            if (length != sizeof(struct endorsement)) return false;
-            const struct endorsement *endorsement = data;
-            // TODO: Check chain ID
-            out->is_endorsement = true;
-            out->level = READ_UNALIGNED_BIG_ENDIAN(level_t, &endorsement->level);
-            return true;
-        case MAGIC_BYTE_BLOCK:
-            if (length < sizeof(struct block)) return false;
-            // TODO: Check chain ID
-            out->is_endorsement = false;
-            const struct block *block = data;
-            out->level = READ_UNALIGNED_BIG_ENDIAN(level_t, &block->level);
-            return true;
-        case MAGIC_BYTE_INVALID:
-        default:
-            return false;
-    }
-}
 
 struct operation_group_header {
     uint8_t magic_byte;

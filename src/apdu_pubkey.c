@@ -2,7 +2,6 @@
 
 #include "apdu.h"
 #include "baking_auth.h"
-#include "prompts.h"
 #include "keys.h"
 
 #include "cx.h"

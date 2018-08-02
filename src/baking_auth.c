@@ -2,10 +2,11 @@
 #include "baking_auth.h"
 #include "keys.h"
 #include "protocol.h"
+#include "ui_prompt.h"
 #include "to_string.h"
 
-#include "cx.h"
 #include "os.h"
+#include "cx.h"
 
 #include <string.h>
 
@@ -85,5 +86,102 @@ void update_auth_text(void) {
                           &pub_key, &priv_key);
         os_memset(&priv_key, 0, sizeof(priv_key));
         pubkey_to_pkh_string(baking_auth_text, sizeof(baking_auth_text), N_data.curve, &pub_key);
+    }
+}
+
+static char address_display_data[64]; // Should be more than big enough
+
+static const char *const pubkey_labels[] = {
+    "Provide",
+    "Public Key",
+    NULL,
+};
+
+static const char *const pubkey_values[] = {
+    "Public Key?",
+    address_display_data,
+    NULL,
+};
+
+#ifdef BAKING_APP
+static const char *const baking_labels[] = {
+    "Authorize baking",
+    "Public Key",
+    NULL,
+};
+
+static const char *const baking_values[] = {
+    "With Public Key?",
+    address_display_data,
+    NULL,
+};
+
+// TODO: Unshare code with next function
+void prompt_contract_for_baking(struct parsed_contract *contract, callback_t ok_cb, callback_t cxl_cb) {
+    if (!parsed_contract_to_string(address_display_data, sizeof(address_display_data), contract)) {
+        THROW(EXC_WRONG_VALUES);
+    }
+
+    ui_prompt_multiple(baking_labels, baking_values, ok_cb, cxl_cb);
+}
+#endif
+
+void prompt_address(
+#ifndef BAKING_APP
+    __attribute__((unused))
+#endif
+    bool baking,
+                    cx_curve_t curve, const cx_ecfp_public_key_t *key, callback_t ok_cb,
+                    callback_t cxl_cb) {
+    if (!pubkey_to_pkh_string(address_display_data, sizeof(address_display_data), curve, key)) {
+        THROW(EXC_WRONG_VALUES);
+    }
+
+#ifdef BAKING_APP
+    if (baking) {
+        ui_prompt_multiple(baking_labels, baking_values, ok_cb, cxl_cb);
+    } else {
+#endif
+        ui_prompt_multiple(pubkey_labels, pubkey_values, ok_cb, cxl_cb);
+#ifdef BAKING_APP
+    }
+#endif
+}
+
+struct __attribute__((packed)) block {
+    char magic_byte;
+    uint32_t chain_id;
+    level_t level;
+    uint8_t proto;
+    // ... beyond this we don't care
+};
+
+struct __attribute__((packed)) endorsement {
+    uint8_t magic_byte;
+    uint32_t chain_id;
+    uint8_t branch[32];
+    uint8_t tag;
+    uint32_t level;
+};
+
+bool parse_baking_data(const void *data, size_t length, struct parsed_baking_data *out) {
+    switch (get_magic_byte(data, length)) {
+        case MAGIC_BYTE_BAKING_OP:
+            if (length != sizeof(struct endorsement)) return false;
+            const struct endorsement *endorsement = data;
+            // TODO: Check chain ID
+            out->is_endorsement = true;
+            out->level = READ_UNALIGNED_BIG_ENDIAN(level_t, &endorsement->level);
+            return true;
+        case MAGIC_BYTE_BLOCK:
+            if (length < sizeof(struct block)) return false;
+            // TODO: Check chain ID
+            out->is_endorsement = false;
+            const struct block *block = data;
+            out->level = READ_UNALIGNED_BIG_ENDIAN(level_t, &block->level);
+            return true;
+        case MAGIC_BYTE_INVALID:
+        default:
+            return false;
     }
 }

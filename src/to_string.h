@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 #include "keys.h"
-#include "protocol.h"
+#include "operations.h"
 
 #include "os.h"
 #include "cx.h"
