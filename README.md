@@ -33,6 +33,14 @@ and which commands are most appropriate to your situation. This will require
 judgment on how best to meet your needs, and this document will also provide
 context to help you understand that.
 
+This document is not a comprehensive guide to setting up Tezos
+software. While it covers some aspects of setting up and installing
+Tezos nodes and clients, especially as it interacts with the Ledger,
+you should familiarize yourself with the Tezos community's own documentation,
+including
+[how to build a node](https://github.com/tezoscommunity/FAQ/blob/master/Compile_Betanet.md)
+and the [Tezos technical FAQ](https://github.com/tezoscommunity/FAQ/wiki/Tezos-Technical-FAQ).
+
 This document is also not a guide on how to use Linux. It assumes you
 know how to install and configure a Linux system to your general needs,
 use the command line, or configure GitHub access. Occasionally, it will
