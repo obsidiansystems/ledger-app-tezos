@@ -195,8 +195,8 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
     // OK, it passes muster.
 
     // Now to display it to make sure it's what the user intended.
-    static char origin_string[40];
-    static char destination_string[40];
+    static char origin_string[PKH_STRING_SIZE];
+    static char destination_string[PKH_STRING_SIZE];
     static char fee_string[MAX_NUMBER_CHARS];
 
     microtez_to_string(fee_string, ops->total_fee);
@@ -211,7 +211,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
 
         case OPERATION_TAG_ORIGINATION:
             {
-                static char delegate_string[40];
+                static char delegate_string[PKH_STRING_SIZE];
                 static const char *const origination_prompts[] = {
                     "Approve",
                     "Source",

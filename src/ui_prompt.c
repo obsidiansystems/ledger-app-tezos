@@ -5,7 +5,7 @@
 #include <string.h>
 
 #define PROMPT_WIDTH 25
-#define VALUE_WIDTH 40
+#define VALUE_WIDTH PKH_STRING_SIZE
 static char prompts[MAX_SCREEN_COUNT][PROMPT_WIDTH + 1]; // Additional bytes init'ed to null,
 static char values[MAX_SCREEN_COUNT][VALUE_WIDTH + 1];   // and null they shall remain.
 

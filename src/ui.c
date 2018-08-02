@@ -28,7 +28,7 @@ static bool do_nothing(void) {
 }
 
 static char idle_text[16];
-char baking_auth_text[40];
+char baking_auth_text[PKH_STRING_SIZE];
 
 const bagl_element_t ui_idle_screen[] = {
     // type                               userid    x    y   w    h  str rad

@@ -17,6 +17,8 @@ void generate_key_pair(cx_curve_t curve, uint32_t path_size, uint32_t *bip32_pat
                        cx_ecfp_public_key_t *public_key, cx_ecfp_private_key_t *private_key);
 
 #define HASH_SIZE 20
+#define PKH_STRING_SIZE 40
+
 void public_key_hash(uint8_t output[HASH_SIZE], cx_curve_t curve,
                      const cx_ecfp_public_key_t *restrict public_key,
                      cx_ecfp_public_key_t *restrict pubkey_out);

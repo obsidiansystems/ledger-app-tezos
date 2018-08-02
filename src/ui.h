@@ -4,6 +4,8 @@
 
 #include <stdbool.h>
 
+#include "keys.h"
+
 typedef bool (*callback_t)(void); // return true to go back to idle screen
 
 void ui_initial_screen(void);
@@ -17,4 +19,4 @@ unsigned char io_event(unsigned char channel);
 void io_seproxyhal_display(const bagl_element_t *element);
 void change_idle_display(uint32_t new);
 
-extern char baking_auth_text[40]; // TODO: Is this the right name?
+extern char baking_auth_text[PKH_STRING_SIZE]; // TODO: Is this the right name?
