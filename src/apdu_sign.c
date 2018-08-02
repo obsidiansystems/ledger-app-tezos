@@ -213,7 +213,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
             {
                 static char delegate_string[PKH_STRING_SIZE];
                 static const char *const origination_prompts[] = {
-                    "Approve",
+                    "Confirm",
                     "Source",
                     "Manager",
                     "Fee",
@@ -222,7 +222,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 };
 
                 static const char *const origination_values[] = {
-                    "Origination?",
+                    "Origination",
                     origin_string,
                     destination_string,
                     fee_string,
@@ -240,7 +240,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
         case OPERATION_TAG_DELEGATION:
             {
                 static const char *const delegation_prompts[] = {
-                    "Approve",
+                    "Confirm",
                     "Source",
                     "Delegate",
                     "Fee",
@@ -248,7 +248,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 };
 
                 static const char *const delegation_values[] = {
-                    "Delegation?",
+                    "Delegation",
                     origin_string,
                     destination_string,
                     fee_string,
@@ -263,7 +263,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 static char amount_string[MAX_NUMBER_CHARS];
 
                 static const char *const transaction_prompts[] = {
-                    "Approve",
+                    "Confirm",
                     "Source",
                     "Destination",
                     "Amount",
@@ -272,7 +272,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 };
 
                 static const char *const transaction_values[] = {
-                    "Transaction?",
+                    "Transaction",
                     origin_string,
                     destination_string,
                     amount_string,
