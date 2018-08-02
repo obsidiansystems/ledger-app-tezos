@@ -73,27 +73,7 @@ void prompt_address(
 #endif
 }
 
-#define MAX_NUMBER_CHARS 21 // include decimal point
-static char origin_string[40];
-static char destination_string[40];
-static char amount_string[MAX_NUMBER_CHARS + 1]; // include terminating null
-static char fee_string[MAX_NUMBER_CHARS + 1];
-
-static const char *const transaction_prompts[] = {
-    "Source",
-    "Destination",
-    "Amount",
-    "Fee",
-    NULL,
-};
-
-static const char *const transaction_values[] = {
-    origin_string,
-    destination_string,
-    amount_string,
-    fee_string,
-    NULL,
-};
+#define MAX_NUMBER_CHARS (MAX_INT_DIGITS + 2) // include decimal point and terminating null
 
 // Return false if the transaction isn't easily parseable, otherwise prompt with given callbacks
 // and do not return, but rather throw ASYNC.
@@ -110,10 +90,11 @@ bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
 #endif
             allowed_operation_set allowed;
             clear_operation_set(&allowed);
-            // TODO: allow_operation(&allowed, OPERATION_TAG_DELEGATION);
-            // TODO: Add other operations
+            allow_operation(&allowed, OPERATION_TAG_DELEGATION);
             allow_operation(&allowed, OPERATION_TAG_REVEAL);
             allow_operation(&allowed, OPERATION_TAG_TRANSACTION);
+            // TODO: Add other operations
+
             parse_operations(data, length, curve, path_length, bip32_path, allowed, &ops);
 #ifndef DEBUG
         }
@@ -133,12 +114,61 @@ bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
     // OK, it passes muster.
 
     // Now to display it to make sure it's what the user intended.
-    microtez_to_string(amount_string, ops.operation.amount);
+    static char origin_string[40];
+    static char destination_string[40];
+    static char fee_string[MAX_NUMBER_CHARS];
+
     microtez_to_string(fee_string, ops.total_fee);
     if (!parsed_contract_to_string(origin_string, sizeof(origin_string),
                                    &ops.operation.source)) return false;
     if (!parsed_contract_to_string(destination_string, sizeof(destination_string),
                                    &ops.operation.destination)) return false;
 
-    ui_prompt_multiple(transaction_prompts, transaction_values, ok, cxl);
+    switch (ops.operation.tag) {
+        default:
+            THROW(EXC_PARSE_ERROR);
+
+        case OPERATION_TAG_DELEGATION:
+            {
+                static const char *const delegation_prompts[] = {
+                    "Source",
+                    "Delegate",
+                    "Fee",
+                    NULL,
+                };
+
+                static const char *const delegation_values[] = {
+                    origin_string,
+                    destination_string,
+                    fee_string,
+                    NULL,
+                };
+
+                ui_prompt_multiple(delegation_prompts, delegation_values, ok, cxl);
+            }
+
+        case OPERATION_TAG_TRANSACTION:
+            {
+                static char amount_string[MAX_NUMBER_CHARS];
+
+                static const char *const transaction_prompts[] = {
+                    "Source",
+                    "Destination",
+                    "Amount",
+                    "Fee",
+                    NULL,
+                };
+
+                static const char *const transaction_values[] = {
+                    origin_string,
+                    destination_string,
+                    amount_string,
+                    fee_string,
+                    NULL,
+                };
+
+                microtez_to_string(amount_string, ops.operation.amount);
+                ui_prompt_multiple(transaction_prompts, transaction_values, ok, cxl);
+            }
+    }
 }

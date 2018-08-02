@@ -143,7 +143,7 @@ static void compute_pkh(cx_curve_t curve, size_t path_length, uint32_t *bip32_pa
 }
 
 static void parse_implicit(struct parsed_contract *out, uint8_t curve_code,
-                               const uint8_t hash[HASH_SIZE]) {
+                           const uint8_t hash[HASH_SIZE]) {
     out->originated = 0;
     out->curve_code = curve_code;
     memcpy(out->hash, hash, sizeof(out->hash));
