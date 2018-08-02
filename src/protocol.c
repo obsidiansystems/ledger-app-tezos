@@ -191,9 +191,9 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
 
         if (tag == OPERATION_TAG_REVEAL) {
             // Public key up next! Ensure it matches signing key.
-            // Ignore source :-) and do not parse it from hdr
+            // Ignore source :-) and do not parse it from hdr.
             // We don't much care about reveals, they have very little in the way of bad security
-            // implementations and any fees have already been accounted for
+            // implications and any fees have already been accounted for
             if (next_byte(data, &ix, length) != out.signing.curve_code) parse_error(64);
 
             size_t klen = out.public_key.W_len;
