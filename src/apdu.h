@@ -50,3 +50,10 @@ uint32_t handle_apdu_version(uint8_t instruction);
 uint32_t handle_apdu_exit(uint8_t instruction);
 
 uint32_t send_word_big_endian(uint32_t word);
+
+// For debugging...
+extern void *stack_root;
+static inline void throw_stack_size() {
+    uint32_t here;
+    THROW(0x9000 + stack_root - (void*)&here);
+}

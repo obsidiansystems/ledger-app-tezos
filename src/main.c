@@ -24,8 +24,12 @@ the specific language governing permissions and
 #include "apdu_sign.h"
 #include "apdu_reset.h"
 
+void *stack_root;
+
 void app_main(void) {
     static apdu_handler handlers[INS_MAX];
+    uint32_t stack_root_value;
+    stack_root = &stack_root_value;
 
     // TODO: Consider using static initialization of a const, instead of this
     for (size_t i = 0; i < INS_MAX; i++) {
