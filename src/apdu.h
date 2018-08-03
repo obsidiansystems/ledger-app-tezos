@@ -53,9 +53,10 @@ uint32_t send_word_big_endian(uint32_t word);
 
 extern uint32_t app_stack_canary;
 
+extern void *stack_root;
 static inline void throw_stack_size() {
     uint8_t st;
-    uint32_t tmp1 = (uint32_t)&st - (uint32_t)&app_stack_canary;
-    // uint32_t tmp2 = 0x20002800 - (uint32_t)&st;
-    THROW(0x9000 + tmp1);
+    // uint32_t tmp1 = (uint32_t)&st - (uint32_t)&app_stack_canary;
+    uint32_t tmp2 = (uint32_t)stack_root - (uint32_t)&st;
+    THROW(0x9000 + tmp2);
 }

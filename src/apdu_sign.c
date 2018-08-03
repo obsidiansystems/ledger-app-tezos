@@ -24,7 +24,6 @@ static cx_curve_t curve;
 static uint8_t bip32_path_length;
 static uint32_t bip32_path[MAX_BIP32_PATH];
 
-static blake2b_state hash_state;
 static bool is_hash_state_inited;
 static uint8_t magic_number;
 static bool hash_only;
@@ -376,7 +375,7 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
 }
 
 static int perform_signature(bool hash_first) {
-    static uint8_t hash[SIGN_HASH_SIZE];
+    uint8_t hash[SIGN_HASH_SIZE];
     uint8_t *data = message_data;
     uint32_t datalen = message_data_length;
 

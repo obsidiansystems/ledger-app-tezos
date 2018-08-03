@@ -80,6 +80,8 @@ cx_ecfp_public_key_t *public_key_hash(uint8_t output[HASH_SIZE], cx_curve_t curv
         default:
             THROW(EXC_WRONG_PARAM);
     }
-    blake2b(output, HASH_SIZE, compressed.W, compressed.W_len, NULL, 0);
+    blake2b_init(&hash_state, HASH_SIZE);
+    blake2b_update(&hash_state, compressed.W, compressed.W_len);
+    blake2b_final(&hash_state, output, HASH_SIZE);
     return &compressed;
 }

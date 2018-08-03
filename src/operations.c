@@ -74,7 +74,7 @@ static uint8_t next_byte(const void *data, size_t *ix, size_t length, uint32_t l
 
 #define NEXT_BYTE(data, ix, length) next_byte(data, ix, length, __LINE__)
 
-static uint64_t parse_z(const void *data, size_t *ix, size_t length, uint32_t lineno) {
+static inline uint64_t parse_z(const void *data, size_t *ix, size_t length, uint32_t lineno) {
     uint64_t acc = 0;
     uint64_t shift = 0;
     while (true) {
@@ -101,7 +101,7 @@ static uint64_t parse_z(const void *data, size_t *ix, size_t length, uint32_t li
     val; \
 })
 
-static void compute_pkh(cx_curve_t curve, size_t path_length, uint32_t *bip32_path,
+static inline void compute_pkh(cx_curve_t curve, size_t path_length, uint32_t *bip32_path,
                         struct parsed_operation_group *out) {
     struct key_pair *pair = generate_key_pair(curve, path_length, bip32_path);
     os_memset(&pair->private_key, 0, sizeof(pair->private_key));
@@ -112,14 +112,14 @@ static void compute_pkh(cx_curve_t curve, size_t path_length, uint32_t *bip32_pa
     out->signing.originated = 0;
 }
 
-static void parse_implicit(struct parsed_contract *out, uint8_t curve_code,
+static inline void parse_implicit(struct parsed_contract *out, uint8_t curve_code,
                            const uint8_t hash[HASH_SIZE]) {
     out->originated = 0;
     out->curve_code = curve_code;
     memcpy(out->hash, hash, sizeof(out->hash));
 }
 
-static void parse_contract(struct parsed_contract *out, const struct contract *in) {
+static inline void parse_contract(struct parsed_contract *out, const struct contract *in) {
     out->originated = in->originated;
     if (out->originated == 0) { // implicit
         out->curve_code = in->u.implicit.curve_code;

@@ -20,6 +20,8 @@
 #include "blake2.h"
 #include "blake2-impl.h"
 
+blake2b_state hash_state;
+
 static const uint64_t blake2b_IV[8] =
 {
   0x6a09e667f3bcc908ULL, 0xbb67ae8584caa73bULL,
@@ -267,40 +269,6 @@ int blake2b_final( blake2b_state *S, void *out, size_t outlen )
   memcpy( out, buffer, S->outlen );
   secure_zero_memory(buffer, sizeof(buffer));
   return 0;
-}
-
-/* inlen, at least, should be uint64_t. Others can be size_t. */
-int blake2b( void *out, size_t outlen, const void *in, size_t inlen, const void *key, size_t keylen )
-{
-  static blake2b_state S[1];
-
-  /* Verify parameters */
-  if ( NULL == in && inlen > 0 ) return -1;
-
-  if ( NULL == out ) return -1;
-
-  if( NULL == key && keylen > 0 ) return -1;
-
-  if( !outlen || outlen > BLAKE2B_OUTBYTES ) return -1;
-
-  if( keylen > BLAKE2B_KEYBYTES ) return -1;
-
-  if( keylen > 0 )
-  {
-    if( blake2b_init_key( S, outlen, key, keylen ) < 0 ) return -1;
-  }
-  else
-  {
-    if( blake2b_init( S, outlen ) < 0 ) return -1;
-  }
-
-  blake2b_update( S, ( const uint8_t * )in, inlen );
-  blake2b_final( S, out, outlen );
-  return 0;
-}
-
-int blake2( void *out, size_t outlen, const void *in, size_t inlen, const void *key, size_t keylen ) {
-  return blake2b(out, outlen, in, inlen, key, keylen);
 }
 
 #if defined(SUPERCOP)
