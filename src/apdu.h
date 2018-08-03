@@ -51,10 +51,11 @@ uint32_t handle_apdu_exit(uint8_t instruction);
 
 uint32_t send_word_big_endian(uint32_t word);
 
-#ifdef TEZOS_DEBUG
-extern void *stack_root;
+extern uint32_t app_stack_canary;
+
 static inline void throw_stack_size() {
-    uint32_t here;
-    THROW(0x9000 + stack_root - (void*)&here);
+    uint8_t st;
+    uint32_t tmp1 = (uint32_t)&st - (uint32_t)&app_stack_canary;
+    // uint32_t tmp2 = 0x20002800 - (uint32_t)&st;
+    THROW(0x9000 + tmp1);
 }
-#endif

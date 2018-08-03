@@ -376,8 +376,6 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
 }
 
 static int perform_signature(bool hash_first) {
-    cx_ecfp_private_key_t privateKey;
-    cx_ecfp_public_key_t publicKey;
     static uint8_t hash[SIGN_HASH_SIZE];
     uint8_t *data = message_data;
     uint32_t datalen = message_data_length;
@@ -404,12 +402,12 @@ static int perform_signature(bool hash_first) {
 #endif
     }
 
-    generate_key_pair(curve, bip32_path_length, bip32_path, &publicKey, &privateKey);
+    struct key_pair *pair = generate_key_pair(curve, bip32_path_length, bip32_path);
 
     uint32_t tx;
     switch (curve) {
     case CX_CURVE_Ed25519: {
-        tx = cx_eddsa_sign(&privateKey,
+        tx = cx_eddsa_sign(&pair->private_key,
                            0,
                            CX_SHA512,
                            data,
@@ -425,7 +423,7 @@ static int perform_signature(bool hash_first) {
     case CX_CURVE_SECP256R1:
     {
         unsigned int info;
-        tx = cx_ecdsa_sign(&privateKey,
+        tx = cx_ecdsa_sign(&pair->private_key,
                            CX_LAST | CX_RND_TRNG,
                            CX_NONE,
                            data,
@@ -442,7 +440,7 @@ static int perform_signature(bool hash_first) {
         THROW(EXC_WRONG_PARAM); // This should not be able to happen.
     }
 
-    os_memset(&privateKey, 0, sizeof(privateKey));
+    os_memset(&pair->private_key, 0, sizeof(pair->private_key));
 
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;

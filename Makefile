@@ -54,10 +54,10 @@ CLANGPATH := $(BOLOS_ENV)/clang-arm-fropi/bin/
 CC       := $(CLANGPATH)clang
 
 ifeq ($(BAKING_APP),)
-CFLAGS   += -O3 -Os -Wall -Wextra
+CFLAGS   += -Os -Wall -Wextra
 endif
 ifeq ($(BAKING_APP),Y)
-CFLAGS   += -DBAKING_APP -O3 -Os -Wall -Wextra
+CFLAGS   += -DBAKING_APP -Os -Wall -Wextra
 endif
 
 AS     := $(GCCPATH)arm-none-eabi-gcc

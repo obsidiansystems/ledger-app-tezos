@@ -19,7 +19,7 @@ int parsed_contract_to_string(char *buff, uint32_t buff_size, const struct parse
 int pubkey_to_pkh_string(char *buff, uint32_t buff_size, cx_curve_t curve,
                          const cx_ecfp_public_key_t *public_key) {
     uint8_t hash[HASH_SIZE];
-    public_key_hash(hash, curve, public_key, NULL);
+    public_key_hash(hash, curve, public_key);
     return pkh_to_string(buff, buff_size, curve, hash);
 }
 

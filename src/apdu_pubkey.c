@@ -45,8 +45,6 @@ static bool baking_ok(void) {
 unsigned int handle_apdu_get_public_key(uint8_t instruction) {
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
 
-    cx_ecfp_private_key_t privateKey;
-
     if (G_io_apdu_buffer[OFFSET_P1] != 0)
         THROW(EXC_WRONG_PARAM);
 
@@ -66,9 +64,9 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
         }
     }
 #endif
-    generate_key_pair(curve, path_length, bip32_path, &public_key, &privateKey);
-    os_memset(&privateKey, 0, sizeof(privateKey));
-
+    struct key_pair *pair = generate_key_pair(curve, path_length, bip32_path);
+    os_memset(&pair->private_key, 0, sizeof(pair->private_key));
+    memcpy(&public_key, &pair->public_key, sizeof(public_key));
 
     if (instruction == INS_GET_PUBLIC_KEY) {
         return provide_pubkey();

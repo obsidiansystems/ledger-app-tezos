@@ -103,12 +103,11 @@ static uint64_t parse_z(const void *data, size_t *ix, size_t length, uint32_t li
 
 static void compute_pkh(cx_curve_t curve, size_t path_length, uint32_t *bip32_path,
                         struct parsed_operation_group *out) {
-    cx_ecfp_public_key_t public_key_init;
-    cx_ecfp_private_key_t private_key;
-    generate_key_pair(curve, path_length, bip32_path, &public_key_init, &private_key);
-    os_memset(&private_key, 0, sizeof(private_key));
+    struct key_pair *pair = generate_key_pair(curve, path_length, bip32_path);
+    os_memset(&pair->private_key, 0, sizeof(pair->private_key));
 
-    public_key_hash(out->signing.hash, curve, &public_key_init, &out->public_key);
+    cx_ecfp_public_key_t *key = public_key_hash(out->signing.hash, curve, &pair->public_key);
+    memcpy(&out->public_key, key, sizeof(out->public_key));
     out->signing.curve_code = curve_to_curve_code(curve);
     out->signing.originated = 0;
 }

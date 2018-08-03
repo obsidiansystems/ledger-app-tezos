@@ -28,10 +28,6 @@ void *stack_root;
 
 void app_main(void) {
     static apdu_handler handlers[INS_MAX];
-#ifdef TEZOS_DEBUG
-    uint32_t stack_root_value;
-    stack_root = &stack_root_value;
-#endif
 
     // TODO: Consider using static initialization of a const, instead of this
     for (size_t i = 0; i < INS_MAX; i++) {
