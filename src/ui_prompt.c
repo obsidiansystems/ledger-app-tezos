@@ -66,7 +66,6 @@ static const bagl_element_t ui_multi_screen[] = {
     SCREEN_FOR(2),
     SCREEN_FOR(3),
     SCREEN_FOR(4),
-    SCREEN_FOR(5),
 };
 
 char *get_value_buffer(uint32_t which) {

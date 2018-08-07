@@ -9,11 +9,6 @@ unsigned int handle_apdu_error(uint8_t __attribute__((unused)) instruction) {
     THROW(EXC_INVALID_INS);
 }
 
-unsigned int handle_apdu_exit(uint8_t __attribute__((unused)) instruction) {
-    os_sched_exit(-1);
-    THROW(EXC_INVALID_INS); // avoid warning
-}
-
 uint32_t send_word_big_endian(uint32_t word) {
     char word_bytes[sizeof(word)];
     memcpy(word_bytes, &word, sizeof(word));

@@ -44,6 +44,5 @@ void app_main(void) {
 #ifndef BAKING_APP
     handlers[INS_SIGN_UNSAFE] = handle_apdu_sign;
 #endif
-    handlers[INS_EXIT] = handle_apdu_exit;
     main_loop(handlers);
 }
