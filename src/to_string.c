@@ -6,7 +6,15 @@
 
 #include <string.h>
 
+#define NO_CONTRACT_STRING "None"
+
 int parsed_contract_to_string(char *buff, uint32_t buff_size, const struct parsed_contract *contract) {
+    if (contract->originated == 0 && contract->curve_code == TEZOS_NO_CURVE) {
+        if (buff_size < sizeof(NO_CONTRACT_STRING)) return 0;
+        strcpy(buff, NO_CONTRACT_STRING);
+        return buff_size;
+    }
+
     cx_curve_t curve;
     if (contract->originated != 0) {
         curve = CX_CURVE_NONE;

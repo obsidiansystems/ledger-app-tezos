@@ -30,7 +30,7 @@ enum curve_code {
     TEZOS_ED,
     TEZOS_SECP256K1,
     TEZOS_SECP256R1,
-    TEZOS_NO_CURVE,
+    TEZOS_NO_CURVE = 255,
 };
 
 static inline uint8_t curve_to_curve_code(cx_curve_t curve) {

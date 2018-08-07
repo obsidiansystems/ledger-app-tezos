@@ -31,20 +31,8 @@ struct operation_header {
     struct contract contract;
 } __attribute__((packed));
 
-struct delegation_contents {
-    uint8_t delegate_present;
-    uint8_t curve_code;
-    uint8_t hash[HASH_SIZE];
-} __attribute__((packed));
-
-struct origination_header {
-    uint8_t curve_code;
-    uint8_t hash[HASH_SIZE];
-} __attribute__((packed));
-
-__attribute__((noreturn))
-
 // Argument is to distinguish between different parse errors for debugging purposes only
+__attribute__((noreturn))
 static void parse_error(
 #ifndef TEZOS_DEBUG
     __attribute__((unused))
@@ -182,6 +170,7 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
 
         out.operation.tag = (uint8_t)tag;
         parse_contract(&out.operation.source, &hdr->contract);
+
         if (out.operation.source.originated == 0) {
             if (memcmp(&out.operation.source, &out.signing, sizeof(out.signing))) PARSE_ERROR();
         }
@@ -189,14 +178,29 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
         switch (tag) {
             case OPERATION_TAG_DELEGATION:
                 {
-                    const struct delegation_contents *dlg = NEXT_TYPE(struct delegation_contents);
-                    if (!dlg->delegate_present) PARSE_ERROR();
-                    parse_implicit(&out.operation.destination, dlg->curve_code, dlg->hash);
+                    uint8_t delegate_present = NEXT_BYTE(data, &ix, length);
+                    if (delegate_present) {
+                        struct delegation_contents {
+                            uint8_t curve_code;
+                            uint8_t hash[HASH_SIZE];
+                        } __attribute__((packed));
+                        const struct delegation_contents *dlg = NEXT_TYPE(struct delegation_contents);
+                        parse_implicit(&out.operation.destination, dlg->curve_code, dlg->hash);
+                    } else {
+                        // Encode "not present"
+                        out.operation.destination.originated = 0;
+                        out.operation.destination.curve_code = TEZOS_NO_CURVE;
+                    }
                 }
                 break;
             case OPERATION_TAG_ORIGINATION:
                 {
+                    struct origination_header {
+                        uint8_t curve_code;
+                        uint8_t hash[HASH_SIZE];
+                    } __attribute__((packed));
                     const struct origination_header *hdr = NEXT_TYPE(struct origination_header);
+
                     parse_implicit(&out.operation.destination, hdr->curve_code, hdr->hash);
                     out.operation.amount = PARSE_Z(data, &ix, length);
                     if (NEXT_BYTE(data, &ix, length) != 0) {
