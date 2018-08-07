@@ -31,6 +31,11 @@ struct operation_header {
     struct contract contract;
 } __attribute__((packed));
 
+struct delegation_contents {
+    uint8_t curve_code;
+    uint8_t hash[HASH_SIZE];
+} __attribute__((packed));
+
 // Argument is to distinguish between different parse errors for debugging purposes only
 __attribute__((noreturn))
 static void parse_error(
@@ -166,7 +171,7 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
             PARSE_ERROR();
         }
 
-        // This is the one allowable non-reveal operation.
+        // This is the one allowable non-reveal operation per set
 
         out.operation.tag = (uint8_t)tag;
         parse_contract(&out.operation.source, &hdr->contract);
@@ -175,15 +180,15 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
             if (memcmp(&out.operation.source, &out.signing, sizeof(out.signing))) PARSE_ERROR();
         }
 
+        // This should by default be blanked out
+        out.operation.delegate.curve_code = TEZOS_NO_CURVE;
+        out.operation.delegate.originated = 0;
+
         switch (tag) {
             case OPERATION_TAG_DELEGATION:
                 {
                     uint8_t delegate_present = NEXT_BYTE(data, &ix, length);
                     if (delegate_present) {
-                        struct delegation_contents {
-                            uint8_t curve_code;
-                            uint8_t hash[HASH_SIZE];
-                        } __attribute__((packed));
                         const struct delegation_contents *dlg = NEXT_TYPE(struct delegation_contents);
                         parse_implicit(&out.operation.destination, dlg->curve_code, dlg->hash);
                     } else {
@@ -209,7 +214,11 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
                     if (NEXT_BYTE(data, &ix, length) != 0) {
                         out.operation.flags |= ORIGINATION_FLAG_DELEGATABLE;
                     }
-                    if (NEXT_BYTE(data, &ix, length) != 0) PARSE_ERROR();  // Has delegate
+                    if (NEXT_BYTE(data, &ix, length) != 0) {
+                        // Has delegate
+                        const struct delegation_contents *dlg = NEXT_TYPE(struct delegation_contents);
+                        parse_implicit(&out.operation.delegate, dlg->curve_code, dlg->hash);
+                    }
                     if (NEXT_BYTE(data, &ix, length) != 0) PARSE_ERROR(); // Has script
                 }
                 break;

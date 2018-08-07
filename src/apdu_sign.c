@@ -194,15 +194,16 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
     // OK, it passes muster.
 
     // Now to display it to make sure it's what the user intended.
-    static char origin_string[PKH_STRING_SIZE];
-    static char destination_string[PKH_STRING_SIZE];
-    static char fee_string[MAX_NUMBER_CHARS];
+    static const uint32_t TYPE_INDEX = 0;
+    static const uint32_t SOURCE_INDEX = 1;
+    static const uint32_t DESTINATION_INDEX = 2;
+    static const uint32_t FEE_INDEX = 3;
 
-    microtez_to_string(fee_string, ops->total_fee);
-    if (!parsed_contract_to_string(origin_string, sizeof(origin_string),
+    if (!parsed_contract_to_string(get_value_buffer(SOURCE_INDEX), VALUE_WIDTH,
                                    &ops->operation.source)) return false;
-    if (!parsed_contract_to_string(destination_string, sizeof(destination_string),
+    if (!parsed_contract_to_string(get_value_buffer(DESTINATION_INDEX), VALUE_WIDTH,
                                    &ops->operation.destination)) return false;
+    microtez_to_string(get_value_buffer(FEE_INDEX), ops->total_fee);
 
     switch (ops->operation.tag) {
         default:
@@ -210,34 +211,39 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
 
         case OPERATION_TAG_ORIGINATION:
             {
-                static char delegate_string[PKH_STRING_SIZE];
+                static const uint32_t DELEGATE_INDEX = 4;
                 static const char *const origination_prompts[] = {
                     "Confirm",
                     "Source",
                     "Manager",
                     "Fee",
-                    "Delegatable?",
+                    "Delegate",
                     NULL,
                 };
 
-                static const char *const origination_values[] = {
-                    "Origination",
-                    origin_string,
-                    destination_string,
-                    fee_string,
-                    delegate_string,
-                    NULL,
-                };
+                strcpy(get_value_buffer(TYPE_INDEX), "Origination");
 
                 if (!(ops->operation.flags & ORIGINATION_FLAG_SPENDABLE)) return false;
                 bool delegatable = ops->operation.flags & ORIGINATION_FLAG_DELEGATABLE;
 
-                strcpy(delegate_string, delegatable ? "Yes" : "No");
+                if (delegatable) {
+                    strcpy(get_value_buffer(DELEGATE_INDEX), "Any");
+                } else {
+                    if (!parsed_contract_to_string(get_value_buffer(DELEGATE_INDEX), VALUE_WIDTH,
+                                                   &ops->operation.delegate)) return false;
+                }
 
-                ui_prompt_multiple(origination_prompts, origination_values, ok, cxl);
+                ui_prompt_multiple(origination_prompts, NULL, ok, cxl);
             }
         case OPERATION_TAG_DELEGATION:
             {
+                static const char *const withdrawal_prompts[] = {
+                    "Withdraw",
+                    "Source",
+                    "Delegate",
+                    "Fee",
+                    NULL,
+                };
                 static const char *const delegation_prompts[] = {
                     "Confirm",
                     "Source",
@@ -246,41 +252,32 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                     NULL,
                 };
 
-                static const char *const delegation_values[] = {
-                    "Delegation",
-                    origin_string,
-                    destination_string,
-                    fee_string,
-                    NULL,
-                };
+                strcpy(get_value_buffer(TYPE_INDEX), "Delegation");
 
-                ui_prompt_multiple(delegation_prompts, delegation_values, ok, cxl);
+                bool withdrawal = ops->operation.destination.originated == 0 &&
+                    ops->operation.destination.curve_code == TEZOS_NO_CURVE;
+
+                ui_prompt_multiple(withdrawal ? withdrawal_prompts : delegation_prompts, NULL,
+                                   ok, cxl);
             }
 
         case OPERATION_TAG_TRANSACTION:
             {
-                static char amount_string[MAX_NUMBER_CHARS];
+                static const uint32_t AMOUNT_INDEX = 4;
 
                 static const char *const transaction_prompts[] = {
                     "Confirm",
                     "Source",
                     "Destination",
-                    "Amount",
                     "Fee",
+                    "Amount",
                     NULL,
                 };
 
-                static const char *const transaction_values[] = {
-                    "Transaction",
-                    origin_string,
-                    destination_string,
-                    amount_string,
-                    fee_string,
-                    NULL,
-                };
+                strcpy(get_value_buffer(TYPE_INDEX), "Transaction");
+                microtez_to_string(get_value_buffer(AMOUNT_INDEX), ops->operation.amount);
 
-                microtez_to_string(amount_string, ops->operation.amount);
-                ui_prompt_multiple(transaction_prompts, transaction_values, ok, cxl);
+                ui_prompt_multiple(transaction_prompts, NULL, ok, cxl);
             }
     }
 }

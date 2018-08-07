@@ -45,6 +45,7 @@ struct parsed_operation {
     enum operation_tag tag;
     struct parsed_contract source;
     struct parsed_contract destination;
+    struct parsed_contract delegate; // For originations only
     uint64_t amount; // 0 where inappropriate
     uint32_t flags;  // Interpretation depends on operation type
 };

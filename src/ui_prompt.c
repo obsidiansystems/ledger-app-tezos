@@ -4,8 +4,6 @@
 
 #include <string.h>
 
-#define PROMPT_WIDTH 25
-#define VALUE_WIDTH PKH_STRING_SIZE
 static char prompts[MAX_SCREEN_COUNT][PROMPT_WIDTH + 1]; // Additional bytes init'ed to null,
 static char values[MAX_SCREEN_COUNT][VALUE_WIDTH + 1];   // and null they shall remain.
 
@@ -71,18 +69,24 @@ static const bagl_element_t ui_multi_screen[] = {
     SCREEN_FOR(5),
 };
 
+char *get_value_buffer(uint32_t which) {
+    if (which >= MAX_SCREEN_COUNT) THROW(EXC_MEMORY_ERROR);
+    return values[which];
+}
+
 __attribute__((noreturn))
 void ui_prompt_multiple(const char *const *labels, const char *const *data,
                         callback_t ok_c, callback_t cxl_c) {
     check_null(labels);
-    check_null(data);
 
     size_t i;
     for (i = 0; labels[i] != NULL; i++) {
         if (i >= MAX_SCREEN_COUNT) THROW(EXC_MEMORY_ERROR);
         // These will not overwrite terminating bytes
         strncpy(prompts[i], (const char *)PIC(labels[i]), PROMPT_WIDTH);
-        strncpy(values[i], (const char *)PIC(data[i]), VALUE_WIDTH);
+        if (data != NULL) {
+            strncpy(values[i], (const char *)PIC(data[i]), VALUE_WIDTH);
+        }
     }
     size_t screen_count = i;
 
