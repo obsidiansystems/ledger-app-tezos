@@ -14,16 +14,11 @@ static callback_t ok_callback;
 static callback_t cxl_callback;
 
 static unsigned button_handler(unsigned button_mask, unsigned button_mask_counter);
-static bool do_nothing(void);
 
 static uint32_t ux_step, ux_step_count;
 
 #define PROMPT_CYCLES 3
-static uint32_t timeout_count;
-
-static bool do_nothing(void) {
-    return false;
-}
+static uint32_t timeout_cycle_count;
 
 static char idle_text[16];
 char baking_auth_text[PKH_STRING_SIZE];
@@ -81,7 +76,7 @@ const bagl_element_t ui_idle_screen[] = {
 #endif
 
     {{BAGL_LABELINE, 0x02, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
-      BAGL_FONT_OPEN_SANS_REGULAR_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
 #ifdef BAKING_APP
      "Baking Key",
 #else
@@ -107,6 +102,10 @@ const bagl_element_t ui_idle_screen[] = {
 #endif
 };
 
+static bool do_nothing(void) {
+    return false;
+}
+
 static void ui_idle(void) {
 #ifdef BAKING_APP
     update_auth_text();
@@ -127,8 +126,16 @@ void ui_initial_screen(void) {
     ui_idle();
 }
 
-void cancel_pressed(void) {
-    (void) button_handler(BUTTON_EVT_RELEASED | BUTTON_LEFT, 0);
+void timeout(void) {
+    if (cxl_callback == exit_app) {
+        // Idle app timeout
+        update_auth_text();
+        timeout_cycle_count = 0;
+        UX_REDISPLAY();
+    } else {
+        // Prompt timeout -- simulate cancel button
+        (void) button_handler(BUTTON_EVT_RELEASED | BUTTON_LEFT, 0);
+    }
 }
 
 unsigned button_handler(unsigned button_mask, __attribute__((unused)) unsigned button_mask_counter) {
@@ -169,7 +176,7 @@ const bagl_element_t *prepro(const bagl_element_t *element) {
 void ui_display(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback_t cxl_c,
                 uint32_t step_count) {
     // Adapted from definition of UX_DISPLAY in header file
-    timeout_count = 0;
+    timeout_cycle_count = 0;
     ux_step = 0;
     ux_step_count = step_count;
     ok_callback = ok_c;
@@ -205,13 +212,16 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
             if (ux.callback_interval_ms == 0) {
                 // prepare next screen
                 ux_step = (ux_step + 1) % ux_step_count;
-                if (cxl_callback != exit_app && ux_step == 0) {
-                    timeout_count++;
-                    if (timeout_count == PROMPT_CYCLES) {
-                        cancel_pressed();
-                        break;
+
+                // check if we've timed out
+                if (ux_step == 0) {
+                    timeout_cycle_count++;
+                    if (timeout_cycle_count == PROMPT_CYCLES) {
+                        timeout();
+                        break; // timeout() will often display a new screen
                     }
                 }
+
                 // redisplay screen
                 UX_REDISPLAY();
             }
@@ -227,6 +237,7 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
         io_seproxyhal_general_status();
     }
     // command has been processed, DO NOT reset the current APDU transport
+    // TODO: I don't understand that comment or what this return value means
     return 1;
 }
 
