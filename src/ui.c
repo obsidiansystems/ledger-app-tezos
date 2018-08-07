@@ -261,7 +261,4 @@ bool exit_app(void) {
 
 void ui_init(void) {
     UX_INIT();
-    ok_callback = NULL;
-    cxl_callback = NULL;
-    idle_text[0] = '\0';
 }

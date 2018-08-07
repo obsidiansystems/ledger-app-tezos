@@ -37,6 +37,7 @@ unsigned int handle_apdu_version(uint8_t __attribute__((unused)) instruction) {
 
 #define CLA 0x80
 
+__attribute__((noreturn))
 void main_loop(apdu_handler handlers[INS_MAX]) {
     volatile uint32_t rx = io_exchange(CHANNEL_APDU, 0);
     while (true) {

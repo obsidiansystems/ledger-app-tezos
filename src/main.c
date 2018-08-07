@@ -22,6 +22,7 @@
 
 void *stack_root;
 
+__attribute__((noreturn))
 void app_main(void) {
     static apdu_handler handlers[INS_MAX];
     uint8_t tag;

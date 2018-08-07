@@ -11,11 +11,7 @@
 *  Unless required by applicable law or agreed to in writing, software
 *  distributed under the License is distributed on an "AS IS" BASIS,
 *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for * Linode?
-** Figure out how to stop hosting Bud Wolfe's stuff
-** Migrate e-mail/shareyourgifts.net webmail to thecodedmessage.com server
-** Be down to one server
-the specific language governing permissions and
+*  See the License for the specific language governing permissions and
 *  limitations under the License.
 ********************************************************************************/
 
@@ -24,6 +20,7 @@ the specific language governing permissions and
 #include "os.h"
 #include "cx.h"
 
+__attribute__((noreturn))
 void app_main(void);
 
 __attribute__((section(".boot"))) int main(void) {
@@ -52,5 +49,5 @@ __attribute__((section(".boot"))) int main(void) {
     }
     END_TRY;
 
-    exit_app();
+    exit_app(); // Only reached in case of uncaught exception
 }

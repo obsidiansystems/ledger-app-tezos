@@ -27,6 +27,7 @@
 // Return number of bytes to transmit (tx)
 typedef uint32_t (*apdu_handler)(uint8_t instruction);
 
+__attribute__((noreturn))
 void main_loop(apdu_handler handlers[INS_MAX]);
 
 static inline void return_ok(void) {
