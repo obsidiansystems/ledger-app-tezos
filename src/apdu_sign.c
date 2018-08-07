@@ -137,18 +137,21 @@ uint32_t baking_sign_complete(void) {
 
 #else
 
-const char *const sign_prompts[] = {
+const char *const parse_fail_prompts[] = {
+    "Unrecognized",
     "Sign",
     NULL,
 };
 
-const char *const hash_values[] = {
-    "Unsafe Data",
+const char *const prehashed_prompts[] = {
+    "Pre-hashed",
+    "Sign",
     NULL,
 };
 
-const char *const parse_fail_values[] = {
-    "Unparsed Data",
+const char *const insecure_values[] = {
+    "Operation",
+    "Unverified?",
     NULL,
 };
 
@@ -284,7 +287,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
 
 uint32_t wallet_sign_complete(uint8_t instruction) {
     if (instruction == INS_SIGN_UNSAFE) {
-        ui_prompt_multiple(sign_prompts, hash_values, sign_unsafe_ok, sign_reject);
+        ui_prompt_multiple(prehashed_prompts, insecure_values, sign_unsafe_ok, sign_reject);
     } else {
         switch (magic_number) {
             case MAGIC_BYTE_BLOCK:
@@ -304,7 +307,7 @@ uint32_t wallet_sign_complete(uint8_t instruction) {
                 goto unsafe;
         }
 unsafe:
-        ui_prompt_multiple(sign_prompts, parse_fail_values, sign_ok, sign_reject);
+        ui_prompt_multiple(parse_fail_prompts, insecure_values, sign_ok, sign_reject);
     }
 }
 #endif
