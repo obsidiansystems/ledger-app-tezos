@@ -17,7 +17,7 @@ static callback_t both_callback;
 static unsigned button_handler(unsigned button_mask, unsigned button_mask_counter);
 static bool do_nothing(void);
 
-static uint32_t ux_step, ux_step_count, ux_planned_step_count;
+static uint32_t ux_step, ux_step_count;
 
 #define PROMPT_CYCLES 3
 static uint32_t timeout_count;
@@ -154,8 +154,6 @@ unsigned button_handler(unsigned button_mask, __attribute__((unused)) unsigned b
 }
 
 const bagl_element_t *prepro(const bagl_element_t *element) {
-    ux_step_count = ux_planned_step_count;
-
     // Always display elements with userid 0
     if (element->component.userid == 0) return element;
 
@@ -177,6 +175,7 @@ void ui_prompt(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback
     // Adapted from definition of UX_DISPLAY in header file
     timeout_count = 0;
     ux_step = 0;
+    ux_step_count = step_count;
     ok_callback = ok_c;
     cxl_callback = cxl_c;
     both_callback = do_nothing;
@@ -184,7 +183,6 @@ void ui_prompt(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback
     ux.elements_count = sz;
     ux.button_push_handler = button_handler;
     ux.elements_preprocessor = prepro;
-    ux_planned_step_count = step_count;
     UX_WAKE_UP();
     UX_REDISPLAY();
 }
