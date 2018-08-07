@@ -10,7 +10,8 @@
 
 #include <string.h>
 
-WIDE nvram_data N_data_real;
+WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
+static nvram_data new_data;  // Staging area for setting N_data
 
 bool is_valid_level(level_t lvl) {
     return !(lvl & 0xC0000000);
@@ -18,7 +19,6 @@ bool is_valid_level(level_t lvl) {
 
 void write_highest_level(level_t lvl, bool is_endorsement) {
     if (!is_valid_level(lvl)) return;
-    nvram_data new_data;
     memcpy(&new_data, &N_data, sizeof(new_data));
     new_data.highest_level = lvl;
     new_data.had_endorsement = is_endorsement;
@@ -31,12 +31,12 @@ void authorize_baking(cx_curve_t curve, uint32_t *bip32_path, uint8_t path_lengt
         return;
     }
 
-    nvram_data new_baking_details;
-    new_baking_details.highest_level = N_data.highest_level;
-    new_baking_details.curve = curve;
-    memcpy(new_baking_details.bip32_path, bip32_path, path_length * sizeof(*bip32_path));
-    new_baking_details.path_length = path_length;
-    nvm_write((void*)&N_data, &new_baking_details, sizeof(N_data));
+    new_data.highest_level = N_data.highest_level;
+    new_data.had_endorsement = N_data.had_endorsement;
+    new_data.curve = curve;
+    memcpy(new_data.bip32_path, bip32_path, path_length * sizeof(*bip32_path));
+    new_data.path_length = path_length;
+    nvm_write((void*)&N_data, &new_data, sizeof(N_data));
     change_idle_display(N_data.highest_level);
 }
 
@@ -87,7 +87,7 @@ void update_auth_text(void) {
     }
 }
 
-static char address_display_data[64]; // Should be more than big enough
+static char address_display_data[VALUE_WIDTH];
 
 static const char *const pubkey_labels[] = {
     "Provide",
