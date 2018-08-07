@@ -24,11 +24,12 @@ unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
     if (dataLength != sizeof(int)) {
         THROW(EXC_WRONG_LENGTH_FOR_INS);
     }
-    level_t lvl = READ_UNALIGNED_BIG_ENDIAN(int32_t, dataBuffer);
+    level_t lvl = READ_UNALIGNED_BIG_ENDIAN(level_t, dataBuffer);
 
     if (!is_valid_level(lvl)) {
         THROW(EXC_PARSE_ERROR);
     }
+
     reset_level = lvl;
 
     number_to_string(get_value_buffer(0), reset_level);
@@ -42,10 +43,25 @@ bool reset_ok(void) {
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;
 
-
     // Send back the response, do not restart the event loop
     delayed_send(tx);
     return true;
+}
+
+uint32_t send_word_big_endian(uint32_t word) {
+    char word_bytes[sizeof(word)];
+
+    memcpy(word_bytes, &word, sizeof(word));
+
+    uint32_t tx = 0;
+    // endian.h functions do not compile
+    for (; tx < sizeof(word); tx++) {
+        G_io_apdu_buffer[tx] = word_bytes[sizeof(word) - tx - 1];
+    }
+
+    G_io_apdu_buffer[tx++] = 0x90;
+    G_io_apdu_buffer[tx++] = 0x00;
+    return tx;
 }
 
 unsigned int handle_apdu_hwm(__attribute__((unused)) uint8_t instruction) {

@@ -48,8 +48,6 @@ static inline bool delay_reject(void) {
 uint32_t handle_apdu_error(uint8_t instruction);
 uint32_t handle_apdu_version(uint8_t instruction);
 
-uint32_t send_word_big_endian(uint32_t word);
-
 extern uint32_t app_stack_canary;
 
 extern void *stack_root;

@@ -9,18 +9,6 @@ unsigned int handle_apdu_error(uint8_t __attribute__((unused)) instruction) {
     THROW(EXC_INVALID_INS);
 }
 
-uint32_t send_word_big_endian(uint32_t word) {
-    char word_bytes[sizeof(word)];
-    memcpy(word_bytes, &word, sizeof(word));
-    uint32_t tx = 0;
-    for (; tx < sizeof(word); tx++) {
-        G_io_apdu_buffer[tx] = word_bytes[sizeof(word) - tx - 1];
-    }
-    G_io_apdu_buffer[tx++] = 0x90;
-    G_io_apdu_buffer[tx++] = 0x00;
-    return tx;
-}
-
 unsigned int handle_apdu_version(uint8_t __attribute__((unused)) instruction) {
     int tx = 0;
     memcpy(G_io_apdu_buffer, &version, sizeof(version_t));
