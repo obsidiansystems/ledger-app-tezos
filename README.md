@@ -28,10 +28,12 @@ This repository contains two Ledger applications:
 It is possible to do all of these things without a hardware wallet, but using a
 hardware wallet provides you better security against key theft.
 
-We recommend you read this entire document to understand the commands available,
-and which commands are most appropriate to your situation. This will require
-judgment on how best to meet your needs, and this document will also provide
-context to help you understand that.
+Currently, there is no GUI support, so everything in this document is
+tailored towards the command line.  We recommend you read this entire
+document to understand the commands available, and which commands are
+most appropriate to your situation. This will require judgment on how
+best to meet your needs, and this document will also provide context to
+help you understand that.
 
 This document is not a comprehensive guide to setting up Tezos
 software. While it covers some aspects of setting up and installing
