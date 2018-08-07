@@ -21,7 +21,6 @@
 #include "os.h"
 #include "blake2.h"
 
-#include <alloca.h>
 #include <stdbool.h>
 #include <string.h>
 
