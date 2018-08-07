@@ -19,7 +19,6 @@ static bool do_nothing(void);
 
 static uint32_t ux_step, ux_step_count, ux_planned_step_count;
 
-#define PROMPT_TIMEOUT 300 // 100 ms per tick
 #define PROMPT_CYCLES 3
 static uint32_t timeout_count;
 
@@ -161,7 +160,12 @@ const bagl_element_t *prepro(const bagl_element_t *element) {
     if (element->component.userid == 0) return element;
 
     if (ux_step == element->component.userid - 1) {
-        UX_CALLBACK_SET_INTERVAL(MAX(2000, 1500 + bagl_label_roundtrip_duration_ms(element, 7)));
+        // timeouts are in millis
+        if (ux_step_count > 1) {
+            UX_CALLBACK_SET_INTERVAL(MAX(2000, 1500 + bagl_label_roundtrip_duration_ms(element, 7)));
+        } else {
+            UX_CALLBACK_SET_INTERVAL(30000 / PROMPT_CYCLES);
+        }
         return element;
     } else {
         return NULL;
@@ -207,33 +211,25 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
         UX_DISPLAYED_EVENT({});
         break;
     case SEPROXYHAL_TAG_TICKER_EVENT:
-        if (ux_step_count != 0) {
-            if (ux.callback_interval_ms != 0) {
-                ux.callback_interval_ms -= MIN(ux.callback_interval_ms, 100);
-                if (ux.callback_interval_ms == 0) {
-                    // prepare next screen
-                    ux_step = (ux_step + 1) % ux_step_count;
-                    if (cxl_callback != exit_app && ux_step == 0) {
-                        timeout_count++;
-                        if (timeout_count == PROMPT_CYCLES) {
-                            cancel_pressed();
-                            break;
-                        }
+        if (ux.callback_interval_ms != 0) {
+            ux.callback_interval_ms -= MIN(ux.callback_interval_ms, 100);
+            if (ux.callback_interval_ms == 0) {
+                // prepare next screen
+                ux_step = (ux_step + 1) % ux_step_count;
+                if (cxl_callback != exit_app && ux_step == 0) {
+                    timeout_count++;
+                    if (timeout_count == PROMPT_CYCLES) {
+                        cancel_pressed();
+                        break;
                     }
-                    // redisplay screen
-                    UX_REDISPLAY();
                 }
+                // redisplay screen
+                UX_REDISPLAY();
             }
-        } else if (cxl_callback != exit_app) {
-            if (timeout_count == PROMPT_TIMEOUT) {
-                cancel_pressed();
-            }
-            timeout_count++;
         }
         break;
-
-    // unknown events are acknowledged
     default:
+        // unknown events are acknowledged
         break;
     }
 

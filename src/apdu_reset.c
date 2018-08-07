@@ -16,13 +16,6 @@ const char *const reset_prompts[] = {
     NULL,
 };
 
-char reset_string[21];
-
-const char *const reset_values[] = {
-    reset_string,
-    NULL,
-};
-
 static bool reset_ok(void);
 
 unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
@@ -38,8 +31,8 @@ unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
     }
     reset_level = lvl;
 
-    number_to_string(reset_string, reset_level);
-    ui_prompt_multiple(reset_prompts, reset_values, reset_ok, delay_reject);
+    number_to_string(get_value_buffer(0), reset_level);
+    ui_prompt_multiple(reset_prompts, NULL, reset_ok, delay_reject);
 }
 
 bool reset_ok(void) {
