@@ -13,8 +13,8 @@ void ui_init(void);
 __attribute__((noreturn))
 bool exit_app(void);
 
-void ui_prompt(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback_t cxl_c,
-               uint32_t step_count);
+void ui_display(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback_t cxl_c,
+                uint32_t step_count);
 unsigned char io_event(unsigned char channel);
 void io_seproxyhal_display(const bagl_element_t *element);
 void change_idle_display(uint32_t new);

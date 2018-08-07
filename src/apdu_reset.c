@@ -32,7 +32,7 @@ unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
     reset_level = lvl;
 
     number_to_string(get_value_buffer(0), reset_level);
-    ui_prompt_multiple(reset_prompts, NULL, reset_ok, delay_reject);
+    ui_prompt(reset_prompts, NULL, reset_ok, delay_reject);
 }
 
 bool reset_ok(void) {

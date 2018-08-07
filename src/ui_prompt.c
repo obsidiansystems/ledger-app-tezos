@@ -75,8 +75,7 @@ char *get_value_buffer(uint32_t which) {
 }
 
 __attribute__((noreturn))
-void ui_prompt_multiple(const char *const *labels, const char *const *data,
-                        callback_t ok_c, callback_t cxl_c) {
+void ui_prompt(const char *const *labels, const char *const *data, callback_t ok_c, callback_t cxl_c) {
     check_null(labels);
 
     size_t i;
@@ -90,7 +89,7 @@ void ui_prompt_multiple(const char *const *labels, const char *const *data,
     }
     size_t screen_count = i;
 
-    ui_prompt(ui_multi_screen, INITIAL_ELEMENTS_COUNT + screen_count * ELEMENTS_PER_SCREEN,
-              ok_c, cxl_c, screen_count);
+    ui_display(ui_multi_screen, INITIAL_ELEMENTS_COUNT + screen_count * ELEMENTS_PER_SCREEN,
+               ok_c, cxl_c, screen_count);
     THROW(ASYNC_EXCEPTION);
 }

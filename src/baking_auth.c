@@ -120,7 +120,7 @@ void prompt_contract_for_baking(struct parsed_contract *contract, callback_t ok_
         THROW(EXC_WRONG_VALUES);
     }
 
-    ui_prompt_multiple(baking_labels, baking_values, ok_cb, cxl_cb);
+    ui_prompt(baking_labels, baking_values, ok_cb, cxl_cb);
 }
 #endif
 
@@ -137,10 +137,10 @@ void prompt_address(
 
 #ifdef BAKING_APP
     if (baking) {
-        ui_prompt_multiple(baking_labels, baking_values, ok_cb, cxl_cb);
+        ui_prompt(baking_labels, baking_values, ok_cb, cxl_cb);
     } else {
 #endif
-        ui_prompt_multiple(pubkey_labels, pubkey_values, ok_cb, cxl_cb);
+        ui_prompt(pubkey_labels, pubkey_values, ok_cb, cxl_cb);
 #ifdef BAKING_APP
     }
 #endif

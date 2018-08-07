@@ -12,7 +12,6 @@ unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 static callback_t ok_callback;
 static callback_t cxl_callback;
-static callback_t both_callback;
 
 static unsigned button_handler(unsigned button_mask, unsigned button_mask_counter);
 static bool do_nothing(void);
@@ -112,8 +111,8 @@ static void ui_idle(void) {
 #ifdef BAKING_APP
     update_auth_text();
 #endif
-    ui_prompt(ui_idle_screen, sizeof(ui_idle_screen)/sizeof(*ui_idle_screen),
-              do_nothing, exit_app, 2);
+    ui_display(ui_idle_screen, sizeof(ui_idle_screen)/sizeof(*ui_idle_screen),
+               do_nothing, exit_app, 2);
 }
 
 void change_idle_display(uint32_t new) {
@@ -141,9 +140,6 @@ unsigned button_handler(unsigned button_mask, __attribute__((unused)) unsigned b
         case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
             callback = ok_callback;
             break;
-        case BUTTON_EVT_RELEASED | BUTTON_LEFT | BUTTON_RIGHT:
-            callback = both_callback;
-            break;
         default:
             return 0;
     }
@@ -170,25 +166,20 @@ const bagl_element_t *prepro(const bagl_element_t *element) {
     }
 }
 
-void ui_prompt(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback_t cxl_c,
-               uint32_t step_count) {
+void ui_display(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback_t cxl_c,
+                uint32_t step_count) {
     // Adapted from definition of UX_DISPLAY in header file
     timeout_count = 0;
     ux_step = 0;
     ux_step_count = step_count;
     ok_callback = ok_c;
     cxl_callback = cxl_c;
-    both_callback = do_nothing;
     ux.elements = elems;
     ux.elements_count = sz;
     ux.button_push_handler = button_handler;
     ux.elements_preprocessor = prepro;
     UX_WAKE_UP();
     UX_REDISPLAY();
-}
-
-void set_both_callback(callback_t cb) {
-    both_callback = cb;
 }
 
 unsigned char io_event(__attribute__((unused)) unsigned char channel) {

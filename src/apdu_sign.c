@@ -236,7 +236,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                                                    &ops->operation.delegate)) return false;
                 }
 
-                ui_prompt_multiple(origination_prompts, NULL, ok, cxl);
+                ui_prompt(origination_prompts, NULL, ok, cxl);
             }
         case OPERATION_TAG_DELEGATION:
             {
@@ -260,8 +260,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 bool withdrawal = ops->operation.destination.originated == 0 &&
                     ops->operation.destination.curve_code == TEZOS_NO_CURVE;
 
-                ui_prompt_multiple(withdrawal ? withdrawal_prompts : delegation_prompts, NULL,
-                                   ok, cxl);
+                ui_prompt(withdrawal ? withdrawal_prompts : delegation_prompts, NULL, ok, cxl);
             }
 
         case OPERATION_TAG_TRANSACTION:
@@ -280,14 +279,14 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 strcpy(get_value_buffer(TYPE_INDEX), "Transaction");
                 microtez_to_string(get_value_buffer(AMOUNT_INDEX), ops->operation.amount);
 
-                ui_prompt_multiple(transaction_prompts, NULL, ok, cxl);
+                ui_prompt(transaction_prompts, NULL, ok, cxl);
             }
     }
 }
 
 uint32_t wallet_sign_complete(uint8_t instruction) {
     if (instruction == INS_SIGN_UNSAFE) {
-        ui_prompt_multiple(prehashed_prompts, insecure_values, sign_unsafe_ok, sign_reject);
+        ui_prompt(prehashed_prompts, insecure_values, sign_unsafe_ok, sign_reject);
     } else {
         switch (magic_number) {
             case MAGIC_BYTE_BLOCK:
@@ -307,7 +306,7 @@ uint32_t wallet_sign_complete(uint8_t instruction) {
                 goto unsafe;
         }
 unsafe:
-        ui_prompt_multiple(parse_fail_prompts, insecure_values, sign_ok, sign_reject);
+        ui_prompt(parse_fail_prompts, insecure_values, sign_ok, sign_reject);
     }
 }
 #endif
