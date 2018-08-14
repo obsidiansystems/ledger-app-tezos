@@ -52,7 +52,7 @@ const bagl_element_t ui_idle_screen[] = {
     {{BAGL_LABELINE, 0x01, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
 #ifdef BAKING_APP
-     "Last Baked Level",
+     "Last Block Level",
 #else
      "Tezos",
 #endif
@@ -126,8 +126,12 @@ void ui_initial_screen(void) {
     ui_idle();
 }
 
-void timeout(void) {
-    if (cxl_callback == exit_app) {
+static bool is_idling(void) {
+    return cxl_callback == exit_app;
+}
+
+static void timeout(void) {
+    if (is_idling()) {
         // Idle app timeout
         update_auth_text();
         timeout_cycle_count = 0;
@@ -160,10 +164,19 @@ const bagl_element_t *prepro(const bagl_element_t *element) {
     // Always display elements with userid 0
     if (element->component.userid == 0) return element;
 
+    uint32_t min = 2000;
+    uint32_t div = 1;
+
+    if (is_idling()) {
+        min = 4000;
+        div = 2;
+    }
+
     if (ux_step == element->component.userid - 1) {
         // timeouts are in millis
         if (ux_step_count > 1) {
-            UX_CALLBACK_SET_INTERVAL(MAX(2000, 1500 + bagl_label_roundtrip_duration_ms(element, 7)));
+            UX_CALLBACK_SET_INTERVAL(MAX(min,
+                                         (1500 + bagl_label_roundtrip_duration_ms(element, 7)) / div));
         } else {
             UX_CALLBACK_SET_INTERVAL(30000 / PROMPT_CYCLES);
         }

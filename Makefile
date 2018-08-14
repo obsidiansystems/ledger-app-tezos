@@ -73,6 +73,16 @@ include $(BOLOS_SDK)/Makefile.glyphs
 APP_SOURCE_PATH  += src
 SDK_SOURCE_PATH  += lib_stusb lib_stusb_impl
 
+### U2F support
+SDK_SOURCE_PATH  += lib_u2f lib_stusb_impl
+
+DEFINES   += USB_SEGMENT_SIZE=64
+DEFINES   += HAVE_BAGL HAVE_SPRINTF
+DEFINES   += HAVE_PRINTF PRINTF=screen_printf
+DEFINES   += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=6 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
+
+DEFINES   += U2F_PROXY_MAGIC=\"XTZ\"
+DEFINES   += HAVE_IO_U2F HAVE_U2F
 
 load: all
 	python -m ledgerblue.loadApp $(APP_LOAD_PARAMS)
