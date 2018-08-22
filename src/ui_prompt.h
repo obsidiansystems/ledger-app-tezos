@@ -2,7 +2,7 @@
 
 #include "ui.h"
 
-#define MAX_SCREEN_COUNT 5 // Current maximum usage
+#define MAX_SCREEN_COUNT 6 // Current maximum usage
 #define PROMPT_WIDTH 25
 #define VALUE_WIDTH PKH_STRING_SIZE
 

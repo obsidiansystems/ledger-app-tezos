@@ -214,29 +214,61 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
 
         case OPERATION_TAG_ORIGINATION:
             {
-                static const uint32_t DELEGATE_INDEX = 4;
-                static const char *const origination_prompts[] = {
+                static const uint32_t AMOUNT_INDEX = 4;
+                static const uint32_t DELEGATE_INDEX = 5;
+                static const char *const origination_prompts_fixed[] = {
                     "Confirm",
                     "Source",
                     "Manager",
                     "Fee",
+                    "Amount",
+                    "Fixed Delegate",
+                    NULL,
+                };
+                static const char *const origination_prompts_delegatable[] = {
+                    "Confirm",
+                    "Source",
+                    "Manager",
+                    "Fee",
+                    "Amount",
                     "Delegate",
                     NULL,
                 };
-
-                strcpy(get_value_buffer(TYPE_INDEX), "Origination");
+                static const char *const origination_prompts_undelegatable[] = {
+                    "Confirm",
+                    "Source",
+                    "Manager",
+                    "Fee",
+                    "Amount",
+                    "Delegation",
+                    NULL,
+                };
 
                 if (!(ops->operation.flags & ORIGINATION_FLAG_SPENDABLE)) return false;
-                bool delegatable = ops->operation.flags & ORIGINATION_FLAG_DELEGATABLE;
 
-                if (delegatable) {
-                    strcpy(get_value_buffer(DELEGATE_INDEX), "Any");
-                } else {
+                strcpy(get_value_buffer(TYPE_INDEX), "Origination");
+                microtez_to_string(get_value_buffer(AMOUNT_INDEX), ops->operation.amount);
+
+                const char *const *prompts;
+                bool delegatable = ops->operation.flags & ORIGINATION_FLAG_DELEGATABLE;
+                bool has_delegate = ops->operation.delegate.curve_code != TEZOS_NO_CURVE;
+                if (delegatable && has_delegate) {
+                    prompts = origination_prompts_delegatable;
                     if (!parsed_contract_to_string(get_value_buffer(DELEGATE_INDEX), VALUE_WIDTH,
                                                    &ops->operation.delegate)) return false;
+                } else if (delegatable && !has_delegate) {
+                    prompts = origination_prompts_delegatable;
+                    strcpy(get_value_buffer(DELEGATE_INDEX), "Any");
+                } else if (!delegatable && has_delegate) {
+                    prompts = origination_prompts_fixed;
+                    if (!parsed_contract_to_string(get_value_buffer(DELEGATE_INDEX), VALUE_WIDTH,
+                                                   &ops->operation.delegate)) return false;
+                } else if (!delegatable && !has_delegate) {
+                    prompts = origination_prompts_undelegatable;
+                    strcpy(get_value_buffer(DELEGATE_INDEX), "Disabled");
                 }
 
-                ui_prompt(origination_prompts, NULL, ok, cxl);
+                ui_prompt(prompts, NULL, ok, cxl);
             }
         case OPERATION_TAG_DELEGATION:
             {

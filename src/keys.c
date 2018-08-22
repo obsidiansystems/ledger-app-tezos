@@ -20,6 +20,7 @@
 #include "apdu.h"
 #include "os.h"
 #include "blake2.h"
+#include "protocol.h"
 
 #include <stdbool.h>
 #include <string.h>
@@ -36,7 +37,7 @@ uint32_t read_bip32_path(uint32_t bytes, uint32_t *bip32_path, const uint8_t *bu
     }
 
     for (size_t i = 0; i < path_length; i++) {
-        bip32_path[i] = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3]);
+        bip32_path[i] = READ_UNALIGNED_BIG_ENDIAN(uint32_t, (uint32_t*)buf);
         buf += 4;
     }
 
