@@ -1,6 +1,12 @@
-# Version 0.1.3 of the Tezos Wallet and Baking Apps
+# Version 0.1.3 of the Tezos Wallet and Baking Apps for Ledger
 
-## Wallet App
+## Summary
+* The Ledger Wallet App now displays transactions and other operations in detail.
+
+* The Ledger Baking App now has double-endorsement protection as well as
+double-baking protection in its high watermark support.
+
+## Ledger Wallet App
 ### Operation Display
 The new version of the wallet app will display certain fields of most
 transactions, delegations, and account origination in the prompt where
@@ -18,23 +24,6 @@ The fields are displayed in sequence, one after another. To verify all
 the fields, you must wait for all of the fields to display in order.
 The sequence is repeated 3 times, after which the app will default to
 a rejection of the transaction.
-
-If the wallet app is not capable of parsing the message, it displays a
-special prompt: "Unrecognized Operation, Sign Unverified?" This should
-not happen with ordinary transactions and delegations, but may happen
-in the presence of optional information like fields that will be sent
-to contracts or smart contract originations. If you are not using these
-features, you should reject the transaction.  You should only approve
-it if you are using these features, and are confident in your computer's
-security.
-
-The wallet app also allows the signing of prehashed data, which it will
-not be able to parse. In this situation, it will display "Pre-hashed
-Operation, Sign Unverified?" You should not approve this transaction
-unless you intentionally sent pre-hashed data to the ledger and are
-confident in your computer's security. Pre-hashed data is not
-exposed as a feature in `tezos-client`, and can only be sent
-manually. Most users will never need to use this feature.
 
 #### Transactions
 * Source:
@@ -101,16 +90,41 @@ account. Any changes to the delegation settings on an originated account
 could cause various inconveniences to the user, and potentially could
 be useful in a sophisticated attack.
 
-### Browser Support
+### Unverified Operations
 
-The wallet app also adds support for browser access through U2F. The
-ledger now supports browsers transparently; there is no need to enable
-or disable browser support in the app itself to communicate with web
-wallets vs non-web wallets; the app seamlessly allows both protocols
-without a mode switch. As of yet, there are no web wallet implementations
-for Tezos.
+Sometimes the wallet app will not be able to parse an operation, and
+will prompt for an unverified signature. In this case, most users will
+want to reject the operation.
 
-## Baking App
+The wallet app may not capable of parsing the message because of
+advanced features in it. In this case, it displays a special prompt:
+"Unrecognized Operation, Sign Unverified?" This should not happen with
+ordinary transactions and delegations, but may happen in the presence
+of optional information like fields that will be sent to contracts or
+smart contract originations. If you are not using these features, you
+should reject the transaction.  You should only approve it if you are
+using these features, and are confident in your computer's security.
+
+The wallet app also allows the signing of prehashed data, which it will
+not be able to parse. In this situation, it will display "Pre-hashed
+Operation, Sign Unverified?" You should not approve this transaction
+unless you intentionally sent pre-hashed data to the ledger and are
+confident in your computer's security. Pre-hashed data is not
+exposed as a feature in `tezos-client`, and can only be sent
+manually. Most users will never need to use this feature.
+
+### Browser Support (Not Yet Implemented Client-Side)
+
+As of yet, the Tezos web wallet implementations do not support the
+Ledger. However, for future web wallet implementations, the wallet app
+also adds support for browser access through U2F, so no upgrade will be
+required when web wallets start supporting the ledger.  Unlike previous
+ledger apps, the ledger now supports browsers transparently. There
+is no need to enable or disable browser support in the app itself to
+communicate with web wallets vs non-web wallets; the app seamlessly
+allows both protocols without a mode switch.
+
+## Ledger Baking App
 The new baking app extends the concept of the high watermark to
 endorsements as well as block headers, as a precaution against double
 baking. No block header or endorsement will be signed at a lower block
