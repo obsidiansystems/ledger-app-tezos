@@ -1,10 +1,18 @@
 # Version 0.1.3 of the Tezos Wallet and Baking Apps for Ledger
 
-## Summary
-* The Ledger Wallet App now displays transactions and other operations in detail.
+## Release Highlights
 
-* The Ledger Baking App now has double-endorsement protection as well as
-double-baking protection in its high watermark support.
+### Wallet App
+* Transactions now display with: source, destination, amount and fee
+* Delegations now display with: source, delegate, amount and fee
+* Account originations now display with: source, manager, fee, amount and delegation
+* Support for browser access through U2F: no need to enable or disable browser support in the app
+
+In addition to the improved user experience, these changes are important security enablers, as it
+can help a cautious user protect against a certain type of attack. See more details below.
+
+### Baking App
+* High watermark feature extended to protect against double-endorsing as well as double-baking.
 
 ## Ledger Wallet App
 ### Operation Display
