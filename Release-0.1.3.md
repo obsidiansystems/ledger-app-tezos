@@ -14,7 +14,7 @@ can help a cautious user protect against a certain type of attack. See more deta
 ### Ledger Baking App
 - [x] High watermark feature extended to protect against double-endorsing as well as double-baking.
 
-## Ledger Wallet App
+## Ledger Wallet App -- Release Details
 ### Operation Display
 The new version of the wallet app will display certain fields of most
 transactions, delegations, and account origination in the prompt where
@@ -132,7 +132,7 @@ is no need to enable or disable browser support in the app itself to
 communicate with web wallets vs non-web wallets; the app seamlessly
 allows both protocols without a mode switch.
 
-## Ledger Baking App
+## Ledger Baking App -- Release Details
 The new baking app extends the concept of the high watermark to
 endorsements as well as block headers, as a precaution against double
 baking. No block header or endorsement will be signed at a lower block
