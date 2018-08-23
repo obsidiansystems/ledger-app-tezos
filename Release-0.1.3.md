@@ -2,7 +2,7 @@
 
 ## Release Highlights
 
-### Wallet App
+### Ledger Wallet App
 * Transactions now display with: source, destination, amount and fee
 * Delegations now display with: source, delegate, amount and fee
 * Account originations now display with: source, manager, fee, amount and delegation
@@ -11,7 +11,7 @@
 In addition to the improved user experience, these changes are important security enablers, as it
 can help a cautious user protect against a certain type of attack. See more details below.
 
-### Baking App
+### Ledger Baking App
 * High watermark feature extended to protect against double-endorsing as well as double-baking.
 
 ## Ledger Wallet App
