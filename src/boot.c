@@ -27,16 +27,17 @@ __attribute__((section(".boot"))) int main(void) {
     // exit critical section
     __asm volatile("cpsie i");
 
-    ui_init();
-
     // ensure exception will work as planned
     os_boot();
 
     for (;;) {
         BEGIN_TRY {
             TRY {
+                ui_init();
+
                 io_seproxyhal_init();
 
+                USB_power(0);
                 USB_power(1);
 
                 ui_initial_screen();
