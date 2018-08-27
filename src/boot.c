@@ -32,22 +32,28 @@ __attribute__((section(".boot"))) int main(void) {
     // ensure exception will work as planned
     os_boot();
 
-    BEGIN_TRY {
-        TRY {
-            io_seproxyhal_init();
+    for (;;) {
+        BEGIN_TRY {
+            TRY {
+                io_seproxyhal_init();
 
-            USB_power(1);
+                USB_power(1);
 
-            ui_initial_screen();
+                ui_initial_screen();
 
-            app_main();
+                app_main();
+            }
+            CATCH(EXCEPTION_IO_RESET) {
+                // reset IO and UX
+                continue;
+            }
+            CATCH_OTHER(e) {
+            }
+            FINALLY {
+            }
         }
-        CATCH_OTHER(e) {
-        }
-        FINALLY {
-        }
+        END_TRY;
     }
-    END_TRY;
 
     exit_app(); // Only reached in case of uncaught exception
 }
