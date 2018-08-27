@@ -152,3 +152,8 @@ As before, you may reset the high watermark with a reset command
 reason to change the high watermark include switching to a test network
 at a different block level or restoring a baker after an attacker or
 software error caused a block to be signed with too high a level.
+
+## Acknowledgements
+
+Thank you to everyone in the tezos-baking Slack channel, especially Tom
+Knudsen, for their testing and bug reports.
