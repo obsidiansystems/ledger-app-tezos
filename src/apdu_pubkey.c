@@ -48,6 +48,11 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
     if (G_io_apdu_buffer[OFFSET_P1] != 0)
         THROW(EXC_WRONG_PARAM);
 
+    // do not expose pks without prompt over U2F
+    if (instruction == INS_GET_PUBLIC_KEY) {
+        require_hid();
+    }
+
     curve = curve_code_to_curve(G_io_apdu_buffer[OFFSET_CURVE]);
 
 #ifdef BAKING_APP

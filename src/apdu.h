@@ -45,6 +45,12 @@ static inline bool delay_reject(void) {
     return true;
 }
 
+static inline void require_hid(void) {
+    if (G_io_apdu_media != IO_APDU_MEDIA_USB_HID) {
+       THROW(EXC_SECURITY);
+    }
+}
+
 uint32_t handle_apdu_error(uint8_t instruction);
 uint32_t handle_apdu_version(uint8_t instruction);
 
