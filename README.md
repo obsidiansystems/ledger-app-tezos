@@ -939,3 +939,9 @@ If the Ledger app crashes when you load it, there are two primary causes:
     might have to restart the Ledger.
   * Out of date firmware: If the Ledger app doesn't work at all, make sure you are running firmware
     version 1.4.2.
+    
+### Contact Us
+
+You can email us at tezos@obsidian.systems and request to join our Slack. 
+We have several channels about baking and one specifically for our Ledger app. 
+You can ask questions and get answers from Obsidian staff or from the community.
