@@ -6,7 +6,7 @@ Whether you're baking or just trading XTZ, you want to store your keys securely.
 This is what a "hardware wallet" like the
 [Ledger Nano S](https://www.ledgerwallet.com/products/ledger-nano-s) is for.
 Your private keys never leave the device, and it performs the signing
-operations. To use a Ledger with [Tezos](https://www.tezos.com/), you need to
+operations. To use a Ledger Nano S with [Tezos](https://www.tezos.com/), you need to
 load Tezos-specific software onto it.
 
 The term "hardware wallet" can refer to several devices that store your private
@@ -23,7 +23,7 @@ This repository contains two Ledger applications:
      endorsements, and denunciations. For more information about baking, see
      [*Benefits and Risks of Home Baking*](https://medium.com/@tezos_91823/benefits-and-risks-of-home-baking-a631c9ca745).
   2. The "Tezos Wallet" application is for making XTZ transactions, and
-     everything you might want to use the Ledger for on Tezos besides baking.
+     everything you might want to use the Ledger Nano S for on Tezos besides baking.
 
 It is possible to do all of these things without a hardware wallet, but using a
 hardware wallet provides you better security against key theft.
@@ -46,9 +46,9 @@ it and set it up, part of the setup process is generating a keypair. The keypair
 will be associated with a rather long seed phrase that you must write down and
 keep securely. We'll discuss that seed phrase more below. You also set a PIN
 code that allows you to unlock the device so that it will sign messages. You can
-then install the Tezos app to use the Ledger Nano to interact directly with the
+then install the Tezos app to use the Ledger Nano S to interact directly with the
 Tezos network (see more about this in the app instructions, forthcoming).
-However, your Ledger will ask for confirmation before it sends your keys to sign
+However, your Ledger Nano S will ask for confirmation before it sends your keys to sign
 transactions or blocks, and you must confirm by physically pushing a button on
 the device, and that provides some security against an attacker taking control
 over your keys.
@@ -56,13 +56,13 @@ over your keys.
 ### Protecting your key
 
 The seed phrase is an encoding of your private key itself and can be used to
-restore your key. If you lose your Ledger or destroy it somehow, you can buy a
+restore your key. If you lose your Ledger Nano S or destroy it somehow, you can buy a
 new one and set it up with the seed phrase from your old one, hence restoring
 your tokens.
 
 Consequently, is is extremely important that you keep your seed phrase written
 down somewhere safe. Losing it can mean you lose control of your account should
-you, for example, lose your Ledger. Keeping it somewhere a hacker could find it
+you, for example, lose your Ledger device. Keeping it somewhere a hacker could find it
 (such as in a file on your internet-connected computer) means your private key
 can fall into the wrong hands.
 
@@ -72,7 +72,7 @@ deposit box, but at the very least keep it away from places where children,
 dogs, housekeepers, obnoxious neighbors, could inadvertently destroy it.
 Additionally, we recommend storing your PIN in a password manager.
 
-Finally, if you will not be baking yourself, consider disconnecting your Ledger
+Finally, if you will not be baking yourself, consider disconnecting your Ledger device
 and closing your password manager when not in use.
 
 ### Protecting Your Key -- Further Advanced Reading
@@ -81,9 +81,9 @@ More advanced techniques for those interested in even more layers of security
 or plausible deniability features should look at the
 [Ledger's documentation on this](https://support.ledgerwallet.com/hc/en-us/articles/115005214529-Advanced-Passphrase-options).
 
-Note that Ledgers with different seeds will appear to `tezos-client` to be
+Note that Ledger hardeware wallets with different seeds will appear to `tezos-client` to be
 different Ledgers. Note also that it can change what key is authorized in
-the Baking App. When using these features in a Ledger used for baking,
+the Baking App. When using these features in a Ledger device used for baking,
 please exit and re-start the Baking App right before baking is supposed to
 happen, and manually verify that it displays the key you expect to bake for.
 
@@ -98,7 +98,7 @@ way, the baking account won't actually store the vast majority of the tez.
 
 To use these apps, you must be sure to have [up-to-date
 firmware](https://support.ledgerwallet.com/hc/en-us/articles/360002731113)
-on the Ledger. This code was tested with version
+on the Ledger Nano S. This code was tested with version
 1.4.2. Please use the Ledger's tools, including their [Chrome
 app](https://www.ledgerwallet.com/apps/manager), to do this. Note that
 you can't talk to the Ledger OS itself while a Ledger app is running.
@@ -125,7 +125,7 @@ You might have to adjust which group this script uses, and modify the script for
 purpose. We recommend against piping `wget` into `sudo bash` without adjusting
 the script to your computer's configuration.
 
-Subsequently, unplug your ledger, and plug it in again for the changes to take
+Subsequently, unplug your Ledger device, and plug it in again for the changes to take
 effect.
 
 #### Instructions for NixOS
@@ -150,10 +150,10 @@ configuration file typically located at `/etc/nixos/configuration.nix`:
 
 Depending on your system's settings, you may wish to replace `users` with
 another group. Everyone in that group will get permissions for accessing the
-ledger.
+Ledger device.
 
 Once you have added this, run `sudo nixos-rebuild switch` to activate the
-configuration, and unplug your Ledger and plug it in again for the changes to
+configuration, and unplug your Ledger Nano S and plug it in again for the changes to
 take effect.
 
 ## Obtaining the Ledger apps
@@ -185,7 +185,7 @@ to use the Makefile, which can be cloned from Ledger's
 [nanos-secure-sdk](https://github.com/LedgerHQ/nanos-secure-sdk) git repository.
 You will also need to download two compilers for use with the SDK.
 Note that these are specialized compilers to cross-compile for the ARM-based
-platform of the Ledger; please don't use the versions of `clang` and `gcc` that
+platform of the Ledger Nano S; please don't use the versions of `clang` and `gcc` that
 come with your system.
 
   * [CLANG](http://releases.llvm.org/4.0.0/clang+llvm-4.0.0-x86_64-linux-gnu-ubuntu-16.10.tar.xz)
@@ -338,10 +338,10 @@ The Ledger must be in the following state:
   * Not asleep (you should not see *vires in numeris* is scrolling across the
     screen)
 
-If you are already in an app or the Ledger is asleep, your installation process
+If you are already in an app or the Ledger Nano S is asleep, your installation process
 will fail.
 
-We recommend staying at your computer and keeping an eye on the Ledger's screen
+We recommend staying at your computer and keeping an eye on the Ledger device's screen
 as you continue. You may want to read the rest of these instructions before you
 begin installing, as you will need to confirm and verify a few things during the
 process.
@@ -382,12 +382,12 @@ like this:
 Generated random root public key : <long string of digits and letters>
 ```
 
-Look at your Ledger screen and verify that the digits of that key match the
-digits you can see on your Ledger screen. What you see on your Ledger screen
+Look at your Ledger Nano S screen and verify that the digits of that key match the
+digits you can see on your Ledger device's screen. What you see on your Ledger device's screen
 should be just the beginning and ending few characters of the longer string that
 printed in your terminal.
 
-You will need to push confirmation buttons on your Ledger Nano a few times
+You will need to push confirmation buttons on your Ledger Nano S a few times
 during the installation process and re-enter your PIN code near the end of the
 process. You should finally see the Tezos logo appear on the screen.
 
@@ -405,7 +405,7 @@ the most likely cause is that your `udev` rules are not set up correctly, or you
 did not unplug your Ledger between setting up the rules and attempting to
 install. Please confirm the correctness of your `udev` rules.
 
-To load a new version of the Tezos application onto the Ledger in the future,
+To load a new version of the Tezos application onto the Ledger Nano S in the future,
 you can run the command again, and it will automatically remove any
 previously-loaded version.
 
@@ -424,7 +424,7 @@ $ python \
 Replace the `appName` parameter "Tezos" with whatever app name you used when you
 loaded the app onto the device.
 
-Then follow the prompts on the Ledger screen.
+Then follow the prompts on the Ledger Nano S screen.
 
 ### Confirming the Installation Worked
 
@@ -433,10 +433,10 @@ Baking` app should display also a `0` on the screen, which is the highest block
 level baked so far (`0` in case of no blocks). The `Tezos Wallet` app will just
 display `Tezos`.
 
-## Registering the Ledger with the node
+## Registering the Ledger Nano S with the node
 
 For the remainder of this document, we assume you have a Tezos node running and
-`tezos-client` installed. Also, Docker has some issues working with the ledger,
+`tezos-client` installed. Also, Docker has some issues working with the Ledger Nano S,
 so unless you're willing to troubleshoot them, we don't recommend it.
 
 Currently there are two other ways to do this:
@@ -454,7 +454,7 @@ We can call the network at large "Tezos." Tezos consists of a bunch of nodes,
 one of which is yours. Your node can be thought of as your gateway to the wider
 network.
 
-You can't do anything with the Ledger without using `tezos-client`. Tezos-client
+You can't do anything with the Ledger Nano S without using `tezos-client`. Tezos-client
 is the program you use to access information about the network,
 which you ultimately get through your node. See the
 [command documentation](http://doc.tzalpha.net/api/cli-commands.html)
@@ -465,7 +465,7 @@ In summary:
 * Tezos is the network
 * We connect to the network through a node
 * We access that node through tezos-client
-* We store our client's keys on the ledger
+* We store our client's keys on the ledger device
 
 Note that `tezos-client` will not only not support certain commands unless the node is installed,
 but the error messages for those commands will not even indicate that those commands are possible.
@@ -476,29 +476,29 @@ running.
 
 Every Ledger generates public and private keys for `ed25519`, `secp256k1`, or
 `P-256` encryption systems based on a seed (represented by and encoded in
-the words associated with that Ledger) and a BIP32 ("hierarchical deterministic
+the words associated with that Ledger device) and a BIP32 ("hierarchical deterministic
 wallet") path.
 
 The same seed and BIP32 path will always result in the same key for the same
 systems. This means that, to keep your Bitcoin app from knowing your Tezos keys,
-and vice versa, different BIP32 paths have to be used for the same Ledger. This
-also means that, in order to sync two ledgers, you can set them to the same
+and vice versa, different BIP32 paths have to be used for the same Ledger device. This
+also means that, in order to sync two Ledger devices, you can set them to the same
 seed, represented as 24 or some other number of natural language words (English
 by default).
 
 All Tezos BIP32 paths begin with `44'/1729'` (the `'` indicates it is
-"hardened").  Which Ledger is intended to be used, as well as choice of
+"hardened").  Which Ledger device is intended to be used, as well as choice of
 encryption system, is indicated by a root key hash, the Tezos-specific base58
-encoding of the hash of the public key at `44'/1729'` on that Ledger. Because
+encoding of the hash of the public key at `44'/1729'` on that Ledger device. Because
 all Tezos paths start with this, in `tezos-client` commands it is implied.
 
-### Importing the key from the Ledger
+### Importing the key from the Ledger Nano S
 
 This section must be done regardless of whether you're going to be baking or
 only using the Tezos Wallet application.
 
 Please run, with a Tezos app (either Tezos Baking or Tezos Wallet will do) open
-on your Ledger:
+on your Ledger Nano S:
 
 ```
 $ tezos-client list connected ledgers
@@ -530,7 +530,7 @@ encryption system (`ed25519`, `secp256k1`, or P-256). The second three show you
 examples of how to append a BIP32 path to the root key to construct a new
 address.
 
-The Ledger does not currently support non-hardened path components. All
+The Ledger Nano Sdoes not currently support non-hardened path components. All
 components of all paths must be hardened, which is indicated by following them
 with a `'` character. This character may need to be escaped from the shell
 through backslashes `\` or double-quotes `"`.
@@ -573,7 +573,7 @@ this.
 ## Using the Tezos Wallet application
 
 This application and the Tezos Baking Application constitute complementary apps
-for different use cases -- which could be on paired Ledgers and therefore use
+for different use cases -- which could be on paired Ledger hardware wallets and therefore use
 the same key, or which could also be used in different scenarios for different
 accounts. Baking is rejected by this app.
 
@@ -671,12 +671,12 @@ someone.
 
 ### Delegation
 
-If you want to delegate tez controlled by a Ledger account to another account to
+If you want to delegate tez controlled by a Ledger Nano S to another account to
 bake, that requires the Wallet App. This is distinct from registering the Ledger
 account itself to bake, which is also called "delegation," and which is covered
 in the section on the baking app below.
 
-To delegate tez controlled by a Ledger to someone else,
+To delegate tez controlled by a Ledger Nano S to someone else,
 you must first originate an account. Please read more
 about this in the Tezos document, [How to bake on the
 alphanet](http://doc.tzalpha.net/introduction/alphanet.html#how-to-bake-on-the-alphanet), to
@@ -694,7 +694,7 @@ $ tezos-client originate account <NEW> for <MGR> transferring <QTY> from <SRC> -
   * `QTY` is the initial amount of tez to give to the originated account.
   * `SRC` is the account where you'll be getting the tez from.
 
-Subsequently, every transaction made with `<NEW>` will require the Ledger mentioned in `<MGR>`
+Subsequently, every transaction made with `<NEW>` will require the Ledger Nano S mentioned in `<MGR>`
 to sign it. This is done with the wallet application, and includes setting a delegate with:
 
 ```
@@ -713,14 +713,14 @@ The Tezos Baking Application supports 3 operations:
 
 It will only sign block headers and endorsements, as the purpose of the baking
 app is that it cannot be co-opted to perform other types of operations (like
-transferring XTZ). If a Ledger is running with the Tezos Baking Application, it
+transferring XTZ). If a Ledger device is running with the Tezos Baking Application, it
 is the expectation of its owner that no transactions will need to be signed with
-it. To sign transactions with that Ledger, you will need to switch it to using
+it. To sign transactions with that Ledger device, you will need to switch it to using
 the Tezos Wallet application, or have the Tezos Wallet application installed on
 a paired Ledger. Therefore, if you have a larger stake and bake frequently, we
 recommend the paired Ledger approach. If, however, you bake infrequently and can
 afford to have your baker offline temporarily, then switching to the Tezos
-Wallet application on the same Ledger should suffice.
+Wallet application on the same Ledger device should suffice.
 
 
 ### Start the baking daemon
@@ -752,7 +752,7 @@ You need to run a specific command to authorize a key for baking. Once a key is
 authorized for baking, the user will not have to approve this command again. If
 a key is not authorized for baking, signing endorsements and block headers with
 that key will be rejected. This authorization data is persisted across runs of
-the application.  Only one key can be authorized for baking per Ledger at a
+the application.  Only one key can be authorized for baking per Ledger device at a
 time.
 
 In order to authorize a public key for baking, you can do either of the
@@ -766,7 +766,7 @@ following:
     $ tezos-client authorize ledger to bake for <SIGNATURE>
     ```
 
-    This only authorizes the key for baking on the Ledger, but does
+    This only authorizes the key for baking on the Ledger Nano S, but does
     not inform the blockchain of your intention to bake. This might
     be necessary if you re-install the app, or if you have a different
     paired Ledger that you are using to bake for the first time.
@@ -775,12 +775,12 @@ following:
 
 ### Registering as a Delegate
 
-In order to bake from the ledger account you need to register the key as a
+In order to bake from the Ledger account you need to register the key as a
 delegate. This is formally done by delegating the account to itself. As a
-non-originated account, an account directly stored on the Ledger can only
+non-originated account, an account directly stored on the Ledger device can only
 delegate to itself.
 
-Open the Tezos Baking Application on the Ledger, and then run this:
+Open the Tezos Baking Application on the Ledger Nano S, and then run this:
 
 ```
 $ tezos-client register key ledger_<...>_ed_0_0 as delegate
@@ -791,7 +791,7 @@ bake with this key. It can be signed with either the Wallet App or the Baking
 App, but if you sign it with the Baking App, it also implies to the Ledger
 that you want to authorize that key for baking on the Ledger as well.
 
-Authorizing a key for baking on a specific Ledger and authorizing it for
+Authorizing a key for baking on a specific Ledger device and authorizing it for
 baking in general on the blockchain are two distinct authorizations. This
 command will do both of them if signed with the appropriate baking app,
 whereas the `authorize ledger` command in the previous section will
@@ -805,10 +805,10 @@ $ tezos-client set delegate for ledger_<...>_ed_0_0 to ledger_<...>_ed_0_0
 ```
 
 The Baking App only signs self-delegations; the Wallet App is needed to sign
-delegations of originated accounts controlled by a Ledger. The Baking App
+delegations of originated accounts controlled by a Ledger hardware wallet. The Baking App
 also only signs delegations with fees less than 0.05 ꜩ; to sign those with
 more, you must use the Wallet App to authorize baking for the blockchain,
-and the command in the previous section to authorize baking for the Ledger,
+and the command in the previous section to authorize baking for the Ledger Nano S,
 which is always available as an alternative to signing this with the Baking App.
 
 ### Sign
@@ -816,16 +816,16 @@ which is always available as an alternative to signing this with the Baking App.
 The sign operation is for signing block headers and endorsements.
 
 Block headers must have monotonically strictly increasing levels; that is, each
-block must have a higher level than all previous blocks signed with the Ledger.
+block must have a higher level than all previous blocks signed with the Ledger device.
 This is intended to prevent double baking at the Ledger level, as a security
 measure against potential vulnerabilities where the computer might be tricked
 into double baking. This feature will hopefully be a redundant precaution, but
-it's implemented at the Ledger level because the point of the Ledger is to not
+it's implemented at the Ledger level because the point of the Ledger Nano S is to not
 trust the computer. The current High Water Mark (HWM) -- the highest level to
-have been baked so far -- is displayed on the Ledger screen, and is also
+have been baked so far -- is displayed on the Ledger device screen, and is also
 persisted between runs of the device.
 
-The sign operation will be sent to the Ledger by the baking daemon when
+The sign operation will be sent to the Ledger device by the baking daemon when
 configured to bake with a Ledger key. The Ledger uses the first byte of the
 information to be signed -- the magic number -- to tell whether it is a block
 header (which is verified with the High Water Mark), an endorsement (which is
@@ -839,10 +839,10 @@ attempt at signing; this operation is designed to be used unsupervised.
 
 As mentioned, the only exception to this is self-delegation. This will prompt
 and display the public key hash of the account. This will authorize the key for
-baking on the ledger. This is independent of what the signed self-delegation
-will then do on the blockchain. If you are baking on a new ledger, or have
+baking on the Ledger. This is independent of what the signed self-delegation
+will then do on the blockchain. If you are baking on a new Ledger Nano S, or have
 reinstalled the app, you might have to sign a self-delegation to authorize the
-key on the ledger, even if you are already registered for baking on the
+key on the Ledger Nano S, even if you are already registered for baking on the
 block-chain. This will also have to be done if you have previously signed this
 with the wallet app.
 
@@ -875,7 +875,7 @@ Ledger's high water mark is, you can run:
 
 When you want to upgrade to a new version, whether you built it yourself from source
 or whether it's a new release of the `app.hex` files, use the same commands as you did
-to originally install it. As the keys are generated from the Ledger's seeds and the
+to originally install it. As the keys are generated from the Ledger device's seed and the
 derivation paths, you will have the same keys with every version of this Ledger app,
 so there is no need to re-import the keys with `tezos-client`.
 
@@ -895,7 +895,7 @@ You can also set the High Water Mark to the level of the most recently baked blo
 tezos-client set ledger high water mark for "ledger://<tz...>/" to <HWM>
 ```
 
-This will require the correct URL for the Ledger acquired from:
+This will require the correct URL for the Ledger Nano S acquired from:
 
 ```
 tezos-client list connected ledgers
@@ -910,7 +910,7 @@ $ client/bin/tezos-client list connected ledgers
 Fatal error:                                                                                                                                        Header.check: unexpected seq num
 ```
 
-This means you do not have the Tezos app open on your Ledger.
+This means you do not have the Tezos app open on your Ledger Nano S.
 
 ### No device found
 
