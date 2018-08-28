@@ -308,6 +308,7 @@ virtual env. To have a new terminal session enter the virtualenv, run the above
 
 ### ledgerblue
 
+ALthough we do not yet support Ledger Blue, you must still install the following python package. 
 Within the virtualenv environment -- making sure that `(ledger)` is showing up
 before your prompt -- use pip to install the `ledgerblue`
 [Python package](https://pypi.org/project/ledgerblue/).
