@@ -530,7 +530,7 @@ encryption system (`ed25519`, `secp256k1`, or P-256). The second three show you
 examples of how to append a BIP32 path to the root key to construct a new
 address.
 
-The Ledger Nano Sdoes not currently support non-hardened path components. All
+The Ledger Nano S does not currently support non-hardened path components. All
 components of all paths must be hardened, which is indicated by following them
 with a `'` character. This character may need to be escaped from the shell
 through backslashes `\` or double-quotes `"`.
