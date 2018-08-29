@@ -81,7 +81,7 @@ More advanced techniques for those interested in even more layers of security
 or plausible deniability features should look at the
 [Ledger's documentation on this](https://support.ledgerwallet.com/hc/en-us/articles/115005214529-Advanced-Passphrase-options).
 
-Note that Ledger hardeware wallets with different seeds will appear to `tezos-client` to be
+Note that Ledger hardware wallets with different seeds will appear to `tezos-client` to be
 different Ledgers. Note also that it can change what key is authorized in
 the Baking App. When using these features in a Ledger device used for baking,
 please exit and re-start the Baking App right before baking is supposed to
