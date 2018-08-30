@@ -110,8 +110,11 @@ advanced features in it. In this case, it displays a special prompt:
 ordinary transactions and delegations, but may happen in the presence
 of optional information like fields that will be sent to contracts or
 smart contract originations. If you are not using these features, you
-should reject the transaction.  You should only approve it if you are
+should reject the transaction. You should only approve it if you are
 using these features, and are confident in your computer's security.
+Among advanced features is included non-zero storage limits. This
+is because storage limits can cost additional tez, and so we want
+to make sure that users are not surprised by these additional costs.
 
 The wallet app also allows the signing of prehashed data, which it will
 not be able to parse. In this situation, it will display "Pre-hashed
