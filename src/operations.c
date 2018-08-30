@@ -147,7 +147,7 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
         out.total_fee += PARSE_Z(data, &ix, length); // fee
         PARSE_Z(data, &ix, length); // counter
         PARSE_Z(data, &ix, length); // gas limit
-        PARSE_Z(data, &ix, length); // storage limit
+        if (PARSE_Z(data, &ix, length) != 0) PARSE_ERROR(); // storage limit
 
         enum operation_tag tag = hdr->tag;
         if (!is_operation_allowed(ops, tag)) PARSE_ERROR();
