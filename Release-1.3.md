@@ -1,4 +1,4 @@
-# Version 0.1.3 of the Tezos Wallet and Baking Applications for Ledger Nano S
+# Version 1.3 of the Tezos Wallet and Baking Applications for Ledger Nano S
 
 ## Release Highlights
 
