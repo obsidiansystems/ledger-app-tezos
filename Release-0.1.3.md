@@ -6,7 +6,7 @@
 - [x] Transactions now display with: source, destination, amount and fee
 - [x] Delegations now display with: source, delegate, amount and fee
 - [x] Account originations now display with: source, manager, fee, amount and delegation
-- [x] Support for browser access through U2F: no need to enable or disable browser support in the app
+- [x] Support for browser access through U2F
 
 In addition to the improved user experience, these changes are important security enablers, as it
 can help a cautious user protect against a certain type of attack. There are also instances where the Ledger device will not display operation information listed above. See more details below.
@@ -143,9 +143,9 @@ adjusted to reflect the success of these operations.
 You'll be communicating with the ledger OS, not one of the Tezos Applications.
 
 ## Baking Application -- Release Details
-The new baking app extends the concept of the high watermark to
+The new version of the Baking Application extends the concept of the high watermark to
 endorsements as well as block headers, as a precaution against double
-baking. No block header or endorsement will be signed at a lower block
+baking and double endorsing. No block header or endorsement will be signed at a lower block
 level than a previous block or endorsement. Furthermore, only one block
 and one endorsement is allowed at each level, and the block must come
 before the endorsement. Both block headers and endorsements are
@@ -158,10 +158,11 @@ level, only one endorsement will actually need to be signed, and you
 will receive the reward for all the endorsement slots at that level.
 
 As before, you may reset the high watermark with a reset command
-(`tezos-client set ledger high watermark`), which will prompt. Legitimate
-reason to change the high watermark include switching to a test network
-at a different block level or restoring a baker after an attacker or
-software error caused a block to be signed with too high a level.
+(`tezos-client set ledger high watermark for <uri> to <high watermark>`), which 
+will prompt "Reset HWM" and the new value. Legitimate reasons to change the high 
+watermark include switching to a test network at a different block level or 
+restoring a baker after an attacker or software error caused a block to be signed 
+with too high a level.
 
 ## Acknowledgements
 
