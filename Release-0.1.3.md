@@ -1,29 +1,29 @@
-# Version 0.1.3 of the Tezos Wallet and Baking Apps for Ledger
+# Version 0.1.3 of the Tezos Wallet and Baking Applications for Ledger Nano S
 
 ## Release Highlights
 
-### Ledger Wallet App
+### Ledger Nano S Wallet Application
 - [x] Transactions now display with: source, destination, amount and fee
 - [x] Delegations now display with: source, delegate, amount and fee
 - [x] Account originations now display with: source, manager, fee, amount and delegation
-- [x] Support for browser access through U2F: no need to enable or disable browser support in the app
+- [x] Support for browser access through U2F
 
 In addition to the improved user experience, these changes are important security enablers, as it
-can help a cautious user protect against a certain type of attack. See more details below.
+can help a cautious user protect against a certain type of attack. There are also instances where the Ledger device will not display operation information listed above. See more details below.
 
-### Ledger Baking App
+### Ledger Nano S Baking Application
 - [x] High watermark feature extended to protect against double-endorsing as well as double-baking.
 
-## Ledger Wallet App -- Release Details
+## Ledger Nano S Wallet Application -- Release Details
 ### Operation Display
-The new version of the wallet app will display certain fields of most
+The new version of the Wallet App will display certain fields of most
 transactions, delegations, and account origination in the prompt where
 the user is asked to approve or reject the delegation. In addition to the
 improved user experience, this is an important security improvement, as it
 can help a cautious user protect against a certain type of attack. Without
 this measure, an attacker with control over your computer can replace a
 legitimate transaction with a falsified transaction, which could send
-any amount of tez from any wallet on the ledger (with any derivation
+any amount of tez from any wallet on the Ledger hardware wallet (with any derivation
 path) to the attacker, and the user would approve it thinking it was the
 transaction they intended. The security benefit is only realized if the
 user manually verifies the relevant fields.
@@ -124,21 +124,31 @@ confident in your computer's security. Pre-hashed data is not
 exposed as a feature in `tezos-client`, and can only be sent
 manually. Most users will never need to use this feature.
 
-### Browser Support (Not Yet Implemented Client-Side)
+### U2F Support
 
-As of yet, the Tezos web wallet implementations do not support the
-Ledger. However, for future web wallet implementations, the wallet app
-also adds support for browser access through U2F, so no upgrade will be
-required when web wallets start supporting the ledger.  Unlike previous
-ledger apps, the ledger now supports browsers transparently. There
-is no need to enable or disable browser support in the app itself to
-communicate with web wallets vs non-web wallets; the app seamlessly
-allows both protocols without a mode switch.
+The Wallet Application now supports U2F protocol, the standard method for enabling 
+browser access by 3rd party wallet providers for all tokens. Recent versions 
+of Ledger Nano S firmware (v1.4.1+) allow us to support browsers seamlessly without the need 
+to toggle it in settings; the app will automatically detect which protocol is 
+being used.
 
-## Ledger Baking App -- Release Details
-The new baking app extends the concept of the high watermark to
+#### APDU level error: Unexpected sequence number (expect 0, got 191)
+
+As a side effect of adding U2F support, users will see this error when sending operations 
+to the Wallet Application. There are two situations where this error will fire:
+
+* If you send an operation to the Tezos Wallet Application. `tezos-client` might interpret 
+the presence of U2F support as a sequence number error, but it will recover from this error 
+and successfully be able to communicate with the device over APDU protocol. In our experience, 
+the operation always succeeds despite this error. We intend to have the error message from `tezos-client`
+adjusted to reflect the success of these operations.
+* If you send an operation to the Ledger device and neither Tezos Application is open. 
+You'll be communicating with the ledger OS, not one of the Tezos Applications.
+
+## Baking Application -- Release Details
+The new version of the Baking Application extends the concept of the high watermark to
 endorsements as well as block headers, as a precaution against double
-baking. No block header or endorsement will be signed at a lower block
+baking and double endorsing. No block header or endorsement will be signed at a lower block
 level than a previous block or endorsement. Furthermore, only one block
 and one endorsement is allowed at each level, and the block must come
 before the endorsement. Both block headers and endorsements are
@@ -151,12 +161,13 @@ level, only one endorsement will actually need to be signed, and you
 will receive the reward for all the endorsement slots at that level.
 
 As before, you may reset the high watermark with a reset command
-(`tezos-client set ledger high watermark`), which will prompt. Legitimate
-reason to change the high watermark include switching to a test network
-at a different block level or restoring a baker after an attacker or
-software error caused a block to be signed with too high a level.
+(`tezos-client set ledger high watermark for <uri> to <high watermark>`), which 
+will prompt "Reset HWM" and the new value. Legitimate reasons to change the high 
+watermark include switching to a test network at a different block level or 
+restoring a baker after an attacker or software error caused a block to be signed 
+with too high a level.
 
 ## Acknowledgements
 
 Thank you to everyone in the tezos-baking Slack channel, especially Tom
-Knudsen, for their testing and bug reports.
+Knudsen and Tom Jack, for their testing and bug reports.
