@@ -2,6 +2,7 @@
 
 #include "apdu.h"
 #include "base58.h"
+#include "blake2.h"
 #include "keys.h"
 
 #include <string.h>
@@ -64,6 +65,33 @@ int pkh_to_string(char *buff, uint32_t buff_size, cx_curve_t curve, const uint8_
         default:
             THROW(EXC_WRONG_PARAM); // Should not reach
     }
+
+    // hash
+    memcpy(data.hash, hash, sizeof(data.hash));
+
+    // checksum -- twice because them's the rules
+    uint8_t checksum[32];
+    cx_hash_sha256((void*)&data, sizeof(data) - sizeof(data.checksum), checksum, sizeof(checksum));
+    cx_hash_sha256(checksum, sizeof(checksum), checksum, sizeof(checksum));
+    memcpy(data.checksum, checksum, sizeof(data.checksum));
+
+    b58enc(buff, &buff_size, &data, sizeof(data));
+    return buff_size;
+}
+
+int expr_hash_to_string(char *buff, uint32_t buff_size, const uint8_t hash[EXPR_HASH_SIZE]) {
+    // Data to encode
+    struct __attribute__((packed)) {
+        char prefix[4];
+        uint8_t hash[EXPR_HASH_SIZE];
+        char checksum[4];
+    } data;
+
+    // prefix (expr)
+    data.prefix[0] = 13;
+    data.prefix[1] = 44;
+    data.prefix[2] = 64;
+    data.prefix[3] = 27;
 
     // hash
     memcpy(data.hash, hash, sizeof(data.hash));

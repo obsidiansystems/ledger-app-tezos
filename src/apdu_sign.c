@@ -157,6 +157,41 @@ const char *const insecure_values[] = {
 
 #define MAX_NUMBER_CHARS (MAX_INT_DIGITS + 2) // include decimal point and terminating null
 
+static void prompt_expr(cx_curve_t curve, size_t bip32_path_length, uint32_t *bip32_path) {
+    check_null(message_data);
+    check_null(bip32_path);
+
+    // get signer key
+    struct key_pair *pair = generate_key_pair(curve, bip32_path_length, bip32_path);
+    os_memset(&pair->private_key, 0, sizeof(pair->private_key));
+
+    // finish hashing expression, in place (for display and signing)
+
+    uint8_t hash[SIGN_HASH_SIZE];
+    hash_buffer();
+    finish_hashing(hash, sizeof(hash));
+    memmove(message_data, hash, sizeof(hash));
+    message_data_length = sizeof(hash);
+
+    const char *const expr_prompts[] = {
+        "Sign",
+        "Signer",
+        "Hash",
+        NULL,
+    };
+    static const uint32_t TYPE_INDEX = 0;
+    static const uint32_t SIGNER_INDEX = 1;
+    static const uint32_t EXPR_HASH_INDEX = 2;
+
+    strcpy(get_value_buffer(TYPE_INDEX), "Expression");
+    // ignoring return values...
+    pubkey_to_pkh_string(get_value_buffer(SIGNER_INDEX), VALUE_WIDTH, curve, &pair->public_key);
+    expr_hash_to_string(get_value_buffer(EXPR_HASH_INDEX), VALUE_WIDTH, hash);
+
+    // sign_unsafe_ok because we already hashed
+    ui_prompt(expr_prompts, NULL, sign_unsafe_ok, sign_reject);
+}
+
 // Return false if the transaction isn't easily parseable, otherwise prompt with given callbacks
 // and do not return, but rather throw ASYNC.
 static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
@@ -334,8 +369,9 @@ uint32_t wallet_sign_complete(uint8_t instruction) {
                     goto unsafe;
                 }
             case MAGIC_BYTE_UNSAFE_OP2:
-            case MAGIC_BYTE_UNSAFE_OP3:
                 goto unsafe;
+            case MAGIC_BYTE_UNSAFE_OP3:
+                prompt_expr(curve, bip32_path_length, bip32_path);
         }
 unsafe:
         ui_prompt(parse_fail_prompts, insecure_values, sign_ok, sign_reject);

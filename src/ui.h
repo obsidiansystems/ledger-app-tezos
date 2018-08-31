@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 #include "keys.h"
+#include "to_string.h"
 
 typedef bool (*callback_t)(void); // return true to go back to idle screen
 

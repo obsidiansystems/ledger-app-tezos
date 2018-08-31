@@ -4,7 +4,8 @@
 
 #define MAX_SCREEN_COUNT 6 // Current maximum usage
 #define PROMPT_WIDTH 25
-#define VALUE_WIDTH PKH_STRING_SIZE
+// what are the implications of making this bigger?
+#define VALUE_WIDTH EXPR_STRING_SIZE
 
 // Displays labels (terminated with a NULL pointer) associated with data
 // If data is NULL, assume we've filled it in directly with get_value_buffer
