@@ -71,7 +71,7 @@ static inline uint64_t parse_z(const void *data, size_t *ix, size_t length, uint
     uint64_t acc = 0;
     uint64_t shift = 0;
     while (true) {
-        uint8_t byte = next_byte(data, ix, length, lineno);
+        uint64_t byte = next_byte(data, ix, length, lineno);
         acc |= (byte & 0x7F) << shift;
         shift += 7;
         if (!(byte & 0x80)) {
