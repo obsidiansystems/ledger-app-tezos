@@ -934,6 +934,18 @@ tezos-client list connected ledgers
 
 ## Troubleshooting
 
+### Two Ledger Devices at the Same Time
+
+Two Ledger devices with the same seed should not ever be plugged in at the same time. This confuses
+`tezos-client` and other client programs. Instead, you should plug only one of a set of paired
+ledgers at a time. Two Ledger devices of different seeds are fine and are fully supported,
+and the computer will automatically determine which one to send information to.
+
+If you have one running the baking app, it is bad for security to also have the wallet app
+plugged in simultaneously. Plug the wallet app in as-needed, removing the baking app, at a time
+when you are not going to be needed for endorsement or baking. Alternatively, use a different
+computer for wallet transactions.
+
 ### unexpected seq num
 
 ```
