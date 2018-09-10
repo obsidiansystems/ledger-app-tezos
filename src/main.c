@@ -18,7 +18,7 @@
 #include "apdu.h"
 #include "apdu_pubkey.h"
 #include "apdu_sign.h"
-#include "apdu_reset.h"
+#include "apdu_baking.h"
 
 void *stack_root;
 
@@ -38,6 +38,7 @@ void app_main(void) {
 #ifdef BAKING_APP
     handlers[INS_AUTHORIZE_BAKING] = handle_apdu_get_public_key;
     handlers[INS_RESET] = handle_apdu_reset;
+    handlers[INS_QUERY_AUTH_KEY] = handle_apdu_query_auth_key;
     handlers[INS_QUERY_HWM] = handle_apdu_hwm;
 #endif
     handlers[INS_SIGN] = handle_apdu_sign;

@@ -5,8 +5,8 @@
 #endif
 
 #define MAJOR 1
-#define MINOR 3
-#define PATCH 2
+#define MINOR 4
+#define PATCH 0
 
 typedef struct version {
     uint8_t class;

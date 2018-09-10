@@ -1,6 +1,6 @@
 #include "apdu.h"
 #include "baking_auth.h"
-#include "apdu_reset.h"
+#include "apdu_baking.h"
 #include "cx.h"
 #include "os.h"
 #include "protocol.h"
@@ -67,4 +67,18 @@ uint32_t send_word_big_endian(uint32_t word) {
 unsigned int handle_apdu_hwm(__attribute__((unused)) uint8_t instruction) {
     level_t level = N_data.highest_level;
     return send_word_big_endian(level);
+}
+
+unsigned int handle_apdu_query_auth_key(__attribute__((unused)) uint8_t instruction) {
+    uint32_t tx = 0;
+
+    uint8_t length = N_data.path_length;
+    G_io_apdu_buffer[tx++] = length;
+
+    uint32_t copy_size = length * sizeof(*N_data.bip32_path);
+    memcpy(&G_io_apdu_buffer[tx], N_data.bip32_path, copy_size);
+    tx += copy_size;
+    G_io_apdu_buffer[tx++] = 0x90;
+    G_io_apdu_buffer[tx++] = 0x00;
+    return tx;
 }
