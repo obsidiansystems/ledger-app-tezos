@@ -21,7 +21,8 @@
 #define OFFSET_CDATA 5
 
 #define INS_VERSION 0x00
-#define INS_MAX 0x09
+#define INS_GIT 0x09
+#define INS_MAX 0x0A
 
 // Return number of bytes to transmit (tx)
 typedef uint32_t (*apdu_handler)(uint8_t instruction);
@@ -53,6 +54,7 @@ static inline void require_hid(void) {
 
 uint32_t handle_apdu_error(uint8_t instruction);
 uint32_t handle_apdu_version(uint8_t instruction);
+uint32_t handle_apdu_git(uint8_t instruction);
 
 extern uint32_t app_stack_canary;
 
