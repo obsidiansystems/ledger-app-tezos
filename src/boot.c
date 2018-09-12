@@ -57,5 +57,10 @@ __attribute__((section(".boot"))) int main(void) {
         END_TRY;
     }
 
-    exit_app(); // Only reached in case of uncaught exception
+    // Only reached in case of uncaught exception
+#ifdef BAKING_APP
+    io_seproxyhal_power_off(); // Should not be allowed dashboard access
+#else
+    exit_app();
+#endif
 }
