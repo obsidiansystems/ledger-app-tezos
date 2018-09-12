@@ -191,8 +191,8 @@ take effect.
 If you are using the [Nix package manager](https://nixos.org/nix/), you can skip
 this section and the next one; go directly to
 [Tezos baking platform](https://gitlab.com/obsidian.systems/tezos-baking-platform)
-for simpler Nix-based installation. Then return to this document and continue
-reading at *Using the Ledger Nano S apps*.
+for simpler Nix-based installation, where documentation should be in `ledger/BUILDING.md`.
+Then return to this document and continue reading at *Using the Ledger Nano S apps*.
 
 The easiest way to obtain the Tezos Ledger Nano S apps is to download the `.hex` files
 from the [releases](https://github.com/obsidiansystems/ledger-app-tezos/releases)
