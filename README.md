@@ -934,6 +934,15 @@ tezos-client list connected ledgers
 
 ## Troubleshooting
 
+### Display Debug Logs
+
+If you are worried about bugs, you should configure your system to display debug logs. Add the
+following line to `~/.bashrc` and to `~/.bash_profile`:
+
+```
+export TEZOS_LOG="client.signer.ledger -> debug"
+```
+
 ### Two Ledger Devices at the Same Time
 
 Two Ledger devices with the same seed should not ever be plugged in at the same time. This confuses
