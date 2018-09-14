@@ -23,6 +23,13 @@ static uint32_t timeout_cycle_count;
 static char idle_text[16];
 char baking_auth_text[PKH_STRING_SIZE];
 
+void require_pin(void) {
+    bolos_ux_params_t params;
+    memset(&params, 0, sizeof(params));
+    params.ux_id = BOLOS_UX_VALIDATE_PIN;
+    os_ux_blocking(&params);
+}
+
 const bagl_element_t ui_idle_screen[] = {
     // type                               userid    x    y   w    h  str rad
     // fill      fg        bg      fid iid  txt   touchparams...       ]
@@ -122,6 +129,8 @@ void change_idle_display(uint32_t new) {
 void ui_initial_screen(void) {
 #ifdef BAKING_APP
     change_idle_display(N_data.highest_level);
+#else
+    require_pin();
 #endif
     ui_idle();
 }
@@ -261,10 +270,7 @@ void io_seproxyhal_display(const bagl_element_t *element) {
 __attribute__((noreturn))
 bool exit_app(void) {
 #ifdef BAKING_APP
-    bolos_ux_params_t params;
-    memset(&params, 0, sizeof(params));
-    params.ux_id = BOLOS_UX_VALIDATE_PIN;
-    os_ux_blocking(&params);
+    require_pin();
 #endif
     BEGIN_TRY_L(exit) {
         TRY_L(exit) {
