@@ -48,7 +48,7 @@ static inline bool delay_reject(void) {
 
 static inline void require_hid(void) {
     if (G_io_apdu_media != IO_APDU_MEDIA_USB_HID) {
-       THROW(EXC_SECURITY);
+       THROW(EXC_HID_FORBIDDEN);
     }
 }
 

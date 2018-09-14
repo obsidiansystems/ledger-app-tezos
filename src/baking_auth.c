@@ -62,9 +62,9 @@ void guard_baking_authorized(cx_curve_t curve, void *data, int datalen, uint32_t
     if (!is_path_authorized(curve, bip32_path, path_length)) THROW(EXC_SECURITY);
 
     struct parsed_baking_data baking_info;
-    if (!parse_baking_data(data, datalen, &baking_info)) THROW(EXC_SECURITY);
+    if (!parse_baking_data(data, datalen, &baking_info)) THROW(EXC_PARSE_ERROR);
 
-    if (!is_level_authorized(baking_info.level, baking_info.is_endorsement)) THROW(EXC_SECURITY);
+    if (!is_level_authorized(baking_info.level, baking_info.is_endorsement)) THROW(EXC_WRONG_VALUES);
 }
 
 void update_high_water_mark(void *data, int datalen) {
