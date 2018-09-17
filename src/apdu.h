@@ -22,7 +22,7 @@
 
 #define INS_VERSION 0x00
 #define INS_GIT 0x09
-#define INS_MAX 0x0A
+#define INS_MAX 0x0B
 
 // Return number of bytes to transmit (tx)
 typedef uint32_t (*apdu_handler)(uint8_t instruction);

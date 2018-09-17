@@ -90,12 +90,24 @@ void update_auth_text(void) {
 static char address_display_data[VALUE_WIDTH];
 
 static const char *const pubkey_labels[] = {
-    "Your",
+    "Provide",
     "Public Key Hash",
     NULL,
 };
 
 static const char *const pubkey_values[] = {
+    "Public Key",
+    address_display_data,
+    NULL,
+};
+
+static const char *const your_address_labels[] = {
+    "Your",
+    "Public Key Hash",
+    NULL,
+};
+
+static const char *const your_address_values[] = {
     "Address",
     address_display_data,
     NULL,
@@ -103,8 +115,8 @@ static const char *const pubkey_values[] = {
 
 #ifdef BAKING_APP
 static const char *const baking_labels[] = {
-    "Authorize baking",
-    "Public Key",
+    "Authorize Baking",
+    "Public Key Hash",
     NULL,
 };
 
@@ -126,11 +138,12 @@ void prompt_contract_for_baking(struct parsed_contract *contract, callback_t ok_
 
 void prompt_address(
 #ifndef BAKING_APP
-    __attribute__((unused))
+        __attribute__((unused))
 #endif
-    bool baking,
-                    cx_curve_t curve, const cx_ecfp_public_key_t *key, callback_t ok_cb,
-                    callback_t cxl_cb) {
+        bool baking,
+        bool prompt_your_address,
+        cx_curve_t curve, const cx_ecfp_public_key_t *key, callback_t ok_cb,
+        callback_t cxl_cb) {
     if (!pubkey_to_pkh_string(address_display_data, sizeof(address_display_data), curve, key)) {
         THROW(EXC_WRONG_VALUES);
     }
@@ -140,7 +153,11 @@ void prompt_address(
         ui_prompt(baking_labels, baking_values, ok_cb, cxl_cb);
     } else {
 #endif
-        ui_prompt(pubkey_labels, pubkey_values, ok_cb, cxl_cb);
+        if (prompt_your_address) {
+            ui_prompt(your_address_labels, your_address_values, ok_cb, cxl_cb);
+        } else {
+            ui_prompt(pubkey_labels, pubkey_values, ok_cb, cxl_cb);
+        }
 #ifdef BAKING_APP
     }
 #endif
