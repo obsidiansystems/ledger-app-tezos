@@ -90,13 +90,13 @@ void update_auth_text(void) {
 static char address_display_data[VALUE_WIDTH];
 
 static const char *const pubkey_labels[] = {
-    "Provide",
-    "Public Key",
+    "Your",
+    "Public Key Hash",
     NULL,
 };
 
 static const char *const pubkey_values[] = {
-    "Public Key?",
+    "Address",
     address_display_data,
     NULL,
 };
