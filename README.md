@@ -937,11 +937,23 @@ tezos-client list connected ledgers
 ### Display Debug Logs
 
 If you are worried about bugs, you should configure your system to display debug logs. Add the
-following line to `~/.bashrc` and to `~/.bash_profile`:
+following line to `~/.bashrc` and to `~/.bash_profile`, or set the equivalent environnment
+variable in whatever system you use to launch your daemons:
 
 ```
 export TEZOS_LOG="client.signer.ledger -> debug"
 ```
+
+If you have a bug report, it is far more likely we'll be able to fix it if you include the
+entire output of the transaction, including debug messages enabled by that command above.
+Please copy and paste the entire run of the command (for `tezos-client`) or everything
+involving the failed block level and the previous one (for baking); if you need to anonymize
+the PKH then please do so by using `XXX` or similar rather than by removing those entire lines.
+We need as much context as possible to help troubleshoot.
+
+`script` is also a useful command for logging all the output of a long-running process.
+If you run `script <file-name>` it opens a new shell where everything output and typed
+is also output to that file, giving you a transcript of your terminal session.
 
 ### Two Ledger Devices at the Same Time
 
