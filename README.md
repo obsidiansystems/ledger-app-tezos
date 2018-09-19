@@ -739,7 +739,7 @@ Originated accounts have names beginning with `KT1` rather than `tz1`, `tz2` or 
 The Tezos Baking Application supports 3 operations:
 
   1. Authorize/get public key
-  2. Reset high water mark
+  2. Reset high watermark
   3. Sign
 
 It will only sign block headers and endorsements, as the purpose of the baking
@@ -852,19 +852,19 @@ This is intended to prevent double baking at the device level, as a security
 measure against potential vulnerabilities where the computer might be tricked
 into double baking. This feature will hopefully be a redundant precaution, but
 it's implemented at the device level because the point of the Ledger hardware wallet is to not
-trust the computer. The current High Water Mark (HWM) -- the highest level to
+trust the computer. The current High Watermark (HWM) -- the highest level to
 have been baked so far -- is displayed on the device's screen, and is also
 persisted between runs of the device.
 
 The sign operation will be sent to the hardware wallet by the baking daemon when
 configured to bake with a Ledger Nano S key. The Ledger device uses the first byte of the
 information to be signed -- the magic number -- to tell whether it is a block
-header (which is verified with the High Water Mark), an endorsement (which is
+header (which is verified with the High Watermark), an endorsement (which is
 not), or some other operation (which it will reject, unless it is a
 self-delegation).
 
 With the exception of self-delegations, as long as the key is configured and the
-high water mark constraint is followed, there is no user prompting required for
+high watermark constraint is followed, there is no user prompting required for
 signing. The baking app will only ever sign without prompting or reject an
 attempt at signing; this operation is designed to be used unsupervised.
 
@@ -891,16 +891,16 @@ attempted attacks or bugs, not as a day to day command. It requires an explicit
 confirmation from the user, and there is no specific utility to send this
 command. To send it manually, you can use the following command line:
 
-`tezos-client set ledger high water mark for "ledger://<tz...>/" to <HWM>`
+`tezos-client set ledger high watermark for "ledger://<tz...>/" to <HWM>`
 
-`<HWM>` indicates the new high water mark to reset to. If you are joining a new
+`<HWM>` indicates the new high watermark to reset to. If you are joining a new
 test network, `0` is a fitting number, as then all blocks will be allowed again.
 You can also set it to the most recently baked level on that test net.
 
 If you are not physically present at your computer, but are curious what the
-Ledger device's high water mark is, you can run:
+Ledger device's high watermark is, you can run:
 
-`tezos-client get ledger high water mark for "ledger://<tz...>/`
+`tezos-client get ledger high watermark for "ledger://<tz...>/"`
 
 ## Upgrading
 
@@ -913,17 +913,17 @@ so there is no need to re-import the keys with `tezos-client`.
 ### Special Upgrading Considerations for Bakers
 
 If you've already been baking on an old version of the Baking App, the new version will
-not remember which key you are baking with nor the High Water Mark. You will have to re-run
+not remember which key you are baking with nor the High Watermark. You will have to re-run
 this command to remind the hardware wallet what key you intend to authorize for baking:
 
 ```
 $ tezos-client authorize ledger to bake for <SIGNATURE>
 ```
 
-You can also set the High Water Mark to the level of the most recently baked block with:
+You can also set the High Watermark to the level of the most recently baked block with:
 
 ```
-tezos-client set ledger high water mark for "ledger://<tz...>/" to <HWM>
+tezos-client set ledger high watermark for "ledger://<tz...>/" to <HWM>
 ```
 
 This will require the correct URL for the Ledger Nano S acquired from:
