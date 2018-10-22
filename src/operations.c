@@ -141,6 +141,10 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
     const struct operation_group_header *ogh = NEXT_TYPE(struct operation_group_header);
     if (ogh->magic_byte != MAGIC_BYTE_UNSAFE_OP) PARSE_ERROR();
 
+    // Start out with source = signing, for reveals
+    // TODO: This is slightly hackish
+    memcpy(&out.operation.source, &out.signing, sizeof(out.signing));
+
     while (ix < length) {
         const struct operation_header *hdr = NEXT_TYPE(struct operation_header);
 
@@ -163,6 +167,7 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
             advance_ix(&ix, length, klen);
             if (memcmp(out.public_key.W, data + ix - klen, klen) != 0) PARSE_ERROR();
 
+            out.has_reveal = true;
             continue;
         }
 
@@ -176,9 +181,12 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
         out.operation.tag = (uint8_t)tag;
         parse_contract(&out.operation.source, &hdr->contract);
 
+        // If the source is an implicit contract,...
         if (out.operation.source.originated == 0) {
-            if (memcmp(&out.operation.source, &out.signing, sizeof(out.signing))) PARSE_ERROR();
+            // ... it had better match our key, otherwise why are we signing it?
+            if (memcmp(&out.operation.source, &out.signing, sizeof(out.signing))) return false;
         }
+        // OK, it passes muster.
 
         // This should by default be blanked out
         out.operation.delegate.curve_code = TEZOS_NO_CURVE;
@@ -238,7 +246,9 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
         }
     }
 
-    if (out.operation.tag == OPERATION_TAG_NONE) PARSE_ERROR(); // Must have one non-reveal op
+    if (out.operation.tag == OPERATION_TAG_NONE && !out.has_reveal) {
+        PARSE_ERROR(); // Must have at least one op
+    }
 
     return &out; // Success!
 }
