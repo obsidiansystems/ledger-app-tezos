@@ -535,51 +535,41 @@ on your device:
 $ tezos-client list connected ledgers
 ```
 
-The output of this command includes six Tezos addresses derived from the secret
+The output of this command includes three Tezos addresses derived from the secret
 stored on the device, via different signing curves and BIP32 paths.
 
 ```
-Found a valid Tezos application running on Ledger Nano S at [0001:0014:00].
+Oct 22 16:48:52 - client.signer.ledger: WARNING: The device at [0001:002a:01] is not a Tezos application
+Oct 22 16:48:52 - client.signer.ledger: APDU level error: Unexpected sequence number (expected 0, got 191)
+Found a Tezos Wallet 1.4.0 (commit 764625b1) application running on Ledger Nano S at [0001:002a:00].
 
-To add the root key of this ledger, use one of
-  tezos-client import secret key ledger_<...>_ed ledger://tz1Rctvczeh7WK91NfT9LUSrYJFceyhJKUQN # Ed25519 signature
-  tezos-client import secret key ledger_<...>_secp ledger://tz2EhYFRUhY4YiinHYxb7PncETZXP9BfRSPj # Secp256k1 signature
-  tezos-client import secret key ledger_<...>_p2 ledger://tz3RZ5JvhuSAg3i4qBSaoCKqXwmqhswqeNgF # P-256 signature
-Each of these tz* is a valid Tezos address.
-
-To use a derived address, add a hardened BIP32 path suffix at the end of the URI.
-For instance, to use keys at BIP32 path m/44'/1729'/0'/0', use one of
-  tezos-client import secret key ledger_<...>_ed_0_0 "ledger://tz1Rctvczeh7WK91NfT9LUSrYJFceyhJKUQN/0'/0'"
-  tezos-client import secret key ledger_<...>_secp_0_0 "ledger://tz2EhYFRUhY4YiinHYxb7PncETZXP9BfRSPj/0'/0'"
-  tezos-client import secret key ledger_<...>_p2_0_0 "ledger://tz3RZ5JvhuSAg3i4qBSaoCKqXwmqhswqeNgF/0'/0'"
-In this case, your Tezos address will be a derived tz*.
-It will be displayed when you do the import, or using command `show ledger path`.
+To use keys at BIP32 path m/44'/1729'/0'/0' (default Tezos key path), use one of
+ tezos-client import secret key ledger_jhartzell "ledger://major-squirrel-thick-hedgehog/ed25519/0'/0'"
+ tezos-client import secret key ledger_jhartzell "ledger://major-squirrel-thick-hedgehog/secp256k1/0'/0'"
+ tezos-client import secret key ledger_jhartzell "ledger://major-squirrel-thick-hedgehog/P-256/0'/0'"
 ```
 
-The first three are addressed constructed directly from the root key for each
-encryption system (`ed25519`, `secp256k1`, or P-256). The second three show you
-examples of how to append a BIP32 path to the root key to construct a new
-address.
+These show you how to import keys with a specific signing curve and derivation path. The
+animal-based name (e.g. `major-squirrel-thick-hedgehog`) is a unique identifier for your
+Ledger device, to enable the client to distinguish different Ledger devices. This is combined with
+a derivation path (which may but probably should not be empty) to indicate one of
+the possible keys on the Ledger Nano S.
 
 The Ledger Nano S does not currently support non-hardened path components. All
 components of all paths must be hardened, which is indicated by following them
 with a `'` character. This character may need to be escaped from the shell
 through backslashes `\` or double-quotes `"`.
 
-You'll need to choose one of the six commands starting with `tezos-client import
-secret key ...` to run.
+You'll need to choose one of the three commands starting with
+`tezos-client import secret key ...` to run. `ed25519` is the standard recommended curve.
 
-  * `ed25519` is the standard recommended curve
-  * If you know you're always going to use only one key, use a root key; you can
-    only have one root account per device per signing curve. If you might want
-    to leave open the possibility of using your device for multiple keys,
-    use a BIP32 path. We recommend the latter.
+The BIP32 path is the part that in the example commands read `0'/0'`. You
+can change it, but if you do (and even if you don't), be sure to write
+down. You need the full address to use your tez. This means that if you
+lose all your devices and need to set everything up again, you will need
+three things:
 
-If you use a BIP32 path, be sure to write it down. You need the full address to
-use your tez. This means that if you lose all your devices and need to set
-everything up again, you will need three things:
-
-  1. The mnemonic phrase
+  1. The mnemonic phrase -- this is the phrase from your Ledger device itself when you set it up, not the animal mnemonic you see on the command line. They are different.
   2. Which signing curve you chose
   3. The BIP32 path, if you used one
 
