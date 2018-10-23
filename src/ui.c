@@ -123,8 +123,6 @@ void change_idle_display(uint32_t new) {
 void ui_initial_screen(void) {
 #ifdef BAKING_APP
     change_idle_display(N_data.highest_level);
-#else
-    require_pin();
 #endif
     ui_idle();
 }
