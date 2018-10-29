@@ -30,7 +30,7 @@ bool is_valid_level(level_t level);
 void update_auth_text(void);
 
 void prompt_contract_for_baking(struct parsed_contract *contract, callback_t ok_cb, callback_t cxl_cb);
-void prompt_address(bool bake, bool prompt_your_address, cx_curve_t curve,
+void prompt_address(bool bake, cx_curve_t curve,
                     const cx_ecfp_public_key_t *key,
                     callback_t ok_cb, callback_t cxl_cb) __attribute__((noreturn));
 
