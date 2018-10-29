@@ -79,7 +79,6 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
         // instruction == INS_PROMPT_PUBLIC_KEY || instruction == INS_AUTHORIZE_BAKING
         callback_t cb;
         bool bake;
-        bool prompt_your_address = false;
 #ifdef BAKING_APP
         if (instruction == INS_AUTHORIZE_BAKING) {
             cb = baking_ok;
@@ -87,12 +86,11 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
         } else {
 #endif
             // INS_PROMPT_PUBLIC_KEY
-            prompt_your_address = instruction == INS_PROMPT_YOUR_ADDRESS;
             cb = pubkey_ok;
             bake = false;
 #ifdef BAKING_APP
         }
 #endif
-        prompt_address(bake, prompt_your_address, curve, &public_key, cb, delay_reject);
+        prompt_address(bake, curve, &public_key, cb, delay_reject);
     }
 }

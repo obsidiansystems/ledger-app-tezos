@@ -101,18 +101,6 @@ static const char *const pubkey_values[] = {
     NULL,
 };
 
-static const char *const your_address_labels[] = {
-    "Your",
-    "Public Key Hash",
-    NULL,
-};
-
-static const char *const your_address_values[] = {
-    "Address",
-    address_display_data,
-    NULL,
-};
-
 #ifdef BAKING_APP
 static const char *const baking_labels[] = {
     "Authorize Baking",
@@ -141,7 +129,6 @@ void prompt_address(
         __attribute__((unused))
 #endif
         bool baking,
-        bool prompt_your_address,
         cx_curve_t curve, const cx_ecfp_public_key_t *key, callback_t ok_cb,
         callback_t cxl_cb) {
     if (!pubkey_to_pkh_string(address_display_data, sizeof(address_display_data), curve, key)) {
@@ -153,11 +140,7 @@ void prompt_address(
         ui_prompt(baking_labels, baking_values, ok_cb, cxl_cb);
     } else {
 #endif
-        if (prompt_your_address) {
-            ui_prompt(your_address_labels, your_address_values, ok_cb, cxl_cb);
-        } else {
-            ui_prompt(pubkey_labels, pubkey_values, ok_cb, cxl_cb);
-        }
+        ui_prompt(pubkey_labels, pubkey_values, ok_cb, cxl_cb);
 #ifdef BAKING_APP
     }
 #endif

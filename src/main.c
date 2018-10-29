@@ -45,7 +45,6 @@ void app_main(void) {
 #ifndef BAKING_APP
     handlers[INS_SIGN_UNSAFE] = handle_apdu_sign;
 #endif
-    handlers[INS_PROMPT_YOUR_ADDRESS] = handle_apdu_get_public_key;
     handlers[INS_GIT] = handle_apdu_git;
     main_loop(handlers);
 }
