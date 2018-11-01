@@ -539,8 +539,6 @@ The output of this command includes three Tezos addresses derived from the secre
 stored on the device, via different signing curves and BIP32 paths.
 
 ```
-Oct 22 16:48:52 - client.signer.ledger: WARNING: The device at [0001:002a:01] is not a Tezos application
-Oct 22 16:48:52 - client.signer.ledger: APDU level error: Unexpected sequence number (expected 0, got 191)
 Found a Tezos Wallet 1.4.0 (commit 764625b1) application running on Ledger Nano S at [0001:002a:00].
 
 To use keys at BIP32 path m/44'/1729'/0'/0' (default Tezos key path), use one of
