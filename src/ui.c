@@ -1,5 +1,7 @@
 #include "ui.h"
 
+#include "ui_menu.h"
+
 #include "baking_auth.h"
 #include "keys.h"
 #include "to_string.h"
@@ -30,6 +32,7 @@ void require_pin(void) {
     os_ux_blocking(&params);
 }
 
+#ifdef BAKING_APP
 const bagl_element_t ui_idle_screen[] = {
     // type                               userid    x    y   w    h  str rad
     // fill      fg        bg      fid iid  txt   touchparams...       ]
@@ -58,11 +61,7 @@ const bagl_element_t ui_idle_screen[] = {
     //0, NULL, NULL, NULL },
     {{BAGL_LABELINE, 0x01, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-#ifdef BAKING_APP
      "Last Block Level",
-#else
-     "Tezos",
-#endif
      0,
      0,
      0,
@@ -70,7 +69,6 @@ const bagl_element_t ui_idle_screen[] = {
      NULL,
      NULL},
 
-#ifdef BAKING_APP
     {{BAGL_LABELINE, 0x01, 0, 26, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
      idle_text,
@@ -80,15 +78,10 @@ const bagl_element_t ui_idle_screen[] = {
      NULL,
      NULL,
      NULL},
-#endif
 
     {{BAGL_LABELINE, 0x02, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-#ifdef BAKING_APP
      "Baking Key",
-#else
-     "Wallet App",
-#endif
      0,
      0,
      0,
@@ -96,7 +89,6 @@ const bagl_element_t ui_idle_screen[] = {
      NULL,
      NULL},
 
-#ifdef BAKING_APP
     {{BAGL_LABELINE, 0x02, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
      baking_auth_text,
@@ -106,19 +98,21 @@ const bagl_element_t ui_idle_screen[] = {
      NULL,
      NULL,
      NULL},
-#endif
 };
 
 static bool do_nothing(void) {
     return false;
 }
+#endif
 
 static void ui_idle(void) {
 #ifdef BAKING_APP
     update_auth_text();
-#endif
     ui_display(ui_idle_screen, sizeof(ui_idle_screen)/sizeof(*ui_idle_screen),
                do_nothing, exit_app, 2);
+#else
+    main_menu();
+#endif
 }
 
 void change_idle_display(uint32_t new) {
@@ -129,8 +123,6 @@ void change_idle_display(uint32_t new) {
 void ui_initial_screen(void) {
 #ifdef BAKING_APP
     change_idle_display(N_data.highest_level);
-#else
-    require_pin();
 #endif
     ui_idle();
 }
