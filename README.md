@@ -191,8 +191,8 @@ take effect.
 If you are using the [Nix package manager](https://nixos.org/nix/), you can skip
 this section and the next one; go directly to
 [Tezos baking platform](https://gitlab.com/obsidian.systems/tezos-baking-platform)
-for simpler Nix-based installation. Then return to this document and continue
-reading at *Using the Ledger Nano S apps*.
+for simpler Nix-based installation, where documentation should be in `ledger/BUILDING.md`.
+Then return to this document and continue reading at *Using the Ledger Nano S apps*.
 
 The easiest way to obtain the Tezos Ledger Nano S apps is to download the `.hex` files
 from the [releases](https://github.com/obsidiansystems/ledger-app-tezos/releases)
@@ -535,51 +535,39 @@ on your device:
 $ tezos-client list connected ledgers
 ```
 
-The output of this command includes six Tezos addresses derived from the secret
+The output of this command includes three Tezos addresses derived from the secret
 stored on the device, via different signing curves and BIP32 paths.
 
 ```
-Found a valid Tezos application running on Ledger Nano S at [0001:0014:00].
+Found a Tezos Wallet 1.4.0 (commit 764625b1) application running on Ledger Nano S at [0001:002a:00].
 
-To add the root key of this ledger, use one of
-  tezos-client import secret key ledger_<...>_ed ledger://tz1Rctvczeh7WK91NfT9LUSrYJFceyhJKUQN # Ed25519 signature
-  tezos-client import secret key ledger_<...>_secp ledger://tz2EhYFRUhY4YiinHYxb7PncETZXP9BfRSPj # Secp256k1 signature
-  tezos-client import secret key ledger_<...>_p2 ledger://tz3RZ5JvhuSAg3i4qBSaoCKqXwmqhswqeNgF # P-256 signature
-Each of these tz* is a valid Tezos address.
-
-To use a derived address, add a hardened BIP32 path suffix at the end of the URI.
-For instance, to use keys at BIP32 path m/44'/1729'/0'/0', use one of
-  tezos-client import secret key ledger_<...>_ed_0_0 "ledger://tz1Rctvczeh7WK91NfT9LUSrYJFceyhJKUQN/0'/0'"
-  tezos-client import secret key ledger_<...>_secp_0_0 "ledger://tz2EhYFRUhY4YiinHYxb7PncETZXP9BfRSPj/0'/0'"
-  tezos-client import secret key ledger_<...>_p2_0_0 "ledger://tz3RZ5JvhuSAg3i4qBSaoCKqXwmqhswqeNgF/0'/0'"
-In this case, your Tezos address will be a derived tz*.
-It will be displayed when you do the import, or using command `show ledger path`.
+To use keys at BIP32 path m/44'/1729'/0'/0' (default Tezos key path), use one of
+ tezos-client import secret key ledger_jhartzell "ledger://major-squirrel-thick-hedgehog/ed25519/0'/0'"
+ tezos-client import secret key ledger_jhartzell "ledger://major-squirrel-thick-hedgehog/secp256k1/0'/0'"
+ tezos-client import secret key ledger_jhartzell "ledger://major-squirrel-thick-hedgehog/P-256/0'/0'"
 ```
 
-The first three are addressed constructed directly from the root key for each
-encryption system (`ed25519`, `secp256k1`, or P-256). The second three show you
-examples of how to append a BIP32 path to the root key to construct a new
-address.
+These show you how to import keys with a specific signing curve and derivation path. The
+animal-based name (e.g. `major-squirrel-thick-hedgehog`) is a unique identifier for your
+Ledger device, to enable the client to distinguish different Ledger devices. This is combined with
+a derivation path (which may but probably should not be empty) to indicate one of
+the possible keys on the Ledger Nano S.
 
 The Ledger Nano S does not currently support non-hardened path components. All
 components of all paths must be hardened, which is indicated by following them
 with a `'` character. This character may need to be escaped from the shell
 through backslashes `\` or double-quotes `"`.
 
-You'll need to choose one of the six commands starting with `tezos-client import
-secret key ...` to run.
+You'll need to choose one of the three commands starting with
+`tezos-client import secret key ...` to run. `ed25519` is the standard recommended curve.
 
-  * `ed25519` is the standard recommended curve
-  * If you know you're always going to use only one key, use a root key; you can
-    only have one root account per device per signing curve. If you might want
-    to leave open the possibility of using your device for multiple keys,
-    use a BIP32 path. We recommend the latter.
+The BIP32 path is the part that in the example commands read `0'/0'`. You
+can change it, but if you do (and even if you don't), be sure to write
+down. You need the full address to use your tez. This means that if you
+lose all your devices and need to set everything up again, you will need
+three things:
 
-If you use a BIP32 path, be sure to write it down. You need the full address to
-use your tez. This means that if you lose all your devices and need to set
-everything up again, you will need three things:
-
-  1. The mnemonic phrase
+  1. The mnemonic phrase -- this is the phrase from your Ledger device itself when you set it up, not the animal mnemonic you see on the command line. They are different.
   2. Which signing curve you chose
   3. The BIP32 path, if you used one
 
@@ -739,7 +727,7 @@ Originated accounts have names beginning with `KT1` rather than `tz1`, `tz2` or 
 The Tezos Baking Application supports 3 operations:
 
   1. Authorize/get public key
-  2. Reset high water mark
+  2. Reset high watermark
   3. Sign
 
 It will only sign block headers and endorsements, as the purpose of the baking
@@ -852,19 +840,19 @@ This is intended to prevent double baking at the device level, as a security
 measure against potential vulnerabilities where the computer might be tricked
 into double baking. This feature will hopefully be a redundant precaution, but
 it's implemented at the device level because the point of the Ledger hardware wallet is to not
-trust the computer. The current High Water Mark (HWM) -- the highest level to
+trust the computer. The current High Watermark (HWM) -- the highest level to
 have been baked so far -- is displayed on the device's screen, and is also
 persisted between runs of the device.
 
 The sign operation will be sent to the hardware wallet by the baking daemon when
 configured to bake with a Ledger Nano S key. The Ledger device uses the first byte of the
 information to be signed -- the magic number -- to tell whether it is a block
-header (which is verified with the High Water Mark), an endorsement (which is
+header (which is verified with the High Watermark), an endorsement (which is
 not), or some other operation (which it will reject, unless it is a
 self-delegation).
 
 With the exception of self-delegations, as long as the key is configured and the
-high water mark constraint is followed, there is no user prompting required for
+high watermark constraint is followed, there is no user prompting required for
 signing. The baking app will only ever sign without prompting or reject an
 attempt at signing; this operation is designed to be used unsupervised.
 
@@ -891,16 +879,16 @@ attempted attacks or bugs, not as a day to day command. It requires an explicit
 confirmation from the user, and there is no specific utility to send this
 command. To send it manually, you can use the following command line:
 
-`tezos-client set ledger high water mark for "ledger://<tz...>/" to <HWM>`
+`tezos-client set ledger high watermark for "ledger://<tz...>/" to <HWM>`
 
-`<HWM>` indicates the new high water mark to reset to. If you are joining a new
+`<HWM>` indicates the new high watermark to reset to. If you are joining a new
 test network, `0` is a fitting number, as then all blocks will be allowed again.
 You can also set it to the most recently baked level on that test net.
 
 If you are not physically present at your computer, but are curious what the
-Ledger device's high water mark is, you can run:
+Ledger device's high watermark is, you can run:
 
-`tezos-client get ledger high water mark for "ledger://<tz...>/`
+`tezos-client get ledger high watermark for "ledger://<tz...>/"`
 
 ## Upgrading
 
@@ -913,17 +901,17 @@ so there is no need to re-import the keys with `tezos-client`.
 ### Special Upgrading Considerations for Bakers
 
 If you've already been baking on an old version of the Baking App, the new version will
-not remember which key you are baking with nor the High Water Mark. You will have to re-run
+not remember which key you are baking with nor the High Watermark. You will have to re-run
 this command to remind the hardware wallet what key you intend to authorize for baking:
 
 ```
 $ tezos-client authorize ledger to bake for <SIGNATURE>
 ```
 
-You can also set the High Water Mark to the level of the most recently baked block with:
+You can also set the High Watermark to the level of the most recently baked block with:
 
 ```
-tezos-client set ledger high water mark for "ledger://<tz...>/" to <HWM>
+tezos-client set ledger high watermark for "ledger://<tz...>/" to <HWM>
 ```
 
 This will require the correct URL for the Ledger Nano S acquired from:
@@ -933,6 +921,39 @@ tezos-client list connected ledgers
 ```
 
 ## Troubleshooting
+
+### Display Debug Logs
+
+If you are worried about bugs, you should configure your system to display debug logs. Add the
+following line to `~/.bashrc` and to `~/.bash_profile`, or set the equivalent environnment
+variable in whatever system you use to launch your daemons:
+
+```
+export TEZOS_LOG="client.signer.ledger -> debug"
+```
+
+If you have a bug report, it is far more likely we'll be able to fix it if you include the
+entire output of the transaction, including debug messages enabled by that command above.
+Please copy and paste the entire run of the command (for `tezos-client`) or everything
+involving the failed block level and the previous one (for baking); if you need to anonymize
+the PKH then please do so by using `XXX` or similar rather than by removing those entire lines.
+We need as much context as possible to help troubleshoot.
+
+`script` is also a useful command for logging all the output of a long-running process.
+If you run `script <file-name>` it opens a new shell where everything output and typed
+is also output to that file, giving you a transcript of your terminal session.
+
+### Two Ledger Devices at the Same Time
+
+Two Ledger devices with the same seed should not ever be plugged in at the same time. This confuses
+`tezos-client` and other client programs. Instead, you should plug only one of a set of paired
+ledgers at a time. Two Ledger devices of different seeds are fine and are fully supported,
+and the computer will automatically determine which one to send information to.
+
+If you have one running the baking app, it is bad for security to also have the wallet app
+plugged in simultaneously. Plug the wallet app in as-needed, removing the baking app, at a time
+when you are not going to be needed for endorsement or baking. Alternatively, use a different
+computer for wallet transactions.
 
 ### unexpected seq num
 

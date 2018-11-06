@@ -30,10 +30,17 @@ else ifeq ($(APP),tezos_wallet)
 APPNAME = "Tezos Wallet"
 endif
 APP_LOAD_PARAMS=--appFlags 0 --curve ed25519 --curve secp256k1 --curve prime256r1 --path "44'/1729'" $(COMMON_LOAD_PARAMS)
-APPVERSION_M=0
-APPVERSION_N=0
-APPVERSION_P=0
+VERSION_TAG=$(shell git tag | grep '^v' | sort | tail -n1)
+APPVERSION_M=1
+APPVERSION_N=3
+APPVERSION_P=3
 APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
+
+ifneq (v$(APPVERSION), $(VERSION_TAG))
+    $(warning "Version-Tag Mismatch: v$(APPVERSION) version and $(VERSION_TAG) tag")
+endif
+
+COMMIT := $(shell git describe --abbrev=8 --always)
 
 ICONNAME=icon.gif
 ################
@@ -48,7 +55,10 @@ all: default
 DEFINES   += OS_IO_SEPROXYHAL IO_SEPROXYHAL_BUFFER_SIZE_B=128
 DEFINES   += HAVE_BAGL HAVE_PRINTF
 DEFINES   += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=6 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
-DEFINES   += VERSION=\"$(APPVERSION)\"
+DEFINES   += VERSION=\"$(APPVERSION)\" APPVERSION_M=$(APPVERSION_M)
+DEFINES   += COMMIT=\"$(COMMIT)\" APPVERSION_N=$(APPVERSION_N) APPVERSION_P=$(APPVERSION_P)
+
+
 
 ##############
 #  Compiler  #

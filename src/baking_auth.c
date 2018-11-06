@@ -62,9 +62,9 @@ void guard_baking_authorized(cx_curve_t curve, void *data, int datalen, uint32_t
     if (!is_path_authorized(curve, bip32_path, path_length)) THROW(EXC_SECURITY);
 
     struct parsed_baking_data baking_info;
-    if (!parse_baking_data(data, datalen, &baking_info)) THROW(EXC_SECURITY);
+    if (!parse_baking_data(data, datalen, &baking_info)) THROW(EXC_PARSE_ERROR);
 
-    if (!is_level_authorized(baking_info.level, baking_info.is_endorsement)) THROW(EXC_SECURITY);
+    if (!is_level_authorized(baking_info.level, baking_info.is_endorsement)) THROW(EXC_WRONG_VALUES);
 }
 
 void update_high_water_mark(void *data, int datalen) {
@@ -91,20 +91,20 @@ static char address_display_data[VALUE_WIDTH];
 
 static const char *const pubkey_labels[] = {
     "Provide",
-    "Public Key",
+    "Public Key Hash",
     NULL,
 };
 
 static const char *const pubkey_values[] = {
-    "Public Key?",
+    "Public Key",
     address_display_data,
     NULL,
 };
 
 #ifdef BAKING_APP
 static const char *const baking_labels[] = {
-    "Authorize baking",
-    "Public Key",
+    "Authorize Baking",
+    "Public Key Hash",
     NULL,
 };
 
@@ -126,11 +126,11 @@ void prompt_contract_for_baking(struct parsed_contract *contract, callback_t ok_
 
 void prompt_address(
 #ifndef BAKING_APP
-    __attribute__((unused))
+        __attribute__((unused))
 #endif
-    bool baking,
-                    cx_curve_t curve, const cx_ecfp_public_key_t *key, callback_t ok_cb,
-                    callback_t cxl_cb) {
+        bool baking,
+        cx_curve_t curve, const cx_ecfp_public_key_t *key, callback_t ok_cb,
+        callback_t cxl_cb) {
     if (!pubkey_to_pkh_string(address_display_data, sizeof(address_display_data), curve, key)) {
         THROW(EXC_WRONG_VALUES);
     }

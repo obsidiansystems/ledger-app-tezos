@@ -189,13 +189,6 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
     END_TRY;
 #endif
 
-    // If the source is an implicit contract,...
-    if (ops->operation.source.originated == 0) {
-        // ... it had better match our key, otherwise why are we signing it?
-        if (memcmp(&ops->operation.source, &ops->signing, sizeof(ops->signing))) return false;
-    }
-    // OK, it passes muster.
-
     // Now to display it to make sure it's what the user intended.
     static const uint32_t TYPE_INDEX = 0;
     static const uint32_t SOURCE_INDEX = 1;
@@ -312,6 +305,19 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 microtez_to_string(get_value_buffer(AMOUNT_INDEX), ops->operation.amount);
 
                 ui_prompt(transaction_prompts, NULL, ok, cxl);
+            }
+        case OPERATION_TAG_NONE:
+            {
+                // Parser function guarantees this has a reveal
+                static const char *const reveal_prompts[] = {
+                    "Reveal Key",
+                    "Key",
+                    NULL,
+                };
+
+                strcpy(get_value_buffer(TYPE_INDEX), "To Blockchain");
+
+                ui_prompt(reveal_prompts, NULL, ok, cxl);
             }
     }
 }

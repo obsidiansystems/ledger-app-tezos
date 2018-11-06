@@ -4,4 +4,6 @@ set -eu
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 cd "$DIR"
 
-nix-shell ledger-blue-shell.nix --pure --run 'python -m ledgerblue.runScript --apdu'
+if ! nix-shell ledger-blue-shell.nix --pure --run 'python -m ledgerblue.runScript --apdu'; then
+    python -m ledgerblue.runScript --apdu
+fi

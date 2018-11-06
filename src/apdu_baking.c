@@ -1,6 +1,6 @@
 #include "apdu.h"
 #include "baking_auth.h"
-#include "apdu_reset.h"
+#include "apdu_baking.h"
 #include "cx.h"
 #include "os.h"
 #include "protocol.h"
@@ -48,23 +48,42 @@ bool reset_ok(void) {
     return true;
 }
 
-uint32_t send_word_big_endian(uint32_t word) {
+uint32_t send_word_big_endian(uint32_t tx, uint32_t word) {
     char word_bytes[sizeof(word)];
 
     memcpy(word_bytes, &word, sizeof(word));
 
-    uint32_t tx = 0;
     // endian.h functions do not compile
-    for (; tx < sizeof(word); tx++) {
-        G_io_apdu_buffer[tx] = word_bytes[sizeof(word) - tx - 1];
+    uint32_t i = 0;
+    for (; i < sizeof(word); i++) {
+        G_io_apdu_buffer[i + tx] = word_bytes[sizeof(word) - i - 1];
     }
+
+    return tx + i;
+}
+
+unsigned int handle_apdu_hwm(__attribute__((unused)) uint8_t instruction) {
+    uint32_t tx = 0;
+
+    level_t level = N_data.highest_level;
+    tx = send_word_big_endian(tx, level);
 
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;
     return tx;
 }
 
-unsigned int handle_apdu_hwm(__attribute__((unused)) uint8_t instruction) {
-    level_t level = N_data.highest_level;
-    return send_word_big_endian(level);
+unsigned int handle_apdu_query_auth_key(__attribute__((unused)) uint8_t instruction) {
+    uint32_t tx = 0;
+
+    uint8_t length = N_data.path_length;
+    G_io_apdu_buffer[tx++] = length;
+
+    for (uint8_t i = 0; i < length; ++i) {
+        tx = send_word_big_endian(tx, N_data.bip32_path[i]);
+    }
+
+    G_io_apdu_buffer[tx++] = 0x90;
+    G_io_apdu_buffer[tx++] = 0x00;
+    return tx;
 }

@@ -18,6 +18,16 @@ unsigned int handle_apdu_version(uint8_t __attribute__((unused)) instruction) {
     return tx;
 }
 
+unsigned int handle_apdu_git(uint8_t __attribute__((unused)) instruction) {
+    static char commit[] = COMMIT;
+    memcpy(G_io_apdu_buffer, commit, sizeof(commit));
+
+    uint32_t tx = sizeof(commit);
+    G_io_apdu_buffer[tx++] = 0x90;
+    G_io_apdu_buffer[tx++] = 0x00;
+    return tx;
+}
+
 #define CLA 0x80
 
 __attribute__((noreturn))

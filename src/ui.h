@@ -11,7 +11,7 @@ typedef bool (*callback_t)(void); // return true to go back to idle screen
 void ui_initial_screen(void);
 void ui_init(void);
 __attribute__((noreturn))
-bool exit_app(void);
+bool exit_app(void); // Might want to send it arguments to use as callback
 
 void ui_display(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback_t cxl_c,
                 uint32_t step_count);
