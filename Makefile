@@ -63,8 +63,11 @@ DEFINES   += COMMIT=\"$(COMMIT)\" APPVERSION_N=$(APPVERSION_N) APPVERSION_P=$(AP
 ##############
 #  Compiler  #
 ##############
+ifneq ($(BOLOS_ENV),)
 GCCPATH   := $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/bin/
 CLANGPATH := $(BOLOS_ENV)/clang-arm-fropi/bin/
+endif
+
 CC       := $(CLANGPATH)clang
 
 ifeq ($(APP),tezos_wallet)
