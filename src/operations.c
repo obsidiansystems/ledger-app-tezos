@@ -73,12 +73,13 @@ static uint8_t next_byte(const void *data, size_t *ix, size_t length, uint32_t l
 
 static inline uint64_t parse_z(const void *data, size_t *ix, size_t length, uint32_t lineno) {
     uint64_t acc = 0;
-    uint32_t shift = 0;
+    uint64_t shift = 0;
     while (true) {
-        uint8_t byte = next_byte(data, ix, length, lineno);
-        uint8_t byte_value = byte & ~TOP_BIT_IN_BYTE;
+        uint64_t byte = next_byte(data, ix, length, lineno);
+        uint64_t byte_value = byte & ~TOP_BIT_IN_BYTE;
 
         // Overflow protection
+        if (shift >= UINT64_BIT) PARSE_ERROR();
         uint32_t max_bit = UINT64_BIT - shift;
         if (max_bit < CHAR_BIT) {
             uint8_t max_value = 1 << max_bit;
