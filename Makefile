@@ -33,7 +33,9 @@ APPVERSION_P=2
 APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 
 ifneq (v$(APPVERSION), $(VERSION_TAG))
-    $(warning "Version-Tag Mismatch: v$(APPVERSION) version and $(VERSION_TAG) tag")
+    ifneq (v$(APPVERSION)-rc, $(VERSION_TAG))
+        $(warning "Version-Tag Mismatch: v$(APPVERSION) version and $(VERSION_TAG) tag")
+    endif
 endif
 
 COMMIT := $(shell git describe --abbrev=8 --always)
