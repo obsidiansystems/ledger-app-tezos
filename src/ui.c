@@ -165,13 +165,8 @@ const bagl_element_t *prepro(const bagl_element_t *element) {
     // Always display elements with userid 0
     if (element->component.userid == 0) return element;
 
-    uint32_t min = 2000;
-    uint32_t div = 1;
-
-    if (is_idling()) {
-        min = 4000;
-        div = 2;
-    }
+    uint32_t min = 4000;
+    uint32_t div = 2;
 
     if (ux_step == element->component.userid - 1) {
         // timeouts are in millis
