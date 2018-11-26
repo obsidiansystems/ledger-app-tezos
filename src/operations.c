@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <limits.h>
 
 struct operation_group_header {
     uint8_t magic_byte;
@@ -67,14 +68,27 @@ static uint8_t next_byte(const void *data, size_t *ix, size_t length, uint32_t l
 
 #define NEXT_BYTE(data, ix, length) next_byte(data, ix, length, __LINE__)
 
+#define TOP_BIT_IN_BYTE (1U << (CHAR_BIT - 1))
+#define UINT64_BIT (sizeof(uint64_t) * CHAR_BIT)
+
 static inline uint64_t parse_z(const void *data, size_t *ix, size_t length, uint32_t lineno) {
     uint64_t acc = 0;
-    uint64_t shift = 0;
+    uint32_t shift = 0;
     while (true) {
-        uint64_t byte = next_byte(data, ix, length, lineno);
-        acc |= (byte & 0x7F) << shift;
-        shift += 7;
-        if (!(byte & 0x80)) {
+        uint8_t byte = next_byte(data, ix, length, lineno);
+        uint8_t byte_value = byte & ~TOP_BIT_IN_BYTE;
+
+        // Overflow protection
+        uint32_t max_bit = UINT64_BIT - shift;
+        if (max_bit < CHAR_BIT) {
+            uint8_t max_value = 1 << max_bit;
+            if (byte_value >= max_value) PARSE_ERROR();
+        }
+
+        acc |= byte_value << shift;
+        shift += CHAR_BIT - 1;
+
+        if (!(byte & TOP_BIT_IN_BYTE)) {
             break;
         }
     }
