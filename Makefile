@@ -29,7 +29,7 @@ APP_LOAD_PARAMS=--appFlags 0 --curve ed25519 --curve secp256k1 --curve prime256r
 VERSION_TAG=$(shell git tag | grep '^v' | sort | tail -n1)
 APPVERSION_M=1
 APPVERSION_N=4
-APPVERSION_P=1
+APPVERSION_P=0
 APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 
 ifneq (v$(APPVERSION), $(VERSION_TAG))
