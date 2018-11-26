@@ -190,16 +190,6 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
 #endif
 
     // Now to display it to make sure it's what the user intended.
-    static const uint32_t TYPE_INDEX = 0;
-    static const uint32_t SOURCE_INDEX = 1;
-    static const uint32_t DESTINATION_INDEX = 2;
-    static const uint32_t FEE_INDEX = 3;
-
-    if (!parsed_contract_to_string(get_value_buffer(SOURCE_INDEX), VALUE_WIDTH,
-                                   &ops->operation.source)) return false;
-    if (!parsed_contract_to_string(get_value_buffer(DESTINATION_INDEX), VALUE_WIDTH,
-                                   &ops->operation.destination)) return false;
-    microtez_to_string(get_value_buffer(FEE_INDEX), ops->total_fee);
 
     switch (ops->operation.tag) {
         default:
@@ -207,33 +197,49 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
 
         case OPERATION_TAG_ORIGINATION:
             {
-                static const uint32_t AMOUNT_INDEX = 4;
+                static const uint32_t TYPE_INDEX = 0;
+                static const uint32_t AMOUNT_INDEX = 1;
+                static const uint32_t FEE_INDEX = 2;
+                static const uint32_t SOURCE_INDEX = 3;
+                static const uint32_t DESTINATION_INDEX = 4;
                 static const uint32_t DELEGATE_INDEX = 5;
+                static const uint32_t STORAGE_INDEX = 6;
+
+                if (!parsed_contract_to_string(get_value_buffer(SOURCE_INDEX), VALUE_WIDTH,
+                                               &ops->operation.source)) return false;
+                if (!parsed_contract_to_string(get_value_buffer(DESTINATION_INDEX), VALUE_WIDTH,
+                                               &ops->operation.destination)) return false;
+                microtez_to_string(get_value_buffer(FEE_INDEX), ops->total_fee);
+                number_to_string(get_value_buffer(STORAGE_INDEX), ops->total_storage_limit);
+
                 static const char *const origination_prompts_fixed[] = {
                     "Confirm",
+                    "Amount",
+                    "Fee",
                     "Source",
                     "Manager",
-                    "Fee",
-                    "Amount",
                     "Fixed Delegate",
+                    "Storage",
                     NULL,
                 };
                 static const char *const origination_prompts_delegatable[] = {
                     "Confirm",
+                    "Amount",
+                    "Fee",
                     "Source",
                     "Manager",
-                    "Fee",
-                    "Amount",
                     "Delegate",
+                    "Storage",
                     NULL,
                 };
                 static const char *const origination_prompts_undelegatable[] = {
                     "Confirm",
+                    "Amount",
+                    "Fee",
                     "Source",
                     "Manager",
-                    "Fee",
-                    "Amount",
                     "Delegation",
+                    "Storage",
                     NULL,
                 };
 
@@ -265,18 +271,33 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
             }
         case OPERATION_TAG_DELEGATION:
             {
+                static const uint32_t TYPE_INDEX = 0;
+                static const uint32_t FEE_INDEX = 1;
+                static const uint32_t SOURCE_INDEX = 2;
+                static const uint32_t DESTINATION_INDEX = 3;
+                static const uint32_t STORAGE_INDEX = 4;
+
+                if (!parsed_contract_to_string(get_value_buffer(SOURCE_INDEX), VALUE_WIDTH,
+                                               &ops->operation.source)) return false;
+                if (!parsed_contract_to_string(get_value_buffer(DESTINATION_INDEX), VALUE_WIDTH,
+                                               &ops->operation.destination)) return false;
+                microtez_to_string(get_value_buffer(FEE_INDEX), ops->total_fee);
+                number_to_string(get_value_buffer(STORAGE_INDEX), ops->total_storage_limit);
+
                 static const char *const withdrawal_prompts[] = {
                     "Withdraw",
+                    "Fee",
                     "Source",
                     "Delegate",
-                    "Fee",
+                    "Storage",
                     NULL,
                 };
                 static const char *const delegation_prompts[] = {
                     "Confirm",
+                    "Fee",
                     "Source",
                     "Delegate",
-                    "Fee",
+                    "Storage",
                     NULL,
                 };
 
@@ -290,32 +311,61 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
 
         case OPERATION_TAG_TRANSACTION:
             {
-                static const uint32_t AMOUNT_INDEX = 4;
+                static const uint32_t TYPE_INDEX = 0;
+                static const uint32_t AMOUNT_INDEX = 1;
+                static const uint32_t FEE_INDEX = 2;
+                static const uint32_t SOURCE_INDEX = 3;
+                static const uint32_t DESTINATION_INDEX = 4;
+                static const uint32_t STORAGE_INDEX = 5;
 
                 static const char *const transaction_prompts[] = {
                     "Confirm",
+                    "Amount",
+                    "Fee",
                     "Source",
                     "Destination",
-                    "Fee",
-                    "Amount",
+                    "Storage",
                     NULL,
                 };
 
+                if (!parsed_contract_to_string(get_value_buffer(SOURCE_INDEX), VALUE_WIDTH,
+                                               &ops->operation.source)) return false;
+                if (!parsed_contract_to_string(get_value_buffer(DESTINATION_INDEX), VALUE_WIDTH,
+                                               &ops->operation.destination)) return false;
+                microtez_to_string(get_value_buffer(FEE_INDEX), ops->total_fee);
+                number_to_string(get_value_buffer(STORAGE_INDEX), ops->total_storage_limit);
+
                 strcpy(get_value_buffer(TYPE_INDEX), "Transaction");
+
                 microtez_to_string(get_value_buffer(AMOUNT_INDEX), ops->operation.amount);
 
                 ui_prompt(transaction_prompts, NULL, ok, cxl);
             }
         case OPERATION_TAG_NONE:
             {
+                static const uint32_t TYPE_INDEX = 0;
+                static const uint32_t SOURCE_INDEX = 1;
+                static const uint32_t FEE_INDEX = 2;
+                static const uint32_t STORAGE_INDEX = 3;
+
+                if (!parsed_contract_to_string(get_value_buffer(SOURCE_INDEX), VALUE_WIDTH,
+                                               &ops->operation.source)) return false;
+
+                microtez_to_string(get_value_buffer(FEE_INDEX), ops->total_fee);
+
                 // Parser function guarantees this has a reveal
                 static const char *const reveal_prompts[] = {
                     "Reveal Key",
                     "Key",
+                    "Fee",
+                    "Storage",
                     NULL,
                 };
 
                 strcpy(get_value_buffer(TYPE_INDEX), "To Blockchain");
+                number_to_string(get_value_buffer(STORAGE_INDEX), ops->total_storage_limit);
+                if (!parsed_contract_to_string(get_value_buffer(SOURCE_INDEX), VALUE_WIDTH,
+                                               &ops->operation.source)) return false;
 
                 ui_prompt(reveal_prompts, NULL, ok, cxl);
             }

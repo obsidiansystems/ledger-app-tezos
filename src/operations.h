@@ -53,6 +53,7 @@ struct parsed_operation {
 struct parsed_operation_group {
     cx_ecfp_public_key_t public_key; // compressed
     uint64_t total_fee;
+    uint64_t total_storage_limit;
     bool has_reveal;
     struct parsed_contract signing;
     struct parsed_operation operation;
