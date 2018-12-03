@@ -528,8 +528,7 @@ all Tezos paths start with this, in `tezos-client` commands it is implied.
 This section must be done regardless of whether you're going to be baking or
 only using the Tezos Wallet application.
 
-Please run, with a Tezos app (either Tezos Baking or Tezos Wallet will do) open
-on your device:
+Please run, with a Tezos app open on your device (either Tezos Baking or Tezos Wallet will do):
 
 ```
 $ tezos-client list connected ledgers
@@ -547,11 +546,12 @@ To use keys at BIP32 path m/44'/1729'/0'/0' (default Tezos key path), use one of
  tezos-client import secret key ledger_jhartzell "ledger://major-squirrel-thick-hedgehog/P-256/0'/0'"
 ```
 
-These show you how to import keys with a specific signing curve and derivation path. The
+These show you how to import keys with a specific signing curve (e.g. `ed25519`) and derivation path (e.g. `/0'/0'`). The
 animal-based name (e.g. `major-squirrel-thick-hedgehog`) is a unique identifier for your
-Ledger device, to enable the client to distinguish different Ledger devices. This is combined with
-a derivation path (which may but probably should not be empty) to indicate one of
-the possible keys on the Ledger Nano S.
+Ledger device enabling the client to distinguish different Ledger devices. This is combined with
+a derivation path (e.g. `/0'/0'`) to indicate one of the possible keys on the Ledger Nano S. Your *root* key is the full identifier without the derivation path (e.g. `major-squirrel-thick-hedgehog/ed25519` by itself) but you should not use the root key directly\*.
+
+\* *NOTE:* If you have used your root key in the past and need to import it, you can do so by simply running one of the commands but without the last derivation portion. From the example above, you would import your root key by running `tezos-client import secret key ledger_jhartzell "ledger://major-squirrel-thick-hedgehog/ed25519"`. You should avoid using your root key.
 
 The Ledger Nano S does not currently support non-hardened path components. All
 components of all paths must be hardened, which is indicated by following them
