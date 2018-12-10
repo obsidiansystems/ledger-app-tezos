@@ -47,7 +47,16 @@ uint32_t read_bip32_path(uint32_t bytes, uint32_t *bip32_path, const uint8_t *bu
 struct key_pair *generate_key_pair(cx_curve_t curve, uint32_t path_length, uint32_t *bip32_path) {
     static uint8_t privateKeyData[32];
     static struct key_pair res;
-    os_perso_derive_node_bip32(curve, bip32_path, path_length, privateKeyData, NULL);
+#if CX_APILEVEL > 8
+    if (curve == CX_CURVE_Ed25519) {
+        os_perso_derive_node_bip32_seed_key(HDW_ED25519_SLIP10, curve, bip32_path, path_length,
+                                            privateKeyData, NULL, NULL, 0);
+    } else {
+#endif
+        os_perso_derive_node_bip32(curve, bip32_path, path_length, privateKeyData, NULL);
+#if CX_APILEVEL > 8
+    }
+#endif
     cx_ecfp_init_private_key(curve, privateKeyData, 32, &res.private_key);
     cx_ecfp_generate_pair(curve, &res.public_key, &res.private_key, 1);
 
