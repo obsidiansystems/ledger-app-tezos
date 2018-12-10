@@ -37,13 +37,13 @@ extern "C" {
     BLAKE2S_PERSONALBYTES = 8
   };
 
-  enum blake2b_constant
+  enum b2b_constant
   {
-    BLAKE2B_BLOCKBYTES = 128,
-    BLAKE2B_OUTBYTES   = 64,
-    BLAKE2B_KEYBYTES   = 64,
-    BLAKE2B_SALTBYTES  = 16,
-    BLAKE2B_PERSONALBYTES = 16
+    B2B_BLOCKBYTES = 128,
+    B2B_OUTBYTES   = 64,
+    B2B_KEYBYTES   = 64,
+    B2B_SALTBYTES  = 16,
+    B2B_PERSONALBYTES = 16
   };
 
   typedef struct blake2s_state__
@@ -57,16 +57,16 @@ extern "C" {
     uint8_t  last_node;
   } blake2s_state;
 
-  typedef struct blake2b_state__
+  typedef struct b2b_state__
   {
     uint64_t h[8];
     uint64_t t[2];
     uint64_t f[2];
-    uint8_t  buf[BLAKE2B_BLOCKBYTES];
+    uint8_t  buf[B2B_BLOCKBYTES];
     size_t   buflen;
     size_t   outlen;
     uint8_t  last_node;
-  } blake2b_state;
+  } b2b_state;
 
   typedef struct blake2sp_state__
   {
@@ -77,14 +77,14 @@ extern "C" {
     size_t        outlen;
   } blake2sp_state;
 
-  typedef struct blake2bp_state__
+  typedef struct b2bp_state__
   {
-    blake2b_state S[4][1];
-    blake2b_state R[1];
-    uint8_t       buf[4 * BLAKE2B_BLOCKBYTES];
+    b2b_state S[4][1];
+    b2b_state R[1];
+    uint8_t       buf[4 * B2B_BLOCKBYTES];
     size_t        buflen;
     size_t        outlen;
-  } blake2bp_state;
+  } b2bp_state;
 
 
   BLAKE2_PACKED(struct blake2s_param__
@@ -105,7 +105,7 @@ extern "C" {
 
   typedef struct blake2s_param__ blake2s_param;
 
-  BLAKE2_PACKED(struct blake2b_param__
+  BLAKE2_PACKED(struct b2b_param__
   {
     uint8_t  digest_length; /* 1 */
     uint8_t  key_length;    /* 2 */
@@ -117,11 +117,11 @@ extern "C" {
     uint8_t  node_depth;    /* 17 */
     uint8_t  inner_length;  /* 18 */
     uint8_t  reserved[14];  /* 32 */
-    uint8_t  salt[BLAKE2B_SALTBYTES]; /* 48 */
-    uint8_t  personal[BLAKE2B_PERSONALBYTES];  /* 64 */
+    uint8_t  salt[B2B_SALTBYTES]; /* 48 */
+    uint8_t  personal[B2B_PERSONALBYTES];  /* 64 */
   });
 
-  typedef struct blake2b_param__ blake2b_param;
+  typedef struct b2b_param__ b2b_param;
 
   typedef struct blake2xs_state__
   {
@@ -131,25 +131,25 @@ extern "C" {
 
   typedef struct blake2xb_state__
   {
-    blake2b_state S[1];
-    blake2b_param P[1];
+    b2b_state S[1];
+    b2b_param P[1];
   } blake2xb_state;
 
   /* Padded structs result in a compile-time error */
   enum {
     BLAKE2_DUMMY_1 = 1/(sizeof(blake2s_param) == BLAKE2S_OUTBYTES),
-    BLAKE2_DUMMY_2 = 1/(sizeof(blake2b_param) == BLAKE2B_OUTBYTES)
+    BLAKE2_DUMMY_2 = 1/(sizeof(b2b_param) == B2B_OUTBYTES)
   };
 
   /* Streaming API */
-  int blake2b_init( blake2b_state *S, size_t outlen );
-  int blake2b_init_key( blake2b_state *S, size_t outlen, const void *key, size_t keylen );
-  int blake2b_init_param( blake2b_state *S, const blake2b_param *P );
-  int blake2b_update( blake2b_state *S, const void *in, size_t inlen );
-  int blake2b_final( blake2b_state *S, void *out, size_t outlen );
+  int b2b_init( b2b_state *S, size_t outlen );
+  int b2b_init_key( b2b_state *S, size_t outlen, const void *key, size_t keylen );
+  int b2b_init_param( b2b_state *S, const b2b_param *P );
+  int b2b_update( b2b_state *S, const void *in, size_t inlen );
+  int b2b_final( b2b_state *S, void *out, size_t outlen );
 #if defined(__cplusplus)
 }
 #endif
 
-extern blake2b_state hash_state;
+extern b2b_state hash_state;
 #endif

@@ -16,7 +16,7 @@
 
 #define TEZOS_BUFSIZE 512
 #define SIGN_HASH_SIZE 32
-#define BLAKE2B_BLOCKBYTES 128
+#define B2B_BLOCKBYTES 128
 
 static uint8_t message_data[TEZOS_BUFSIZE];
 static uint32_t message_data_length;
@@ -30,18 +30,18 @@ static bool hash_only;
 
 static void conditional_init_hash_state(void) {
     if (!is_hash_state_inited) {
-        blake2b_init(&hash_state, SIGN_HASH_SIZE);
+        b2b_init(&hash_state, SIGN_HASH_SIZE);
         is_hash_state_inited = true;
     }
 }
 
 static void hash_buffer(void) {
     const uint8_t *current = message_data;
-    while (message_data_length > BLAKE2B_BLOCKBYTES) {
+    while (message_data_length > B2B_BLOCKBYTES) {
         conditional_init_hash_state();
-        blake2b_update(&hash_state, current, BLAKE2B_BLOCKBYTES);
-        message_data_length -= BLAKE2B_BLOCKBYTES;
-        current += BLAKE2B_BLOCKBYTES;
+        b2b_update(&hash_state, current, B2B_BLOCKBYTES);
+        message_data_length -= B2B_BLOCKBYTES;
+        current += B2B_BLOCKBYTES;
     }
     // TODO use circular buffer at some point
     memmove(message_data, current, message_data_length);
@@ -50,8 +50,8 @@ static void hash_buffer(void) {
 static void finish_hashing(uint8_t *hash, size_t hash_size) {
     hash_buffer();
     conditional_init_hash_state();
-    blake2b_update(&hash_state, message_data, message_data_length);
-    blake2b_final(&hash_state, hash, hash_size);
+    b2b_update(&hash_state, message_data, message_data_length);
+    b2b_final(&hash_state, hash, hash_size);
     message_data_length = 0;
     is_hash_state_inited = false;
 }
