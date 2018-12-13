@@ -42,10 +42,11 @@ static bool baking_ok(void) {
 unsigned int handle_apdu_get_public_key(uint8_t instruction) {
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
 
-    if (G_io_apdu_buffer[OFFSET_P1] != 0)
+    if (G_io_apdu_buffer[OFFSET_P1] != 0) {
         THROW(EXC_WRONG_PARAM);
+    }
 
-    // do not expose pks without prompt over U2F
+    // do not expose pks without prompt over U2F (browser support)
     if (instruction == INS_GET_PUBLIC_KEY) {
         require_hid();
     }

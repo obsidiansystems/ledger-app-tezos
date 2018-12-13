@@ -36,13 +36,15 @@ void main_loop(apdu_handler handlers[INS_MAX]) {
     while (true) {
         BEGIN_TRY {
             TRY {
+                // Process APDU of size rx
+
                 if (rx == 0) {
                     // no apdu received, well, reset the session, and reset the
                     // bootloader configuration
                     THROW(EXC_SECURITY);
                 }
 
-                if (G_io_apdu_buffer[0] != CLA) {
+                if (G_io_apdu_buffer[OFFSET_CLA] != CLA) {
                     THROW(EXC_CLASS);
                 }
 
