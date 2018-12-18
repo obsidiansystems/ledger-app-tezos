@@ -31,7 +31,10 @@ int pubkey_to_pkh_string(char *buff, uint32_t buff_size, cx_curve_t curve,
     return pkh_to_string(buff, buff_size, curve, hash);
 }
 
-int pkh_to_string(char *buff, uint32_t buff_size, cx_curve_t curve, const uint8_t hash[HASH_SIZE]) {
+// TODO: this should return size_t
+int pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve, const uint8_t hash[HASH_SIZE]) {
+    if (buff_size < PKH_STRING_SIZE) THROW(EXC_WRONG_LENGTH);
+
     // Data to encode
     struct __attribute__((packed)) {
         char prefix[3];
@@ -74,8 +77,9 @@ int pkh_to_string(char *buff, uint32_t buff_size, cx_curve_t curve, const uint8_
     cx_hash_sha256(checksum, sizeof(checksum), checksum, sizeof(checksum));
     memcpy(data.checksum, checksum, sizeof(data.checksum));
 
-    b58enc(buff, &buff_size, &data, sizeof(data));
-    return buff_size;
+    size_t out_size = buff_size;
+    if (!b58enc(buff, &out_size, &data, sizeof(data))) THROW(EXC_WRONG_LENGTH);
+    return out_size;
 }
 
 // These functions do not output terminating null bytes.
