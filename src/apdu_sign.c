@@ -14,7 +14,13 @@
 
 #include <string.h>
 
-#define TEZOS_BUFSIZE 512
+// Where does this number come from?
+#ifdef BAKING_APP
+#   define TEZOS_BUFSIZE 512
+#else
+#   define TEZOS_BUFSIZE 256
+#endif
+
 #define SIGN_HASH_SIZE 32
 #define B2B_BLOCKBYTES 128
 
