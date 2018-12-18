@@ -21,8 +21,6 @@
 static uint8_t message_data[TEZOS_BUFSIZE];
 static uint32_t message_data_length;
 static cx_curve_t curve;
-static uint8_t bip32_path_length;
-static uint32_t bip32_path[MAX_BIP32_PATH];
 
 static bool is_hash_state_inited;
 static uint8_t magic_number;
