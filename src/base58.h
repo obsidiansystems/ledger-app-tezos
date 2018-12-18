@@ -1,4 +1,5 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-bool b58enc(char *b58, size_t *b58sz, const void *bin, size_t binsz);
+/* Return true IFF successful, false otherwise. */
+bool b58enc(/* out */ char *b58, /* in/out */ size_t *b58sz, const void *bin, size_t binsz);

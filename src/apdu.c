@@ -53,7 +53,7 @@ void main_loop(apdu_handler handlers[INS_MAX]) {
                     THROW(EXC_WRONG_LENGTH);
                 }
 
-                uint8_t instruction = G_io_apdu_buffer[1];
+                uint8_t instruction = G_io_apdu_buffer[OFFSET_INS];
                 apdu_handler cb;
                 if (instruction >= INS_MAX) {
                     cb = handle_apdu_error;
