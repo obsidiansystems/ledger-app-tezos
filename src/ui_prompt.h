@@ -4,7 +4,8 @@
 
 #define MAX_SCREEN_COUNT 7 // Current maximum usage
 #define PROMPT_WIDTH 16
-#define VALUE_WIDTH PKH_STRING_SIZE
+#define VALUE_WIDTH PROTOCOL_HASH_BASE58_STRING_SIZE
+
 
 // Displays labels (terminated with a NULL pointer) associated with data
 // If data is NULL, assume we've filled it in directly with get_value_buffer

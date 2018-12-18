@@ -174,8 +174,10 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 //       hopefully ultimately never.
         TRY {
 #endif
+            // TODO: Simplify this to just switch on what we got.
             allowed_operation_set allowed;
             clear_operation_set(&allowed);
+            allow_operation(&allowed, OPERATION_TAG_PROPOSAL);
             allow_operation(&allowed, OPERATION_TAG_DELEGATION);
             allow_operation(&allowed, OPERATION_TAG_REVEAL);
             allow_operation(&allowed, OPERATION_TAG_ORIGINATION);
@@ -198,6 +200,33 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
     switch (ops->operation.tag) {
         default:
             THROW(EXC_PARSE_ERROR);
+
+        case OPERATION_TAG_PROPOSAL:
+            {
+                static const uint32_t TYPE_INDEX = 0;
+                static const uint32_t SOURCE_INDEX = 1;
+                static const uint32_t PERIOD_INDEX = 2;
+                static const uint32_t PROTOCOL_HASH_INDEX = 3;
+
+                static const char *const proposal_prompts[] = {
+                    "Confirm",
+                    "Source",
+                    "Period",
+                    "Protocol",
+                    NULL,
+                };
+
+                if (!parsed_contract_to_string(get_value_buffer(SOURCE_INDEX), VALUE_WIDTH,
+                                               &ops->operation.source)) return false;
+                if (!number_to_string(get_value_buffer(PERIOD_INDEX),
+                                      ops->operation.proposal.voting_period)) return false;
+
+                protocol_hash_to_string(get_value_buffer(PROTOCOL_HASH_INDEX), VALUE_WIDTH,
+                                        ops->operation.proposal.protocol_hash);
+
+                strcpy(get_value_buffer(TYPE_INDEX), "Proposal");
+                ui_prompt(proposal_prompts, NULL, ok, cxl);
+            }
 
         case OPERATION_TAG_ORIGINATION:
             {

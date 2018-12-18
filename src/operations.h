@@ -16,8 +16,16 @@ struct parsed_contract {
     uint8_t hash[HASH_SIZE];
 };
 
+#define PROTOCOL_HASH_SIZE 32
+
+struct parsed_proposal {
+    int32_t voting_period;
+    uint8_t protocol_hash[PROTOCOL_HASH_SIZE];
+};
+
 enum operation_tag {
     OPERATION_TAG_NONE = -1, // Sentinal value, as 0 is possibly used for something
+    OPERATION_TAG_PROPOSAL = 5,
     OPERATION_TAG_REVEAL = 7,
     OPERATION_TAG_TRANSACTION = 8,
     OPERATION_TAG_ORIGINATION = 9,
@@ -46,6 +54,7 @@ struct parsed_operation {
     struct parsed_contract source;
     struct parsed_contract destination;
     struct parsed_contract delegate; // For originations only
+    struct parsed_proposal proposal; // For proposals only
     uint64_t amount; // 0 where inappropriate
     uint32_t flags;  // Interpretation depends on operation type
 };

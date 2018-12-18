@@ -6,6 +6,7 @@
 
 static char prompts[MAX_SCREEN_COUNT][PROMPT_WIDTH + 1]; // Additional bytes init'ed to null,
 static char values[MAX_SCREEN_COUNT][VALUE_WIDTH + 1];   // and null they shall remain.
+        // TODO: Get rid of +1
 
 #define SCREEN_FOR(SCREEN_ID) \
     {{BAGL_LABELINE, SCREEN_ID + 1, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000, \
