@@ -39,6 +39,12 @@ struct proposal_contents {
     uint8_t hash[PROTOCOL_HASH_SIZE];
 } __attribute__((packed));
 
+struct ballot_contents {
+    int32_t period;
+    uint8_t proposal[PROTOCOL_HASH_SIZE];
+    int8_t ballot;
+} __attribute__((packed));
+
 // Argument is to distinguish between different parse errors for debugging purposes only
 __attribute__((noreturn))
 static void parse_error(
@@ -153,7 +159,7 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
 
         if (!is_operation_allowed(ops, tag)) PARSE_ERROR();
 
-        if (tag == OPERATION_TAG_PROPOSAL) {
+        if (tag == OPERATION_TAG_PROPOSAL || tag == OPERATION_TAG_BALLOT) {
             // These tags don't have the "originated" byte so we have to parse PKH differently.
             const struct implicit_contract *implicit_source = NEXT_TYPE(struct implicit_contract);
             out.operation.source.originated = 0;
@@ -217,6 +223,30 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
 
                     out.operation.proposal.voting_period = READ_UNALIGNED_BIG_ENDIAN(int32_t, &proposal_data->period);
                     memcpy(out.operation.proposal.protocol_hash, proposal_data->hash, sizeof(out.operation.proposal.protocol_hash));
+                }
+                break;
+            case OPERATION_TAG_BALLOT:
+                {
+                    const struct ballot_contents *ballot_data = NEXT_TYPE(struct ballot_contents);
+                    if (ix != length) PARSE_ERROR();
+
+                    out.operation.ballot.voting_period = READ_UNALIGNED_BIG_ENDIAN(int32_t, &ballot_data->period);
+                    memcpy(out.operation.ballot.protocol_hash, ballot_data->proposal, sizeof(out.operation.ballot.protocol_hash));
+
+                    const int8_t ballot_vote = READ_UNALIGNED_BIG_ENDIAN(int8_t, &ballot_data->ballot);
+                    switch (ballot_vote) {
+                        case 0:
+                            out.operation.ballot.vote = yea;
+                            break;
+                        case 1:
+                            out.operation.ballot.vote = nay;
+                            break;
+                        case 2:
+                            out.operation.ballot.vote = pass;
+                            break;
+                        default:
+                            PARSE_ERROR();
+                    }
                 }
                 break;
             case OPERATION_TAG_DELEGATION:
