@@ -446,7 +446,7 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
     switch (p1 & ~P1_LAST_MARKER) {
     case P1_FIRST:
         clear_data();
-        os_memset(message_data, 0, TEZOS_BUFSIZE);
+        os_memset(message_data, 0, sizeof(message_data));
         message_data_length = 0;
         bip32_path_length = read_bip32_path(dataLength, bip32_path, dataBuffer);
         curve = curve_code_to_curve(G_io_apdu_buffer[OFFSET_CURVE]);
@@ -476,7 +476,7 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
     }
 #endif
 
-    if (message_data_length + dataLength > TEZOS_BUFSIZE) {
+    if (message_data_length + dataLength > sizeof(message_data)) {
         THROW(EXC_PARSE_ERROR);
     }
 
