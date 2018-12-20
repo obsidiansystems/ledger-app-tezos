@@ -221,8 +221,8 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 if (!number_to_string(get_value_buffer(PERIOD_INDEX),
                                       ops->operation.proposal.voting_period)) return false;
 
-                protocol_hash_to_string(get_value_buffer(PROTOCOL_HASH_INDEX), VALUE_WIDTH,
-                                        ops->operation.proposal.protocol_hash);
+                if (!protocol_hash_to_string(get_value_buffer(PROTOCOL_HASH_INDEX), VALUE_WIDTH,
+                                             ops->operation.proposal.protocol_hash)) return false;
 
                 strcpy(get_value_buffer(TYPE_INDEX), "Proposal");
                 ui_prompt(proposal_prompts, NULL, ok, cxl);

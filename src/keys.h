@@ -28,9 +28,6 @@ struct key_pair *generate_key_pair(cx_curve_t curve, uint32_t path_size, uint32_
 #define HASH_SIZE 20
 #define PKH_STRING_SIZE 40
 
-// TODO: Move this to a better place
-#define PROTOCOL_HASH_BASE58_STRING_SIZE 52 // e.g. "ProtoBetaBetaBetaBetaBetaBetaBetaBetaBet11111a5ug96" plus null byte
-
 cx_ecfp_public_key_t *public_key_hash(uint8_t output[HASH_SIZE], cx_curve_t curve,
                                       const cx_ecfp_public_key_t *public_key);
 

@@ -157,7 +157,7 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
             // These tags don't have the "originated" byte so we have to parse PKH differently.
             const struct implicit_contract *implicit_source = NEXT_TYPE(struct implicit_contract);
             out.operation.source.originated = 0;
-            out.operation.source.curve_code = implicit_source->curve_code; // 1 byte is aligned
+            out.operation.source.curve_code = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &implicit_source->curve_code);
             memcpy(out.operation.source.hash, implicit_source->pkh, sizeof(out.operation.source.hash));
         } else {
             const struct contract *source = NEXT_TYPE(struct contract);
