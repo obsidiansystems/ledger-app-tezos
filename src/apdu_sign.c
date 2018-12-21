@@ -141,17 +141,6 @@ uint32_t baking_sign_complete(void) {
 
 #else
 
-const char *const parse_fail_prompts[] = {
-    "Unrecognized",
-    "Sign",
-    NULL,
-};
-
-const char *const prehashed_prompts[] = {
-    "Pre-hashed",
-    "Sign",
-    NULL,
-};
 
 const char *const insecure_values[] = {
     "Operation",
@@ -160,6 +149,8 @@ const char *const insecure_values[] = {
 };
 
 #define MAX_NUMBER_CHARS (MAX_INT_DIGITS + 2) // include decimal point and terminating null
+
+#define SET_STATIC_UI_VALUE(index, str) strcpy(get_value_buffer(index), STATIC_UI_VALUE(str))
 
 // Return false if the transaction isn't easily parseable, otherwise prompt with given callbacks
 // and do not return, but rather throw ASYNC.
@@ -210,10 +201,10 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 static const uint32_t PROTOCOL_HASH_INDEX = 3;
 
                 static const char *const proposal_prompts[] = {
-                    "Confirm",
-                    "Source",
-                    "Period",
-                    "Protocol",
+                    PROMPT("Confirm"),
+                    PROMPT("Source"),
+                    PROMPT("Period"),
+                    PROMPT("Protocol"),
                     NULL,
                 };
 
@@ -225,7 +216,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 if (!protocol_hash_to_string(get_value_buffer(PROTOCOL_HASH_INDEX), VALUE_WIDTH,
                                              ops->operation.proposal.protocol_hash)) return false;
 
-                strcpy(get_value_buffer(TYPE_INDEX), "Proposal");
+                SET_STATIC_UI_VALUE(TYPE_INDEX, "Proposal");
                 ui_prompt(proposal_prompts, NULL, ok, cxl);
             }
 
@@ -237,10 +228,10 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 static const uint32_t PERIOD_INDEX = 3;
 
                 static const char *const ballot_prompts[] = {
-                    "Confirm Vote",
-                    "Source",
-                    "Protocol",
-                    "Period",
+                    PROMPT("Confirm Vote"),
+                    PROMPT("Source"),
+                    PROMPT("Protocol"),
+                    PROMPT("Period"),
                     NULL,
                 };
 
@@ -253,13 +244,13 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
 
                 switch (ops->operation.ballot.vote) {
                     case yea:
-                        strcpy(get_value_buffer(TYPE_INDEX), "Yea");
+                        SET_STATIC_UI_VALUE(TYPE_INDEX, "Yea");
                         break;
                     case nay:
-                        strcpy(get_value_buffer(TYPE_INDEX), "Nay");
+                        SET_STATIC_UI_VALUE(TYPE_INDEX, "Nay");
                         break;
                     case pass:
-                        strcpy(get_value_buffer(TYPE_INDEX), "Pass");
+                        SET_STATIC_UI_VALUE(TYPE_INDEX, "Pass");
                         break;
                 }
 
@@ -284,39 +275,39 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 number_to_string(get_value_buffer(STORAGE_INDEX), ops->total_storage_limit);
 
                 static const char *const origination_prompts_fixed[] = {
-                    "Confirm",
-                    "Amount",
-                    "Fee",
-                    "Source",
-                    "Manager",
-                    "Fixed Delegate",
-                    "Storage",
+                    PROMPT("Confirm"),
+                    PROMPT("Amount"),
+                    PROMPT("Fee"),
+                    PROMPT("Source"),
+                    PROMPT("Manager"),
+                    PROMPT("Fixed Delegate"),
+                    PROMPT("Storage"),
                     NULL,
                 };
                 static const char *const origination_prompts_delegatable[] = {
-                    "Confirm",
-                    "Amount",
-                    "Fee",
-                    "Source",
-                    "Manager",
-                    "Delegate",
-                    "Storage",
+                    PROMPT("Confirm"),
+                    PROMPT("Amount"),
+                    PROMPT("Fee"),
+                    PROMPT("Source"),
+                    PROMPT("Manager"),
+                    PROMPT("Delegate"),
+                    PROMPT("Storage"),
                     NULL,
                 };
                 static const char *const origination_prompts_undelegatable[] = {
-                    "Confirm",
-                    "Amount",
-                    "Fee",
-                    "Source",
-                    "Manager",
-                    "Delegation",
-                    "Storage",
+                    PROMPT("Confirm"),
+                    PROMPT("Amount"),
+                    PROMPT("Fee"),
+                    PROMPT("Source"),
+                    PROMPT("Manager"),
+                    PROMPT("Delegation"),
+                    PROMPT("Storage"),
                     NULL,
                 };
 
                 if (!(ops->operation.flags & ORIGINATION_FLAG_SPENDABLE)) return false;
 
-                strcpy(get_value_buffer(TYPE_INDEX), "Origination");
+                SET_STATIC_UI_VALUE(TYPE_INDEX, "Origination");
                 microtez_to_string(get_value_buffer(AMOUNT_INDEX), ops->operation.amount);
 
                 const char *const *prompts;
@@ -328,14 +319,14 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                                                    &ops->operation.delegate)) return false;
                 } else if (delegatable && !has_delegate) {
                     prompts = origination_prompts_delegatable;
-                    strcpy(get_value_buffer(DELEGATE_INDEX), "Any");
+                    SET_STATIC_UI_VALUE(DELEGATE_INDEX, "Any");
                 } else if (!delegatable && has_delegate) {
                     prompts = origination_prompts_fixed;
                     if (!parsed_contract_to_string(get_value_buffer(DELEGATE_INDEX), VALUE_WIDTH,
                                                    &ops->operation.delegate)) return false;
                 } else if (!delegatable && !has_delegate) {
                     prompts = origination_prompts_undelegatable;
-                    strcpy(get_value_buffer(DELEGATE_INDEX), "Disabled");
+                    SET_STATIC_UI_VALUE(DELEGATE_INDEX, "Disabled");
                 }
 
                 ui_prompt(prompts, NULL, ok, cxl);
@@ -356,23 +347,23 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 number_to_string(get_value_buffer(STORAGE_INDEX), ops->total_storage_limit);
 
                 static const char *const withdrawal_prompts[] = {
-                    "Withdraw",
-                    "Fee",
-                    "Source",
-                    "Delegate",
-                    "Storage",
+                    PROMPT("Withdraw"),
+                    PROMPT("Fee"),
+                    PROMPT("Source"),
+                    PROMPT("Delegate"),
+                    PROMPT("Storage"),
                     NULL,
                 };
                 static const char *const delegation_prompts[] = {
-                    "Confirm",
-                    "Fee",
-                    "Source",
-                    "Delegate",
-                    "Storage",
+                    PROMPT("Confirm"),
+                    PROMPT("Fee"),
+                    PROMPT("Source"),
+                    PROMPT("Delegate"),
+                    PROMPT("Storage"),
                     NULL,
                 };
 
-                strcpy(get_value_buffer(TYPE_INDEX), "Delegation");
+                SET_STATIC_UI_VALUE(TYPE_INDEX, "Delegation");
 
                 bool withdrawal = ops->operation.destination.originated == 0 &&
                     ops->operation.destination.curve_code == TEZOS_NO_CURVE;
@@ -390,12 +381,12 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 static const uint32_t STORAGE_INDEX = 5;
 
                 static const char *const transaction_prompts[] = {
-                    "Confirm",
-                    "Amount",
-                    "Fee",
-                    "Source",
-                    "Destination",
-                    "Storage",
+                    PROMPT("Confirm"),
+                    PROMPT("Amount"),
+                    PROMPT("Fee"),
+                    PROMPT("Source"),
+                    PROMPT("Destination"),
+                    PROMPT("Storage"),
                     NULL,
                 };
 
@@ -406,7 +397,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 microtez_to_string(get_value_buffer(FEE_INDEX), ops->total_fee);
                 number_to_string(get_value_buffer(STORAGE_INDEX), ops->total_storage_limit);
 
-                strcpy(get_value_buffer(TYPE_INDEX), "Transaction");
+                SET_STATIC_UI_VALUE(TYPE_INDEX, "Transaction");
 
                 microtez_to_string(get_value_buffer(AMOUNT_INDEX), ops->operation.amount);
 
@@ -426,14 +417,14 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
 
                 // Parser function guarantees this has a reveal
                 static const char *const reveal_prompts[] = {
-                    "Reveal Key",
-                    "Key",
-                    "Fee",
-                    "Storage",
+                    PROMPT("Reveal Key"),
+                    PROMPT("Key"),
+                    PROMPT("Fee"),
+                    PROMPT("Storage"),
                     NULL,
                 };
 
-                strcpy(get_value_buffer(TYPE_INDEX), "To Blockchain");
+                SET_STATIC_UI_VALUE(TYPE_INDEX, "To Blockchain");
                 number_to_string(get_value_buffer(STORAGE_INDEX), ops->total_storage_limit);
                 if (!parsed_contract_to_string(get_value_buffer(SOURCE_INDEX), VALUE_WIDTH,
                                                &ops->operation.source)) return false;
@@ -444,7 +435,18 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
 }
 
 uint32_t wallet_sign_complete(uint8_t instruction) {
+    static const char *const parse_fail_prompts[] = {
+        PROMPT("Unrecognized"),
+        PROMPT("Sign"),
+        NULL,
+    };
+
     if (instruction == INS_SIGN_UNSAFE) {
+        static const char *const prehashed_prompts[] = {
+            PROMPT("Pre-hashed"),
+            PROMPT("Sign"),
+            NULL,
+        };
         ui_prompt(prehashed_prompts, insecure_values, sign_unsafe_ok, sign_reject);
     } else {
         switch (magic_number) {

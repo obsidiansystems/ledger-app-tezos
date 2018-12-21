@@ -89,12 +89,6 @@ void update_auth_text(void) {
 
 static char address_display_data[VALUE_WIDTH];
 
-static const char *const pubkey_labels[] = {
-    "Provide",
-    "Public Key Hash",
-    NULL,
-};
-
 static const char *const pubkey_values[] = {
     "Public Key",
     address_display_data,
@@ -102,11 +96,15 @@ static const char *const pubkey_values[] = {
 };
 
 #ifdef BAKING_APP
-static const char *const baking_labels[] = {
-    "Authorize Baking",
-    "Public Key Hash",
-    NULL,
-};
+
+static char const * const * get_baking_prompts() {
+    static const char *const baking_prompts[] = {
+        PROMPT("Authorize Baking"),
+        PROMPT("Public Key Hash"),
+        NULL,
+    };
+    return baking_prompts;
+}
 
 static const char *const baking_values[] = {
     "With Public Key?",
@@ -120,7 +118,7 @@ void prompt_contract_for_baking(struct parsed_contract *contract, callback_t ok_
         THROW(EXC_WRONG_VALUES);
     }
 
-    ui_prompt(baking_labels, baking_values, ok_cb, cxl_cb);
+    ui_prompt(get_baking_prompts(), baking_values, ok_cb, cxl_cb);
 }
 #endif
 
@@ -137,9 +135,14 @@ void prompt_address(
 
 #ifdef BAKING_APP
     if (baking) {
-        ui_prompt(baking_labels, baking_values, ok_cb, cxl_cb);
+        ui_prompt(get_baking_prompts(), baking_values, ok_cb, cxl_cb);
     } else {
 #endif
+        static const char *const pubkey_labels[] = {
+            PROMPT("Provide"),
+            PROMPT("Public Key Hash"),
+            NULL,
+        };
         ui_prompt(pubkey_labels, pubkey_values, ok_cb, cxl_cb);
 #ifdef BAKING_APP
     }
