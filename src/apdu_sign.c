@@ -243,13 +243,13 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                                       ops->operation.ballot.voting_period)) return false;
 
                 switch (ops->operation.ballot.vote) {
-                    case yea:
+                    case BALLOT_VOTE_YEA:
                         SET_STATIC_UI_VALUE(TYPE_INDEX, "Yea");
                         break;
-                    case nay:
+                    case BALLOT_VOTE_NAY:
                         SET_STATIC_UI_VALUE(TYPE_INDEX, "Nay");
                         break;
-                    case pass:
+                    case BALLOT_VOTE_PASS:
                         SET_STATIC_UI_VALUE(TYPE_INDEX, "Pass");
                         break;
                 }

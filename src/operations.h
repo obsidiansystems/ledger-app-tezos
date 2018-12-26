@@ -24,9 +24,9 @@ struct parsed_proposal {
 };
 
 enum ballot_vote {
-    yea,
-    nay,
-    pass
+    BALLOT_VOTE_YEA,
+    BALLOT_VOTE_NAY,
+    BALLOT_VOTE_PASS,
 };
 
 struct parsed_ballot {

@@ -236,13 +236,13 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
                     const int8_t ballot_vote = READ_UNALIGNED_BIG_ENDIAN(int8_t, &ballot_data->ballot);
                     switch (ballot_vote) {
                         case 0:
-                            out.operation.ballot.vote = yea;
+                            out.operation.ballot.vote = BALLOT_VOTE_YEA;
                             break;
                         case 1:
-                            out.operation.ballot.vote = nay;
+                            out.operation.ballot.vote = BALLOT_VOTE_NAY;
                             break;
                         case 2:
-                            out.operation.ballot.vote = pass;
+                            out.operation.ballot.vote = BALLOT_VOTE_PASS;
                             break;
                         default:
                             PARSE_ERROR();
