@@ -20,7 +20,10 @@
   })
 
 // Displays labels (terminated with a NULL pointer) associated with data
-// If data is NULL, assume we've filled it in directly with get_value_buffer
+// labels must be completely static string constants
+// data may be dynamic
+// Alternatively, if data is NULL, assume we've filled it in directly with get_value_buffer
+// All pointers may be unrelocated
 __attribute__((noreturn))
 void ui_prompt(const char *const *labels, const char *const *data, callback_t ok_c, callback_t cxl_c);
 
