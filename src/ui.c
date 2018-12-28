@@ -1,6 +1,7 @@
 #include "ui.h"
 
 #include "ui_menu.h"
+#include "ui_prompt.h"
 
 #include "baking_auth.h"
 #include "keys.h"
@@ -172,7 +173,7 @@ const bagl_element_t *prepro(const bagl_element_t *element) {
         min = 4000;
     }
 
-    if (ux_step == element->component.userid - 1) {
+    if (ux_step == element->component.userid - 1 || element->component.userid == 100) {
         // timeouts are in millis
         if (ux_step_count > 1) {
             UX_CALLBACK_SET_INTERVAL(MAX(min,
@@ -191,6 +192,7 @@ void ui_display(const bagl_element_t *elems, size_t sz, callback_t ok_c, callbac
     // Adapted from definition of UX_DISPLAY in header file
     timeout_cycle_count = 0;
     ux_step = 0;
+    switch_screen(0);
     ux_step_count = step_count;
     ok_callback = ok_c;
     cxl_callback = cxl_c;
@@ -225,6 +227,7 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
             if (ux.callback_interval_ms == 0) {
                 // prepare next screen
                 ux_step = (ux_step + 1) % ux_step_count;
+                switch_screen(ux_step);
 
                 // check if we've timed out
                 if (ux_step == 0) {
