@@ -25,3 +25,4 @@ __attribute__((noreturn))
 void ui_prompt(const char *const *labels, const char *const *data, callback_t ok_c, callback_t cxl_c);
 
 char *get_value_buffer(uint32_t which);
+void switch_screen(uint32_t which);
