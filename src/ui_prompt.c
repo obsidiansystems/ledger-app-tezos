@@ -4,8 +4,11 @@
 
 #include <string.h>
 
-static char prompts[MAX_SCREEN_COUNT][PROMPT_WIDTH + 1]; // Additional bytes init'ed to null,
-static char values[MAX_SCREEN_COUNT][VALUE_WIDTH + 1];   // and null they shall remain.
+// This will and must always be static memory full of constants
+static const char *const *prompts;
+
+// Additional bytes (by OS) init'ed to null, and null they shall remain.
+static char values[MAX_SCREEN_COUNT][VALUE_WIDTH + 1];
         // TODO: Get rid of +1
 
 static char active_prompt[PROMPT_WIDTH + 1];
@@ -70,21 +73,24 @@ char *get_value_buffer(uint32_t which) {
 
 void switch_screen(uint32_t which) {
     if (which >= MAX_SCREEN_COUNT) THROW(EXC_MEMORY_ERROR);
-    memcpy(active_prompt, prompts[which], sizeof(active_prompt));
+    const char *label = (const char*)PIC(prompts[which]);
+
+    // This will not overwrite terminating bytes
+    strncpy(active_prompt, label, PROMPT_WIDTH);
     memcpy(active_value, values[which], sizeof(active_value));
 }
 
 __attribute__((noreturn))
 void ui_prompt(const char *const *labels, const char *const *data, callback_t ok_c, callback_t cxl_c) {
     check_null(labels);
+    prompts = labels;
 
     size_t i;
     for (i = 0; labels[i] != NULL; i++) {
         const char *label = (const char *)PIC(labels[i]);
         if (i >= MAX_SCREEN_COUNT || strlen(label) > PROMPT_WIDTH) THROW(EXC_MEMORY_ERROR);
 
-        // These will not overwrite terminating bytes
-        strncpy(prompts[i], label, PROMPT_WIDTH);
+        // This will not overwrite terminating bytes
         if (data != NULL) {
             const char *value = (const char *)PIC(data[i]);
             if (strlen(value) > VALUE_WIDTH) THROW(EXC_MEMORY_ERROR);
