@@ -175,12 +175,8 @@ const bagl_element_t *prepro(const bagl_element_t *element) {
 
     if (ux_step == element->component.userid - 1 || element->component.userid == 100) {
         // timeouts are in millis
-        if (ux_step_count > 1) {
-            UX_CALLBACK_SET_INTERVAL(MAX(min,
-                                         (1500 + bagl_label_roundtrip_duration_ms(element, 7)) / div));
-        } else {
-            UX_CALLBACK_SET_INTERVAL(30000 / PROMPT_CYCLES);
-        }
+        UX_CALLBACK_SET_INTERVAL(MAX(min,
+                                     (1500 + bagl_label_roundtrip_duration_ms(element, 7)) / div));
         return element;
     } else {
         return NULL;
