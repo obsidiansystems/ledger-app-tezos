@@ -9,7 +9,7 @@ static char values[MAX_SCREEN_COUNT][VALUE_WIDTH + 1];   // and null they shall 
         // TODO: Get rid of +1
 
 static char active_prompt[PROMPT_WIDTH + 1];
-static char active_value[PROMPT_WIDTH + 1];
+static char active_value[VALUE_WIDTH + 1];
 
 static const bagl_element_t ui_multi_screen[] = {
     {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
@@ -42,7 +42,7 @@ static const bagl_element_t ui_multi_screen[] = {
      NULL,
      NULL},
 
-    {{BAGL_LABELINE, 100, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+    {{BAGL_LABELINE, 0, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
      active_prompt,
      0,
@@ -60,7 +60,7 @@ static const bagl_element_t ui_multi_screen[] = {
      0,
      NULL,
      NULL,
-     NULL}
+     NULL},
 };
 
 char *get_value_buffer(uint32_t which) {
@@ -69,6 +69,7 @@ char *get_value_buffer(uint32_t which) {
 }
 
 void switch_screen(uint32_t which) {
+    if (which >= MAX_SCREEN_COUNT) THROW(EXC_MEMORY_ERROR);
     memcpy(active_prompt, prompts[which], sizeof(active_prompt));
     memcpy(active_value, values[which], sizeof(active_value));
 }
