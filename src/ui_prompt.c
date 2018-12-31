@@ -15,7 +15,7 @@ static char active_prompt[PROMPT_WIDTH + 1];
 static char active_value[VALUE_WIDTH + 1];
 
 static const bagl_element_t ui_multi_screen[] = {
-    {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
+    {{BAGL_RECTANGLE, BAGL_STATIC_ELEMENT, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
       0, 0},
      NULL,
      0,
@@ -25,7 +25,7 @@ static const bagl_element_t ui_multi_screen[] = {
      NULL,
      NULL},
 
-    {{BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+    {{BAGL_ICON, BAGL_STATIC_ELEMENT, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
       BAGL_GLYPH_ICON_CROSS},
      NULL,
      0,
@@ -35,7 +35,7 @@ static const bagl_element_t ui_multi_screen[] = {
      NULL,
      NULL},
 
-    {{BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+    {{BAGL_ICON, BAGL_STATIC_ELEMENT, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
       BAGL_GLYPH_ICON_CHECK},
      NULL,
      0,
@@ -45,7 +45,7 @@ static const bagl_element_t ui_multi_screen[] = {
      NULL,
      NULL},
 
-    {{BAGL_LABELINE, 0, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+    {{BAGL_LABELINE, BAGL_STATIC_ELEMENT, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
      active_prompt,
      0,
@@ -55,7 +55,7 @@ static const bagl_element_t ui_multi_screen[] = {
      NULL,
      NULL},
 
-    {{BAGL_LABELINE, 100, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+    {{BAGL_LABELINE, BAGL_SCROLLING_ELEMENT, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
      active_value,
      0,
