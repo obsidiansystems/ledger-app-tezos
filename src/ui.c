@@ -163,8 +163,7 @@ unsigned button_handler(unsigned button_mask, __attribute__((unused)) unsigned b
 }
 
 const bagl_element_t *prepro(const bagl_element_t *element) {
-    // Always display elements with userid 0
-    if (element->component.userid == 0) return element;
+    if (element->component.userid == BAGL_STATIC_ELEMENT) return element;
 
     uint32_t min = 2000;
     uint32_t div = 2;
@@ -173,7 +172,7 @@ const bagl_element_t *prepro(const bagl_element_t *element) {
         min = 4000;
     }
 
-    if (ux_step == element->component.userid - 1 || element->component.userid == 100) {
+    if (ux_step == element->component.userid - 1 || element->component.userid == BAGL_SCROLLING_ELEMENT) {
         // timeouts are in millis
         UX_CALLBACK_SET_INTERVAL(MAX(min,
                                      (1500 + bagl_label_roundtrip_duration_ms(element, 7)) / div));
