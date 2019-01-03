@@ -29,3 +29,7 @@ void ui_prompt(const char *const *labels, const char *const *data, callback_t ok
 
 char *get_value_buffer(uint32_t which);
 void switch_screen(uint32_t which);
+
+typedef bool (*string_generation_callback)(char *dest, size_t size, const void *data);
+void register_ui_callback(uint32_t which, string_generation_callback cb, const void *data);
+void clear_ui_callbacks(void);
