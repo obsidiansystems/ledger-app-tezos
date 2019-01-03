@@ -125,6 +125,7 @@ void ui_initial_screen(void) {
 #ifdef BAKING_APP
     change_idle_display(N_data.highest_level);
 #endif
+    clear_ui_callbacks();
     ui_idle();
 }
 
@@ -157,6 +158,7 @@ unsigned button_handler(unsigned button_mask, __attribute__((unused)) unsigned b
             return 0;
     }
     if (callback()) {
+        clear_ui_callbacks();
         ui_idle();
     }
     return 0;

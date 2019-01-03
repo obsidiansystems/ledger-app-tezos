@@ -184,7 +184,8 @@ size_t microtez_to_string(char *dest, uint64_t number) {
     return off;
 }
 
-bool copy_string(char *dest, uint32_t buff_size, const char *src) {
+bool copy_string(char *dest, uint32_t buff_size, const char *src_in) {
+    const char *src = (const char *)PIC(src_in);
     // I don't care that we will loop through the string twice, latency is not an issue
     if (strlen(src) >= buff_size) return false;
     strcpy(dest, src);

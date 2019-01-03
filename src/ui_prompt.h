@@ -32,4 +32,5 @@ void switch_screen(uint32_t which);
 
 typedef bool (*string_generation_callback)(char *dest, size_t size, const void *data);
 void register_ui_callback(uint32_t which, string_generation_callback cb, const void *data);
+#define REGISTER_UI_CALLBACK(which, cb, data) register_ui_callback(which, (string_generation_callback)cb, data)
 void clear_ui_callbacks(void);
