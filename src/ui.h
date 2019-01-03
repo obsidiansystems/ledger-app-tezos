@@ -22,6 +22,6 @@ void ui_display(const bagl_element_t *elems, size_t sz, callback_t ok_c, callbac
                 uint32_t step_count);
 unsigned char io_event(unsigned char channel);
 void io_seproxyhal_display(const bagl_element_t *element);
-void change_idle_display(uint32_t new);
+void change_idle_display(uint64_t new);
 
 extern char baking_auth_text[PKH_STRING_SIZE]; // TODO: Is this the right name?

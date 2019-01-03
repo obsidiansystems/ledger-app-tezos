@@ -1,15 +1,12 @@
 #include "ui_prompt.h"
 
 #include "exception.h"
+#include "to_string.h"
 
 #include <string.h>
 
 // This will and must always be static memory full of constants
 static const char *const *prompts;
-
-// Additional bytes (by OS) init'ed to null, and null they shall remain.
-static char values[MAX_SCREEN_COUNT][VALUE_WIDTH + 1];
-        // TODO: Get rid of +1
 
 static string_generation_callback callbacks[MAX_SCREEN_COUNT];
 static const void *callback_data[MAX_SCREEN_COUNT];
@@ -69,23 +66,15 @@ static const bagl_element_t ui_multi_screen[] = {
      NULL},
 };
 
-char *get_value_buffer(uint32_t which) {
-    if (which >= MAX_SCREEN_COUNT) THROW(EXC_MEMORY_ERROR);
-    return values[which];
-}
-
 void switch_screen(uint32_t which) {
     if (which >= MAX_SCREEN_COUNT) THROW(EXC_MEMORY_ERROR);
     const char *label = (const char*)PIC(prompts[which]);
 
     // This will not overwrite terminating bytes
     strncpy(active_prompt, label, PROMPT_WIDTH);
-    if (callbacks[which] != NULL) {
-        if (!callbacks[which](active_value, sizeof(active_value), callback_data[which])) {
-            THROW(EXC_MEMORY_ERROR);
-        }
-    } else {
-        memcpy(active_value, values[which], sizeof(active_value));
+    if (callbacks[which] == NULL) THROW(EXC_MEMORY_ERROR);
+    if (!callbacks[which](active_value, sizeof(active_value), callback_data[which])) {
+        THROW(EXC_MEMORY_ERROR);
     }
 }
 
@@ -113,9 +102,7 @@ void ui_prompt(const char *const *labels, const char *const *data, callback_t ok
 
         // This will not overwrite terminating bytes
         if (data != NULL) {
-            const char *value = (const char *)PIC(data[i]);
-            if (strlen(value) > VALUE_WIDTH) THROW(EXC_MEMORY_ERROR);
-            strncpy(values[i], value, VALUE_WIDTH);
+            REGISTER_UI_CALLBACK(i, copy_string, data[i]);
         }
     }
     size_t screen_count = i;

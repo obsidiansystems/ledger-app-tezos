@@ -10,6 +10,10 @@
 
 static int pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve, const uint8_t hash[HASH_SIZE]);
 
+// These functions output terminating null bytes, and return the ending offset.
+static size_t number_to_string(char *dest, uint64_t number);
+static size_t microtez_to_string(char *dest, uint64_t number);
+
 int parsed_contract_to_string(char *buff, uint32_t buff_size, const struct parsed_contract *contract) {
     if (contract->originated == 0 && contract->curve_code == TEZOS_NO_CURVE) {
         if (buff_size < sizeof(NO_CONTRACT_STRING)) return 0;

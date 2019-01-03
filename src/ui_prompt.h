@@ -22,15 +22,17 @@
 // Displays labels (terminated with a NULL pointer) associated with data
 // labels must be completely static string constants
 // data may be dynamic
-// Alternatively, if data is NULL, assume we've filled it in directly with get_value_buffer
+// Alternatively, if data is NULL, assume we've registered appropriate callbacks to generate the data
 // All pointers may be unrelocated
 __attribute__((noreturn))
 void ui_prompt(const char *const *labels, const char *const *data, callback_t ok_c, callback_t cxl_c);
 
-char *get_value_buffer(uint32_t which);
+// This is called by internal UI code to implement buffering
 void switch_screen(uint32_t which);
+// This is called by internal UI code to prevent callbacks from sticking around
+void clear_ui_callbacks(void);
 
+// This function (and also macro) registers how a value is to be produced
 typedef bool (*string_generation_callback)(char *dest, size_t size, const void *data);
 void register_ui_callback(uint32_t which, string_generation_callback cb, const void *data);
 #define REGISTER_UI_CALLBACK(which, cb, data) register_ui_callback(which, (string_generation_callback)cb, data)
-void clear_ui_callbacks(void);
