@@ -211,8 +211,6 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 REGISTER_UI_CALLBACK(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
                 REGISTER_UI_CALLBACK(PERIOD_INDEX, number_to_string_indirect, &ops->operation.proposal.voting_period);
                 REGISTER_UI_CALLBACK(PROTOCOL_HASH_INDEX, protocol_hash_to_string, ops->operation.proposal.protocol_hash);
-                if (!protocol_hash_to_string(get_value_buffer(PROTOCOL_HASH_INDEX), VALUE_WIDTH,
-                                             ops->operation.proposal.protocol_hash)) return false;
 
                 SET_STATIC_UI_VALUE(TYPE_INDEX, "Proposal");
                 ui_prompt(proposal_prompts, NULL, ok, cxl);
@@ -233,12 +231,10 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                     NULL,
                 };
 
-                if (!parsed_contract_to_string(get_value_buffer(SOURCE_INDEX), VALUE_WIDTH,
-                                               &ops->operation.source)) return false;
-                if (!protocol_hash_to_string(get_value_buffer(PROTOCOL_HASH_INDEX), VALUE_WIDTH,
-                                             ops->operation.ballot.protocol_hash)) return false;
-                if (!number_to_string(get_value_buffer(PERIOD_INDEX),
-                                      ops->operation.ballot.voting_period)) return false;
+                REGISTER_UI_CALLBACK(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
+                REGISTER_UI_CALLBACK(PROTOCOL_HASH_INDEX, protocol_hash_to_string,
+                                     ops->operation.ballot.protocol_hash);
+                REGISTER_UI_CALLBACK(PERIOD_INDEX, number_to_string_indirect, &ops->operation.ballot.voting_period);
 
                 switch (ops->operation.ballot.vote) {
                     case BALLOT_VOTE_YEA:
@@ -265,12 +261,12 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 static const uint32_t DELEGATE_INDEX = 5;
                 static const uint32_t STORAGE_INDEX = 6;
 
-                if (!parsed_contract_to_string(get_value_buffer(SOURCE_INDEX), VALUE_WIDTH,
-                                               &ops->operation.source)) return false;
-                if (!parsed_contract_to_string(get_value_buffer(DESTINATION_INDEX), VALUE_WIDTH,
-                                               &ops->operation.destination)) return false;
-                microtez_to_string(get_value_buffer(FEE_INDEX), ops->total_fee);
-                number_to_string(get_value_buffer(STORAGE_INDEX), ops->total_storage_limit);
+                REGISTER_UI_CALLBACK(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
+                REGISTER_UI_CALLBACK(DESTINATION_INDEX, parsed_contract_to_string,
+                                     &ops->operation.destination);
+                REGISTER_UI_CALLBACK(FEE_INDEX, microtez_to_string_indirect, &ops->total_fee);
+                REGISTER_UI_CALLBACK(STORAGE_INDEX, number_to_string_indirect,
+                                     &ops->total_storage_limit);
 
                 static const char *const origination_prompts_fixed[] = {
                     PROMPT("Confirm"),
@@ -306,22 +302,22 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 if (!(ops->operation.flags & ORIGINATION_FLAG_SPENDABLE)) return false;
 
                 SET_STATIC_UI_VALUE(TYPE_INDEX, "Origination");
-                microtez_to_string(get_value_buffer(AMOUNT_INDEX), ops->operation.amount);
+                REGISTER_UI_CALLBACK(AMOUNT_INDEX, microtez_to_string_indirect, &ops->operation.amount);
 
                 const char *const *prompts;
                 bool delegatable = ops->operation.flags & ORIGINATION_FLAG_DELEGATABLE;
                 bool has_delegate = ops->operation.delegate.curve_code != TEZOS_NO_CURVE;
                 if (delegatable && has_delegate) {
                     prompts = origination_prompts_delegatable;
-                    if (!parsed_contract_to_string(get_value_buffer(DELEGATE_INDEX), VALUE_WIDTH,
-                                                   &ops->operation.delegate)) return false;
+                    REGISTER_UI_CALLBACK(DELEGATE_INDEX, parsed_contract_to_string,
+                                         &ops->operation.delegate);
                 } else if (delegatable && !has_delegate) {
                     prompts = origination_prompts_delegatable;
                     SET_STATIC_UI_VALUE(DELEGATE_INDEX, "Any");
                 } else if (!delegatable && has_delegate) {
                     prompts = origination_prompts_fixed;
-                    if (!parsed_contract_to_string(get_value_buffer(DELEGATE_INDEX), VALUE_WIDTH,
-                                                   &ops->operation.delegate)) return false;
+                    REGISTER_UI_CALLBACK(DELEGATE_INDEX, parsed_contract_to_string,
+                                         &ops->operation.delegate);
                 } else if (!delegatable && !has_delegate) {
                     prompts = origination_prompts_undelegatable;
                     SET_STATIC_UI_VALUE(DELEGATE_INDEX, "Disabled");
@@ -337,12 +333,12 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 static const uint32_t DESTINATION_INDEX = 3;
                 static const uint32_t STORAGE_INDEX = 4;
 
-                if (!parsed_contract_to_string(get_value_buffer(SOURCE_INDEX), VALUE_WIDTH,
-                                               &ops->operation.source)) return false;
-                if (!parsed_contract_to_string(get_value_buffer(DESTINATION_INDEX), VALUE_WIDTH,
-                                               &ops->operation.destination)) return false;
-                microtez_to_string(get_value_buffer(FEE_INDEX), ops->total_fee);
-                number_to_string(get_value_buffer(STORAGE_INDEX), ops->total_storage_limit);
+                REGISTER_UI_CALLBACK(SOURCE_INDEX, parsed_contract_to_string,
+                                     &ops->operation.source);
+                REGISTER_UI_CALLBACK(DESTINATION_INDEX, parsed_contract_to_string,
+                                     &ops->operation.destination);
+                REGISTER_UI_CALLBACK(FEE_INDEX, microtez_to_string_indirect, &ops->total_fee);
+                REGISTER_UI_CALLBACK(STORAGE_INDEX, number_to_string_indirect, &ops->total_storage_limit);
 
                 static const char *const withdrawal_prompts[] = {
                     PROMPT("Withdraw"),
@@ -406,10 +402,8 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 static const uint32_t FEE_INDEX = 2;
                 static const uint32_t STORAGE_INDEX = 3;
 
-                if (!parsed_contract_to_string(get_value_buffer(SOURCE_INDEX), VALUE_WIDTH,
-                                               &ops->operation.source)) return false;
-
-                microtez_to_string(get_value_buffer(FEE_INDEX), ops->total_fee);
+                REGISTER_UI_CALLBACK(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
+                REGISTER_UI_CALLBACK(FEE_INDEX, microtez_to_string_indirect, &ops->total_fee);
 
                 // Parser function guarantees this has a reveal
                 static const char *const reveal_prompts[] = {
@@ -421,9 +415,8 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 };
 
                 SET_STATIC_UI_VALUE(TYPE_INDEX, "To Blockchain");
-                number_to_string(get_value_buffer(STORAGE_INDEX), ops->total_storage_limit);
-                if (!parsed_contract_to_string(get_value_buffer(SOURCE_INDEX), VALUE_WIDTH,
-                                               &ops->operation.source)) return false;
+                REGISTER_UI_CALLBACK(STORAGE_INDEX, number_to_string_indirect, &ops->total_storage_limit);
+                REGISTER_UI_CALLBACK(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
 
                 ui_prompt(reveal_prompts, NULL, ok, cxl);
             }

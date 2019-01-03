@@ -116,8 +116,8 @@ static void ui_idle(void) {
 #endif
 }
 
-void change_idle_display(uint32_t new) {
-    number_to_string(idle_text, new);
+void change_idle_display(uint64_t new) {
+    number_to_string_indirect(idle_text, sizeof(idle_text), &new);
     update_auth_text();
 }
 
