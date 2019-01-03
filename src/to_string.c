@@ -8,13 +8,13 @@
 
 #define NO_CONTRACT_STRING "None"
 
-static int pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve, const uint8_t hash[HASH_SIZE]);
+static size_t pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve, const uint8_t hash[HASH_SIZE]);
 
 // These functions output terminating null bytes, and return the ending offset.
 static size_t number_to_string(char *dest, uint64_t number);
 static size_t microtez_to_string(char *dest, uint64_t number);
 
-int parsed_contract_to_string(char *buff, uint32_t buff_size, const struct parsed_contract *contract) {
+bool parsed_contract_to_string(char *buff, uint32_t buff_size, const struct parsed_contract *contract) {
     if (contract->originated == 0 && contract->curve_code == TEZOS_NO_CURVE) {
         if (buff_size < sizeof(NO_CONTRACT_STRING)) return 0;
         strcpy(buff, NO_CONTRACT_STRING);
@@ -27,18 +27,18 @@ int parsed_contract_to_string(char *buff, uint32_t buff_size, const struct parse
     } else {
         curve = curve_code_to_curve(contract->curve_code);
     }
-    return pkh_to_string(buff, buff_size, curve, contract->hash);
+    return pkh_to_string(buff, buff_size, curve, contract->hash) <= buff_size;
 }
 
-int pubkey_to_pkh_string(char *buff, uint32_t buff_size, cx_curve_t curve,
+bool pubkey_to_pkh_string(char *buff, uint32_t buff_size, cx_curve_t curve,
                          const cx_ecfp_public_key_t *public_key) {
     uint8_t hash[HASH_SIZE];
     public_key_hash(hash, curve, public_key);
-    return pkh_to_string(buff, buff_size, curve, hash);
+    return pkh_to_string(buff, buff_size, curve, hash) <= buff_size;
 }
 
 // TODO: this should return size_t
-int pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve, const uint8_t hash[HASH_SIZE]) {
+size_t pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve, const uint8_t hash[HASH_SIZE]) {
     if (buff_size < PKH_STRING_SIZE) THROW(EXC_WRONG_LENGTH);
 
     // Data to encode
@@ -88,7 +88,7 @@ int pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve, co
     return out_size;
 }
 
-size_t protocol_hash_to_string(char *buff, const size_t buff_size, const uint8_t hash[PROTOCOL_HASH_SIZE]) {
+bool protocol_hash_to_string(char *buff, const size_t buff_size, const uint8_t hash[PROTOCOL_HASH_SIZE]) {
     if (buff_size < PROTOCOL_HASH_BASE58_STRING_SIZE) THROW(EXC_WRONG_LENGTH);
 
     // Data to encode
@@ -134,14 +134,16 @@ static inline size_t convert_number(char dest[MAX_INT_DIGITS], uint64_t number, 
     return 0;
 }
 
-size_t number_to_string_indirect(char *dest, size_t buff_size, const uint64_t *number) {
-    if (buff_size < MAX_INT_DIGITS + 1) return 0; // terminating null
-    return number_to_string(dest, *number);
+bool number_to_string_indirect(char *dest, size_t buff_size, const uint64_t *number) {
+    if (buff_size < MAX_INT_DIGITS + 1) return false; // terminating null
+    number_to_string(dest, *number);
+    return true;
 }
 
-size_t microtez_to_string_indirect(char *dest, size_t buff_size, const uint64_t *number) {
-    if (buff_size < MAX_INT_DIGITS + 1) return 0; // + terminating null + decimal point
-    return microtez_to_string(dest, *number);
+bool microtez_to_string_indirect(char *dest, size_t buff_size, const uint64_t *number) {
+    if (buff_size < MAX_INT_DIGITS + 1) return false; // + terminating null + decimal point
+    microtez_to_string(dest, *number);
+    return true;
 }
 
 size_t number_to_string(char *dest, uint64_t number) {
