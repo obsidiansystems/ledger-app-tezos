@@ -5,6 +5,7 @@
 #include "base58.h"
 #include "blake2.h"
 #include "keys.h"
+#include "memory.h"
 #include "protocol.h"
 #include "to_string.h"
 #include "ui_prompt.h"
@@ -123,10 +124,10 @@ uint32_t baking_sign_complete(void) {
                 if (ops->total_fee > 50000) THROW(EXC_PARSE_ERROR);
 
                 // Must be self-delegation signed by the same key
-                if (memcmp(&ops->operation.source, &ops->signing, sizeof(ops->signing))) {
+                if (COMPARE(&ops->operation.source, &ops->signing)) {
                     THROW(EXC_PARSE_ERROR);
                 }
-                if (memcmp(&ops->operation.destination, &ops->signing, sizeof(ops->signing))) {
+                if (COMPARE(&ops->operation.destination, &ops->signing)) {
                     THROW(EXC_PARSE_ERROR);
                 }
 
@@ -150,7 +151,7 @@ const char *const insecure_values[] = {
 
 #define MAX_NUMBER_CHARS (MAX_INT_DIGITS + 2) // include decimal point and terminating null
 
-#define SET_STATIC_UI_VALUE(index, str) REGISTER_UI_CALLBACK(index, copy_string, STATIC_UI_VALUE(str))
+#define SET_STATIC_UI_VALUE(index, str) register_ui_callback(index, copy_string, STATIC_UI_VALUE(str))
 
 // Return false if the transaction isn't easily parseable, otherwise prompt with given callbacks
 // and do not return, but rather throw ASYNC.
@@ -208,9 +209,9 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                     NULL,
                 };
 
-                REGISTER_UI_CALLBACK(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
-                REGISTER_UI_CALLBACK(PERIOD_INDEX, number_to_string_indirect, &ops->operation.proposal.voting_period);
-                REGISTER_UI_CALLBACK(PROTOCOL_HASH_INDEX, protocol_hash_to_string, ops->operation.proposal.protocol_hash);
+                register_ui_callback(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
+                register_ui_callback(PERIOD_INDEX, number_to_string_indirect, &ops->operation.proposal.voting_period);
+                register_ui_callback(PROTOCOL_HASH_INDEX, protocol_hash_to_string, ops->operation.proposal.protocol_hash);
 
                 SET_STATIC_UI_VALUE(TYPE_INDEX, "Proposal");
                 ui_prompt(proposal_prompts, NULL, ok, cxl);
@@ -231,10 +232,10 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                     NULL,
                 };
 
-                REGISTER_UI_CALLBACK(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
-                REGISTER_UI_CALLBACK(PROTOCOL_HASH_INDEX, protocol_hash_to_string,
+                register_ui_callback(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
+                register_ui_callback(PROTOCOL_HASH_INDEX, protocol_hash_to_string,
                                      ops->operation.ballot.protocol_hash);
-                REGISTER_UI_CALLBACK(PERIOD_INDEX, number_to_string_indirect, &ops->operation.ballot.voting_period);
+                register_ui_callback(PERIOD_INDEX, number_to_string_indirect, &ops->operation.ballot.voting_period);
 
                 switch (ops->operation.ballot.vote) {
                     case BALLOT_VOTE_YEA:
@@ -261,11 +262,11 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 static const uint32_t DELEGATE_INDEX = 5;
                 static const uint32_t STORAGE_INDEX = 6;
 
-                REGISTER_UI_CALLBACK(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
-                REGISTER_UI_CALLBACK(DESTINATION_INDEX, parsed_contract_to_string,
+                register_ui_callback(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
+                register_ui_callback(DESTINATION_INDEX, parsed_contract_to_string,
                                      &ops->operation.destination);
-                REGISTER_UI_CALLBACK(FEE_INDEX, microtez_to_string_indirect, &ops->total_fee);
-                REGISTER_UI_CALLBACK(STORAGE_INDEX, number_to_string_indirect,
+                register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &ops->total_fee);
+                register_ui_callback(STORAGE_INDEX, number_to_string_indirect,
                                      &ops->total_storage_limit);
 
                 static const char *const origination_prompts_fixed[] = {
@@ -302,21 +303,21 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 if (!(ops->operation.flags & ORIGINATION_FLAG_SPENDABLE)) return false;
 
                 SET_STATIC_UI_VALUE(TYPE_INDEX, "Origination");
-                REGISTER_UI_CALLBACK(AMOUNT_INDEX, microtez_to_string_indirect, &ops->operation.amount);
+                register_ui_callback(AMOUNT_INDEX, microtez_to_string_indirect, &ops->operation.amount);
 
                 const char *const *prompts;
                 bool delegatable = ops->operation.flags & ORIGINATION_FLAG_DELEGATABLE;
                 bool has_delegate = ops->operation.delegate.curve_code != TEZOS_NO_CURVE;
                 if (delegatable && has_delegate) {
                     prompts = origination_prompts_delegatable;
-                    REGISTER_UI_CALLBACK(DELEGATE_INDEX, parsed_contract_to_string,
+                    register_ui_callback(DELEGATE_INDEX, parsed_contract_to_string,
                                          &ops->operation.delegate);
                 } else if (delegatable && !has_delegate) {
                     prompts = origination_prompts_delegatable;
                     SET_STATIC_UI_VALUE(DELEGATE_INDEX, "Any");
                 } else if (!delegatable && has_delegate) {
                     prompts = origination_prompts_fixed;
-                    REGISTER_UI_CALLBACK(DELEGATE_INDEX, parsed_contract_to_string,
+                    register_ui_callback(DELEGATE_INDEX, parsed_contract_to_string,
                                          &ops->operation.delegate);
                 } else if (!delegatable && !has_delegate) {
                     prompts = origination_prompts_undelegatable;
@@ -333,12 +334,12 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 static const uint32_t DESTINATION_INDEX = 3;
                 static const uint32_t STORAGE_INDEX = 4;
 
-                REGISTER_UI_CALLBACK(SOURCE_INDEX, parsed_contract_to_string,
+                register_ui_callback(SOURCE_INDEX, parsed_contract_to_string,
                                      &ops->operation.source);
-                REGISTER_UI_CALLBACK(DESTINATION_INDEX, parsed_contract_to_string,
+                register_ui_callback(DESTINATION_INDEX, parsed_contract_to_string,
                                      &ops->operation.destination);
-                REGISTER_UI_CALLBACK(FEE_INDEX, microtez_to_string_indirect, &ops->total_fee);
-                REGISTER_UI_CALLBACK(STORAGE_INDEX, number_to_string_indirect, &ops->total_storage_limit);
+                register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &ops->total_fee);
+                register_ui_callback(STORAGE_INDEX, number_to_string_indirect, &ops->total_storage_limit);
 
                 static const char *const withdrawal_prompts[] = {
                     PROMPT("Withdraw"),
@@ -384,12 +385,12 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                     NULL,
                 };
 
-                REGISTER_UI_CALLBACK(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
-                REGISTER_UI_CALLBACK(DESTINATION_INDEX, parsed_contract_to_string,
+                register_ui_callback(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
+                register_ui_callback(DESTINATION_INDEX, parsed_contract_to_string,
                                      &ops->operation.destination);
-                REGISTER_UI_CALLBACK(FEE_INDEX, microtez_to_string_indirect, &ops->total_fee);
-                REGISTER_UI_CALLBACK(STORAGE_INDEX, number_to_string_indirect, &ops->total_storage_limit);
-                REGISTER_UI_CALLBACK(AMOUNT_INDEX, microtez_to_string_indirect, &ops->operation.amount);
+                register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &ops->total_fee);
+                register_ui_callback(STORAGE_INDEX, number_to_string_indirect, &ops->total_storage_limit);
+                register_ui_callback(AMOUNT_INDEX, microtez_to_string_indirect, &ops->operation.amount);
 
                 SET_STATIC_UI_VALUE(TYPE_INDEX, "Transaction");
 
@@ -402,8 +403,8 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 static const uint32_t FEE_INDEX = 2;
                 static const uint32_t STORAGE_INDEX = 3;
 
-                REGISTER_UI_CALLBACK(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
-                REGISTER_UI_CALLBACK(FEE_INDEX, microtez_to_string_indirect, &ops->total_fee);
+                register_ui_callback(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
+                register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &ops->total_fee);
 
                 // Parser function guarantees this has a reveal
                 static const char *const reveal_prompts[] = {
@@ -415,8 +416,8 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 };
 
                 SET_STATIC_UI_VALUE(TYPE_INDEX, "To Blockchain");
-                REGISTER_UI_CALLBACK(STORAGE_INDEX, number_to_string_indirect, &ops->total_storage_limit);
-                REGISTER_UI_CALLBACK(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
+                register_ui_callback(STORAGE_INDEX, number_to_string_indirect, &ops->total_storage_limit);
+                register_ui_callback(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
 
                 ui_prompt(reveal_prompts, NULL, ok, cxl);
             }

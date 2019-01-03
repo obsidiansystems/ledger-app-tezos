@@ -1,6 +1,7 @@
 #include "operations.h"
 
 #include "apdu.h"
+#include "memory.h"
 #include "ui.h"
 #include "to_string.h"
 
@@ -204,7 +205,7 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
         // If the source is an implicit contract,...
         if (out.operation.source.originated == 0) {
             // ... it had better match our key, otherwise why are we signing it?
-            if (memcmp(&out.operation.source, &out.signing, sizeof(out.signing))) return false;
+            if (COMPARE(&out.operation.source, &out.signing)) return false;
         }
         // OK, it passes muster.
 

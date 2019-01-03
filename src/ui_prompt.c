@@ -1,6 +1,7 @@
 #include "ui_prompt.h"
 
 #include "exception.h"
+#include "memory.h"
 #include "to_string.h"
 
 #include <string.h>
@@ -102,12 +103,12 @@ void ui_prompt(const char *const *labels, const char *const *data, callback_t ok
 
         // This will not overwrite terminating bytes
         if (data != NULL) {
-            REGISTER_UI_CALLBACK(i, copy_string, data[i]);
+            register_ui_callback(i, copy_string, data[i]);
         }
     }
     size_t screen_count = i;
 
-    ui_display(ui_multi_screen, sizeof(ui_multi_screen) / sizeof(*ui_multi_screen),
+    ui_display(ui_multi_screen, NUM_ELEMENTS(ui_multi_screen),
                ok_c, cxl_c, screen_count);
     THROW(ASYNC_EXCEPTION);
 }

@@ -28,7 +28,7 @@ unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
 
     reset_level = lvl;
 
-    REGISTER_UI_CALLBACK(0, number_to_string_indirect, &reset_level);
+    register_ui_callback(0, number_to_string_indirect, &reset_level);
 
     static const char *const reset_prompts[] = {
         PROMPT("Reset HWM"),

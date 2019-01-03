@@ -5,6 +5,7 @@
 
 #include "baking_auth.h"
 #include "keys.h"
+#include "memory.h"
 #include "to_string.h"
 
 #include <stdbool.h>
@@ -109,7 +110,7 @@ static bool do_nothing(void) {
 static void ui_idle(void) {
 #ifdef BAKING_APP
     update_auth_text();
-    ui_display(ui_idle_screen, sizeof(ui_idle_screen)/sizeof(*ui_idle_screen),
+    ui_display(ui_idle_screen, NUM_ELEMENTS(ui_idle_screen),
                do_nothing, exit_app, 2);
 #else
     main_menu();
