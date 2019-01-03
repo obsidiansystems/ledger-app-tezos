@@ -81,7 +81,9 @@ void switch_screen(uint32_t which) {
     // This will not overwrite terminating bytes
     strncpy(active_prompt, label, PROMPT_WIDTH);
     if (callbacks[which] != NULL) {
-        callbacks[which](active_value, sizeof(active_value), callback_data[which]);
+        if (!callbacks[which](active_value, sizeof(active_value), callback_data[which])) {
+            THROW(EXC_MEMORY_ERROR);
+        }
     } else {
         memcpy(active_value, values[which], sizeof(active_value));
     }
