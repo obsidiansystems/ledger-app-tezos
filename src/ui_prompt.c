@@ -11,6 +11,9 @@ static const char *const *prompts;
 static char values[MAX_SCREEN_COUNT][VALUE_WIDTH + 1];
         // TODO: Get rid of +1
 
+static string_generation_callback callbacks[MAX_SCREEN_COUNT];
+static const void *callback_data[MAX_SCREEN_COUNT];
+
 static char active_prompt[PROMPT_WIDTH + 1];
 static char active_value[VALUE_WIDTH + 1];
 
@@ -77,7 +80,23 @@ void switch_screen(uint32_t which) {
 
     // This will not overwrite terminating bytes
     strncpy(active_prompt, label, PROMPT_WIDTH);
-    memcpy(active_value, values[which], sizeof(active_value));
+    if (callbacks[which] != NULL) {
+        callbacks[which](active_value, sizeof(active_value), callback_data[which]);
+    } else {
+        memcpy(active_value, values[which], sizeof(active_value));
+    }
+}
+
+void register_ui_callback(uint32_t which, string_generation_callback cb, const void *data) {
+    if (which >= MAX_SCREEN_COUNT) THROW(EXC_MEMORY_ERROR);
+    callbacks[which] = cb;
+    callback_data[which] = data;
+}
+
+void clear_ui_callbacks(void) {
+    for (int i = 0; i < MAX_SCREEN_COUNT; ++i) {
+        callbacks[i] = NULL;
+    }
 }
 
 __attribute__((noreturn))

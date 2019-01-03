@@ -8,6 +8,8 @@
 
 #define NO_CONTRACT_STRING "None"
 
+static int pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve, const uint8_t hash[HASH_SIZE]);
+
 int parsed_contract_to_string(char *buff, uint32_t buff_size, const struct parsed_contract *contract) {
     if (contract->originated == 0 && contract->curve_code == TEZOS_NO_CURVE) {
         if (buff_size < sizeof(NO_CONTRACT_STRING)) return 0;
@@ -128,6 +130,16 @@ static inline size_t convert_number(char dest[MAX_INT_DIGITS], uint64_t number, 
     return 0;
 }
 
+size_t number_to_string_indirect(char *dest, size_t buff_size, const uint64_t *number) {
+    if (buff_size < MAX_INT_DIGITS + 1) return 0; // terminating null
+    return number_to_string(dest, *number);
+}
+
+size_t microtez_to_string_indirect(char *dest, size_t buff_size, const uint64_t *number) {
+    if (buff_size < MAX_INT_DIGITS + 1) return 0; // + terminating null + decimal point
+    return microtez_to_string(dest, *number);
+}
+
 size_t number_to_string(char *dest, uint64_t number) {
     char tmp[MAX_INT_DIGITS];
     size_t off = convert_number(tmp, number, false);
@@ -170,4 +182,11 @@ size_t microtez_to_string(char *dest, uint64_t number) {
     off += length;
     dest[off] = '\0';
     return off;
+}
+
+bool copy_string(char *dest, uint32_t buff_size, const char *src) {
+    // I don't care that we will loop through the string twice, latency is not an issue
+    if (strlen(src) >= buff_size) return false;
+    strcpy(dest, src);
+    return true;
 }
