@@ -40,6 +40,7 @@ __attribute__((section(".boot"))) int main(void) {
                 USB_power(0);
                 USB_power(1);
 
+                clear_ui_callbacks();
                 ui_initial_screen();
 
                 app_main();
