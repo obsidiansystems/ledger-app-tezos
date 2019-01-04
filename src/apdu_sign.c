@@ -370,17 +370,17 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
             {
                 static const uint32_t TYPE_INDEX = 0;
                 static const uint32_t AMOUNT_INDEX = 1;
-                static const uint32_t FEE_INDEX = 2;
+                static const uint32_t DESTINATION_INDEX = 2;
                 static const uint32_t SOURCE_INDEX = 3;
-                static const uint32_t DESTINATION_INDEX = 4;
+                static const uint32_t FEE_INDEX = 4;
                 static const uint32_t STORAGE_INDEX = 5;
 
                 static const char *const transaction_prompts[] = {
                     PROMPT("Confirm"),
                     PROMPT("Amount"),
-                    PROMPT("Fee"),
-                    PROMPT("Source"),
                     PROMPT("Destination"),
+                    PROMPT("Source"),
+                    PROMPT("Fee"),
                     PROMPT("Storage"),
                     NULL,
                 };
