@@ -223,28 +223,36 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
         UX_DISPLAYED_EVENT({});
         break;
     case SEPROXYHAL_TAG_TICKER_EVENT:
-        if (ux.callback_interval_ms != 0) {
-            ux.callback_interval_ms -= MIN(ux.callback_interval_ms, 100);
-            if (ux.callback_interval_ms == 0) {
-                // prepare next screen
-                ux_step = (ux_step + 1) % ux_step_count;
-                if (!is_idling()) {
-                    switch_screen(ux_step);
-                }
+#ifndef BAKING_APP
+        UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
+            if (UX_ALLOWED) {
+#endif
+                if (ux.callback_interval_ms != 0) {
+                    ux.callback_interval_ms -= MIN(ux.callback_interval_ms, 100);
+                    if (ux.callback_interval_ms == 0) {
+                        // prepare next screen
+                        ux_step = (ux_step + 1) % ux_step_count;
+                        if (!is_idling()) {
+                            switch_screen(ux_step);
+                        }
 
-                // check if we've timed out
-                if (ux_step == 0) {
-                    timeout_cycle_count++;
-                    if (timeout_cycle_count == PROMPT_CYCLES) {
-                        timeout();
-                        break; // timeout() will often display a new screen
+                        // check if we've timed out
+                        if (ux_step == 0) {
+                            timeout_cycle_count++;
+                            if (timeout_cycle_count == PROMPT_CYCLES) {
+                                timeout();
+                                break; // timeout() will often display a new screen
+                            }
+                        }
+
+                        // redisplay screen
+                        UX_REDISPLAY();
                     }
                 }
-
-                // redisplay screen
-                UX_REDISPLAY();
+#ifndef BAKING_APP
             }
-        }
+        });
+#endif
         break;
     default:
         // unknown events are acknowledged
