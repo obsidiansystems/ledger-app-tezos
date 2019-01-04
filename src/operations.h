@@ -19,7 +19,7 @@ struct parsed_contract {
 #define PROTOCOL_HASH_SIZE 32
 
 struct parsed_proposal {
-    uint64_t voting_period; // must be 64 bit for function call reasons
+    uint32_t voting_period;
     // TODO: Make 32 bit version of number_to_string_indirect
     uint8_t protocol_hash[PROTOCOL_HASH_SIZE];
 };
@@ -31,7 +31,7 @@ enum ballot_vote {
 };
 
 struct parsed_ballot {
-    int32_t voting_period;
+    uint32_t voting_period;
     uint8_t protocol_hash[PROTOCOL_HASH_SIZE];
     enum ballot_vote vote;
 };

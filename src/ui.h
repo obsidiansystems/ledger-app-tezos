@@ -9,7 +9,7 @@
 #define PROTOCOL_HASH_BASE58_STRING_SIZE 52 // e.g. "ProtoBetaBetaBetaBetaBetaBetaBetaBetaBet11111a5ug96" plus null byte
 
 #define BAGL_STATIC_ELEMENT 0
-#define BAGL_SCROLLING_ELEMENT 100 // Arbitrary value
+#define BAGL_SCROLLING_ELEMENT 100 // Arbitrary value chosen to connect data structures with prepro func
 
 typedef bool (*callback_t)(void); // return true to go back to idle screen
 
@@ -22,6 +22,6 @@ void ui_display(const bagl_element_t *elems, size_t sz, callback_t ok_c, callbac
                 uint32_t step_count);
 unsigned char io_event(unsigned char channel);
 void io_seproxyhal_display(const bagl_element_t *element);
-void change_idle_display(uint64_t new);
+void change_idle_display(uint32_t new);
 
 extern char baking_auth_text[PKH_STRING_SIZE]; // TODO: Is this the right name?

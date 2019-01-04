@@ -210,7 +210,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 };
 
                 register_ui_callback(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
-                register_ui_callback(PERIOD_INDEX, number_to_string_indirect, &ops->operation.proposal.voting_period);
+                register_ui_callback(PERIOD_INDEX, number_to_string_indirect32, &ops->operation.proposal.voting_period);
                 register_ui_callback(PROTOCOL_HASH_INDEX, protocol_hash_to_string, ops->operation.proposal.protocol_hash);
 
                 SET_STATIC_UI_VALUE(TYPE_INDEX, "Proposal");
@@ -235,7 +235,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 register_ui_callback(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
                 register_ui_callback(PROTOCOL_HASH_INDEX, protocol_hash_to_string,
                                      ops->operation.ballot.protocol_hash);
-                register_ui_callback(PERIOD_INDEX, number_to_string_indirect, &ops->operation.ballot.voting_period);
+                register_ui_callback(PERIOD_INDEX, number_to_string_indirect32, &ops->operation.ballot.voting_period);
 
                 switch (ops->operation.ballot.vote) {
                     case BALLOT_VOTE_YEA:
@@ -266,7 +266,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 register_ui_callback(DESTINATION_INDEX, parsed_contract_to_string,
                                      &ops->operation.destination);
                 register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &ops->total_fee);
-                register_ui_callback(STORAGE_INDEX, number_to_string_indirect,
+                register_ui_callback(STORAGE_INDEX, number_to_string_indirect64,
                                      &ops->total_storage_limit);
 
                 static const char *const origination_prompts_fixed[] = {
@@ -339,7 +339,8 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 register_ui_callback(DESTINATION_INDEX, parsed_contract_to_string,
                                      &ops->operation.destination);
                 register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &ops->total_fee);
-                register_ui_callback(STORAGE_INDEX, number_to_string_indirect, &ops->total_storage_limit);
+                register_ui_callback(STORAGE_INDEX, number_to_string_indirect64,
+                                     &ops->total_storage_limit);
 
                 static const char *const withdrawal_prompts[] = {
                     PROMPT("Withdraw"),
@@ -389,7 +390,8 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 register_ui_callback(DESTINATION_INDEX, parsed_contract_to_string,
                                      &ops->operation.destination);
                 register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &ops->total_fee);
-                register_ui_callback(STORAGE_INDEX, number_to_string_indirect, &ops->total_storage_limit);
+                register_ui_callback(STORAGE_INDEX, number_to_string_indirect64,
+                                     &ops->total_storage_limit);
                 register_ui_callback(AMOUNT_INDEX, microtez_to_string_indirect, &ops->operation.amount);
 
                 SET_STATIC_UI_VALUE(TYPE_INDEX, "Transaction");
@@ -416,7 +418,8 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 };
 
                 SET_STATIC_UI_VALUE(TYPE_INDEX, "To Blockchain");
-                register_ui_callback(STORAGE_INDEX, number_to_string_indirect, &ops->total_storage_limit);
+                register_ui_callback(STORAGE_INDEX, number_to_string_indirect64,
+                                     &ops->total_storage_limit);
                 register_ui_callback(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
 
                 ui_prompt(reveal_prompts, NULL, ok, cxl);

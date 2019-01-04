@@ -9,8 +9,7 @@
 
 #include <string.h>
 
-// Must be wider to be passed to number_to_string_indirect
-static uint64_t reset_level;
+static level_t reset_level;
 
 static bool reset_ok(void);
 
@@ -28,7 +27,7 @@ unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
 
     reset_level = lvl;
 
-    register_ui_callback(0, number_to_string_indirect, &reset_level);
+    register_ui_callback(0, number_to_string_indirect32, &reset_level);
 
     static const char *const reset_prompts[] = {
         PROMPT("Reset HWM"),
@@ -38,7 +37,7 @@ unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
 }
 
 bool reset_ok(void) {
-    write_highest_level((level_t)reset_level, false); // We have not yet had an endorsement at this level
+    write_highest_level(reset_level, false); // We have not yet had an endorsement at this level
 
     uint32_t tx = 0;
     G_io_apdu_buffer[tx++] = 0x90;

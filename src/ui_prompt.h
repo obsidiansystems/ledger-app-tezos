@@ -32,6 +32,8 @@ void switch_screen(uint32_t which);
 // This is called by internal UI code to prevent callbacks from sticking around
 void clear_ui_callbacks(void);
 
-// This function (and also macro) registers how a value is to be produced
-typedef bool (*string_generation_callback)();
+// Uses K&R style declaration to avoid being stuck on const void *, to avoid having to cast the
+// function pointers.
+typedef void (*string_generation_callback)(/* char *buffer, size_t buffer_size, const void *data */);
+// This function registers how a value is to be produced
 void register_ui_callback(uint32_t which, string_generation_callback cb, const void *data);

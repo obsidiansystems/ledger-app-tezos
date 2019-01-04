@@ -74,9 +74,7 @@ void switch_screen(uint32_t which) {
     // This will not overwrite terminating bytes
     strncpy(active_prompt, label, PROMPT_WIDTH);
     if (callbacks[which] == NULL) THROW(EXC_MEMORY_ERROR);
-    if (!callbacks[which](active_value, sizeof(active_value), callback_data[which])) {
-        THROW(EXC_MEMORY_ERROR);
-    }
+    callbacks[which](active_value, sizeof(active_value), callback_data[which]);
 }
 
 void register_ui_callback(uint32_t which, string_generation_callback cb, const void *data) {

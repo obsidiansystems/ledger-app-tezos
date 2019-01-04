@@ -118,8 +118,8 @@ static void ui_idle(void) {
 #endif
 }
 
-void change_idle_display(uint64_t new) {
-    number_to_string_indirect(idle_text, sizeof(idle_text), &new);
+void change_idle_display(uint32_t new) {
+    number_to_string(idle_text, new);
     update_auth_text();
 }
 
@@ -169,8 +169,9 @@ unsigned button_handler(unsigned button_mask, __attribute__((unused)) unsigned b
 const bagl_element_t *prepro(const bagl_element_t *element) {
     if (element->component.userid == BAGL_STATIC_ELEMENT) return element;
 
+    static const uint32_t pause_millis = 1500;
     uint32_t min = 2000;
-    uint32_t div = 2;
+    static const uint32_t div = 2;
 
     if (is_idling()) {
         min = 4000;
@@ -179,7 +180,7 @@ const bagl_element_t *prepro(const bagl_element_t *element) {
     if (ux_step == element->component.userid - 1 || element->component.userid == BAGL_SCROLLING_ELEMENT) {
         // timeouts are in millis
         UX_CALLBACK_SET_INTERVAL(MAX(min,
-                                     (1500 + bagl_label_roundtrip_duration_ms(element, 7)) / div));
+                                     (pause_millis + bagl_label_roundtrip_duration_ms(element, 7)) / div));
         return element;
     } else {
         return NULL;

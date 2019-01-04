@@ -8,17 +8,16 @@
 
 #define NO_CONTRACT_STRING "None"
 
-static size_t pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve, const uint8_t hash[HASH_SIZE]);
+static void pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve, const uint8_t hash[HASH_SIZE]);
 
 // These functions output terminating null bytes, and return the ending offset.
-static size_t number_to_string(char *dest, uint64_t number);
 static size_t microtez_to_string(char *dest, uint64_t number);
 
-bool parsed_contract_to_string(char *buff, uint32_t buff_size, const struct parsed_contract *contract) {
+void parsed_contract_to_string(char *buff, uint32_t buff_size, const struct parsed_contract *contract) {
     if (contract->originated == 0 && contract->curve_code == TEZOS_NO_CURVE) {
-        if (buff_size < sizeof(NO_CONTRACT_STRING)) return 0;
+        if (buff_size < sizeof(NO_CONTRACT_STRING)) THROW(EXC_WRONG_LENGTH);
         strcpy(buff, NO_CONTRACT_STRING);
-        return buff_size;
+        return;
     }
 
     cx_curve_t curve;
@@ -27,18 +26,18 @@ bool parsed_contract_to_string(char *buff, uint32_t buff_size, const struct pars
     } else {
         curve = curve_code_to_curve(contract->curve_code);
     }
-    return pkh_to_string(buff, buff_size, curve, contract->hash) <= buff_size;
+    pkh_to_string(buff, buff_size, curve, contract->hash);
 }
 
-bool pubkey_to_pkh_string(char *buff, uint32_t buff_size, cx_curve_t curve,
+void pubkey_to_pkh_string(char *buff, uint32_t buff_size, cx_curve_t curve,
                          const cx_ecfp_public_key_t *public_key) {
     uint8_t hash[HASH_SIZE];
     public_key_hash(hash, curve, public_key);
-    return pkh_to_string(buff, buff_size, curve, hash) <= buff_size;
+    pkh_to_string(buff, buff_size, curve, hash);
 }
 
-// TODO: this should return size_t
-size_t pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve, const uint8_t hash[HASH_SIZE]) {
+void pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve,
+                   const uint8_t hash[HASH_SIZE]) {
     if (buff_size < PKH_STRING_SIZE) THROW(EXC_WRONG_LENGTH);
 
     // Data to encode
@@ -85,10 +84,9 @@ size_t pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve,
 
     size_t out_size = buff_size;
     if (!b58enc(buff, &out_size, &data, sizeof(data))) THROW(EXC_WRONG_LENGTH);
-    return out_size;
 }
 
-bool protocol_hash_to_string(char *buff, const size_t buff_size, const uint8_t hash[PROTOCOL_HASH_SIZE]) {
+void protocol_hash_to_string(char *buff, const size_t buff_size, const uint8_t hash[PROTOCOL_HASH_SIZE]) {
     if (buff_size < PROTOCOL_HASH_BASE58_STRING_SIZE) THROW(EXC_WRONG_LENGTH);
 
     // Data to encode
@@ -114,7 +112,6 @@ bool protocol_hash_to_string(char *buff, const size_t buff_size, const uint8_t h
 
     size_t out_size = buff_size;
     if (!b58enc(buff, &out_size, &data, sizeof(data))) THROW(EXC_WRONG_LENGTH);
-    return out_size;
 }
 
 // These functions do not output terminating null bytes.
@@ -134,16 +131,19 @@ static inline size_t convert_number(char dest[MAX_INT_DIGITS], uint64_t number, 
     return 0;
 }
 
-bool number_to_string_indirect(char *dest, size_t buff_size, const uint64_t *number) {
-    if (buff_size < MAX_INT_DIGITS + 1) return false; // terminating null
+void number_to_string_indirect64(char *dest, size_t buff_size, const uint64_t *number) {
+    if (buff_size < MAX_INT_DIGITS + 1) THROW(EXC_WRONG_LENGTH); // terminating null
     number_to_string(dest, *number);
-    return true;
 }
 
-bool microtez_to_string_indirect(char *dest, size_t buff_size, const uint64_t *number) {
-    if (buff_size < MAX_INT_DIGITS + 1) return false; // + terminating null + decimal point
+void number_to_string_indirect32(char *dest, size_t buff_size, const uint32_t *number) {
+    if (buff_size < MAX_INT_DIGITS + 1) THROW(EXC_WRONG_LENGTH); // terminating null
+    number_to_string(dest, *number);
+}
+
+void microtez_to_string_indirect(char *dest, size_t buff_size, const uint64_t *number) {
+    if (buff_size < MAX_INT_DIGITS + 1) THROW(EXC_WRONG_LENGTH); // + terminating null + decimal point
     microtez_to_string(dest, *number);
-    return true;
 }
 
 size_t number_to_string(char *dest, uint64_t number) {
@@ -190,10 +190,9 @@ size_t microtez_to_string(char *dest, uint64_t number) {
     return off;
 }
 
-bool copy_string(char *dest, uint32_t buff_size, const char *src_in) {
+void copy_string(char *dest, uint32_t buff_size, const char *src_in) {
     const char *src = (const char *)PIC(src_in);
     // I don't care that we will loop through the string twice, latency is not an issue
-    if (strlen(src) >= buff_size) return false;
+    if (strlen(src) >= buff_size) THROW(EXC_WRONG_LENGTH);
     strcpy(dest, src);
-    return true;
 }
