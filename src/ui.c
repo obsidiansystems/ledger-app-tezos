@@ -225,7 +225,9 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
             if (ux.callback_interval_ms == 0) {
                 // prepare next screen
                 ux_step = (ux_step + 1) % ux_step_count;
-                switch_screen(ux_step);
+                if (!is_idling) {
+                    switch_screen(ux_step);
+                }
 
                 // check if we've timed out
                 if (ux_step == 0) {
