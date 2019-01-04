@@ -12,9 +12,6 @@
 static cx_ecfp_public_key_t public_key;
 static cx_curve_t curve;
 
-// The following need to be persisted for baking app
-static uint8_t path_length;
-static uint32_t bip32_path[MAX_BIP32_PATH];
 
 static int provide_pubkey(void) {
     int tx = 0;
@@ -36,7 +33,7 @@ static bool pubkey_ok(void) {
 
 #ifdef BAKING_APP
 static bool baking_ok(void) {
-    authorize_baking(curve, bip32_path, path_length);
+    authorize_baking(curve, bip32_path, bip32_path_length);
     pubkey_ok();
     return true;
 }
@@ -58,18 +55,18 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
 #ifdef BAKING_APP
     if (G_io_apdu_buffer[OFFSET_LC] == 0 && instruction == INS_AUTHORIZE_BAKING) {
         curve = N_data.curve;
-        path_length = N_data.path_length;
-        memcpy(bip32_path, N_data.bip32_path, sizeof(*bip32_path) * path_length);
+        bip32_path_length = N_data.path_length;
+        memcpy(bip32_path, N_data.bip32_path, sizeof(*bip32_path) * bip32_path_length);
     } else {
 #endif
-        path_length = read_bip32_path(G_io_apdu_buffer[OFFSET_LC], bip32_path, dataBuffer);
+        bip32_path_length = read_bip32_path(G_io_apdu_buffer[OFFSET_LC], bip32_path, dataBuffer);
 #ifdef BAKING_APP
-        if (path_length == 0) {
+        if (bip32_path_length == 0) {
             THROW(EXC_WRONG_LENGTH_FOR_INS);
         }
     }
 #endif
-    struct key_pair *pair = generate_key_pair(curve, path_length, bip32_path);
+    struct key_pair *pair = generate_key_pair(curve, bip32_path_length, bip32_path);
     os_memset(&pair->private_key, 0, sizeof(pair->private_key));
     memcpy(&public_key, &pair->public_key, sizeof(public_key));
 

@@ -11,11 +11,6 @@
 
 static level_t reset_level;
 
-const char *const reset_prompts[] = {
-    "Reset HWM",
-    NULL,
-};
-
 static bool reset_ok(void);
 
 unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
@@ -33,6 +28,11 @@ unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
     reset_level = lvl;
 
     number_to_string(get_value_buffer(0), reset_level);
+
+    static const char *const reset_prompts[] = {
+        PROMPT("Reset HWM"),
+        NULL,
+    };
     ui_prompt(reset_prompts, NULL, reset_ok, delay_reject);
 }
 

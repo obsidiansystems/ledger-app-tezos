@@ -12,13 +12,15 @@ struct operation_group_header {
     uint8_t hash[32];
 } __attribute__((packed));
 
+struct implicit_contract {
+    uint8_t curve_code;
+    uint8_t pkh[HASH_SIZE];
+} __attribute__((packed));
+
 struct contract {
     uint8_t originated;
     union {
-        struct {
-            uint8_t curve_code;
-            uint8_t pkh[HASH_SIZE];
-        } implicit;
+        struct implicit_contract implicit;
         struct {
             uint8_t pkh[HASH_SIZE];
             uint8_t padding;
@@ -26,14 +28,21 @@ struct contract {
     } u;
 } __attribute__((packed));
 
-struct operation_header {
-    uint8_t tag;
-    struct contract contract;
-} __attribute__((packed));
-
 struct delegation_contents {
     uint8_t curve_code;
     uint8_t hash[HASH_SIZE];
+} __attribute__((packed));
+
+struct proposal_contents {
+    int32_t period;
+    size_t num_bytes;
+    uint8_t hash[PROTOCOL_HASH_SIZE];
+} __attribute__((packed));
+
+struct ballot_contents {
+    int32_t period;
+    uint8_t proposal[PROTOCOL_HASH_SIZE];
+    int8_t ballot;
 } __attribute__((packed));
 
 // Argument is to distinguish between different parse errors for debugging purposes only
@@ -146,15 +155,27 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
     memcpy(&out.operation.source, &out.signing, sizeof(out.signing));
 
     while (ix < length) {
-        const struct operation_header *hdr = NEXT_TYPE(struct operation_header);
+        const enum operation_tag tag = NEXT_BYTE(data, &ix, length);  // 1 byte is always aligned
 
-        out.total_fee += PARSE_Z(data, &ix, length); // fee
-        PARSE_Z(data, &ix, length); // counter
-        PARSE_Z(data, &ix, length); // gas limit
-        out.total_storage_limit += PARSE_Z(data, &ix, length); // storage limit
-
-        enum operation_tag tag = hdr->tag;
         if (!is_operation_allowed(ops, tag)) PARSE_ERROR();
+
+        if (tag == OPERATION_TAG_PROPOSAL || tag == OPERATION_TAG_BALLOT) {
+            // These tags don't have the "originated" byte so we have to parse PKH differently.
+            const struct implicit_contract *implicit_source = NEXT_TYPE(struct implicit_contract);
+            out.operation.source.originated = 0;
+            out.operation.source.curve_code = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &implicit_source->curve_code);
+            memcpy(out.operation.source.hash, implicit_source->pkh, sizeof(out.operation.source.hash));
+        } else {
+            const struct contract *source = NEXT_TYPE(struct contract);
+            parse_contract(&out.operation.source, source);
+
+            out.total_fee += PARSE_Z(data, &ix, length); // fee
+            PARSE_Z(data, &ix, length); // counter
+            PARSE_Z(data, &ix, length); // gas limit
+            out.total_storage_limit += PARSE_Z(data, &ix, length); // storage limit
+        }
+
+        // out.operation.source IS NORMALIZED AT THIS POINT
 
         if (tag == OPERATION_TAG_REVEAL) {
             // Public key up next! Ensure it matches signing key.
@@ -179,7 +200,6 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
         // This is the one allowable non-reveal operation per set
 
         out.operation.tag = (uint8_t)tag;
-        parse_contract(&out.operation.source, &hdr->contract);
 
         // If the source is an implicit contract,...
         if (out.operation.source.originated == 0) {
@@ -193,6 +213,42 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
         out.operation.delegate.originated = 0;
 
         switch (tag) {
+            case OPERATION_TAG_PROPOSAL:
+                {
+                    const struct proposal_contents *proposal_data = NEXT_TYPE(struct proposal_contents);
+                    if (ix != length) PARSE_ERROR();
+
+                    const size_t payload_size = READ_UNALIGNED_BIG_ENDIAN(int32_t, &proposal_data->num_bytes);
+                    if (payload_size != PROTOCOL_HASH_SIZE) PARSE_ERROR(); // We only accept exactly 1 proposal hash.
+
+                    out.operation.proposal.voting_period = READ_UNALIGNED_BIG_ENDIAN(int32_t, &proposal_data->period);
+                    memcpy(out.operation.proposal.protocol_hash, proposal_data->hash, sizeof(out.operation.proposal.protocol_hash));
+                }
+                break;
+            case OPERATION_TAG_BALLOT:
+                {
+                    const struct ballot_contents *ballot_data = NEXT_TYPE(struct ballot_contents);
+                    if (ix != length) PARSE_ERROR();
+
+                    out.operation.ballot.voting_period = READ_UNALIGNED_BIG_ENDIAN(int32_t, &ballot_data->period);
+                    memcpy(out.operation.ballot.protocol_hash, ballot_data->proposal, sizeof(out.operation.ballot.protocol_hash));
+
+                    const int8_t ballot_vote = READ_UNALIGNED_BIG_ENDIAN(int8_t, &ballot_data->ballot);
+                    switch (ballot_vote) {
+                        case 0:
+                            out.operation.ballot.vote = BALLOT_VOTE_YEA;
+                            break;
+                        case 1:
+                            out.operation.ballot.vote = BALLOT_VOTE_NAY;
+                            break;
+                        case 2:
+                            out.operation.ballot.vote = BALLOT_VOTE_PASS;
+                            break;
+                        default:
+                            PARSE_ERROR();
+                    }
+                }
+                break;
             case OPERATION_TAG_DELEGATION:
                 {
                     uint8_t delegate_present = NEXT_BYTE(data, &ix, length);
