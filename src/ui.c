@@ -113,6 +113,7 @@ static void ui_idle(void) {
     ui_display(ui_idle_screen, NUM_ELEMENTS(ui_idle_screen),
                do_nothing, exit_app, 2);
 #else
+    cxl_callback = exit_app;
     main_menu();
 #endif
 }
@@ -190,10 +191,12 @@ void ui_display(const bagl_element_t *elems, size_t sz, callback_t ok_c, callbac
     // Adapted from definition of UX_DISPLAY in header file
     timeout_cycle_count = 0;
     ux_step = 0;
-    switch_screen(0);
     ux_step_count = step_count;
     ok_callback = ok_c;
     cxl_callback = cxl_c;
+    if (!is_idling()) {
+        switch_screen(0);
+    }
     ux.elements = elems;
     ux.elements_count = sz;
     ux.button_push_handler = button_handler;
@@ -225,7 +228,7 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
             if (ux.callback_interval_ms == 0) {
                 // prepare next screen
                 ux_step = (ux_step + 1) % ux_step_count;
-                if (!is_idling) {
+                if (!is_idling()) {
                     switch_screen(ux_step);
                 }
 
