@@ -209,6 +209,7 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
     // nothing done with the event, throw an error on the transport layer if
     // needed
 
+    bool ux_allowed;
     // can't have more than one tag in the reply, not supported yet.
     switch (G_io_seproxyhal_spi_buffer[0]) {
     case SEPROXYHAL_TAG_FINGER_EVENT:
@@ -223,36 +224,36 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
         UX_DISPLAYED_EVENT({});
         break;
     case SEPROXYHAL_TAG_TICKER_EVENT:
-#ifndef BAKING_APP
-        UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {
-            if (UX_ALLOWED) {
+#ifdef BAKING_APP
+        ux_allowed = true;
+#else
+        ux_allowed = (ux.params.len != BOLOS_UX_IGNORE && ux.params.len != BOLOS_UX_CONTINUE);
 #endif
-                if (ux.callback_interval_ms != 0) {
-                    ux.callback_interval_ms -= MIN(ux.callback_interval_ms, 100);
-                    if (ux.callback_interval_ms == 0) {
-                        // prepare next screen
-                        ux_step = (ux_step + 1) % ux_step_count;
-                        if (!is_idling()) {
-                            switch_screen(ux_step);
-                        }
+        if (ux_allowed && ux.callback_interval_ms != 0) {
+            ux.callback_interval_ms -= MIN(ux.callback_interval_ms, 100);
+            if (ux.callback_interval_ms == 0) {
+                // prepare next screen
+                ux_step = (ux_step + 1) % ux_step_count;
+                if (!is_idling()) {
+                    switch_screen(ux_step);
+                }
 
-                        // check if we've timed out
-                        if (ux_step == 0) {
-                            timeout_cycle_count++;
-                            if (timeout_cycle_count == PROMPT_CYCLES) {
-                                timeout();
-                                break; // timeout() will often display a new screen
-                            }
-                        }
-
-                        // redisplay screen
-                        UX_REDISPLAY();
+                // check if we've timed out
+                if (ux_step == 0) {
+                    timeout_cycle_count++;
+                    if (timeout_cycle_count == PROMPT_CYCLES) {
+                        timeout();
+                        break; // timeout() will often display a new screen
                     }
                 }
-#ifndef BAKING_APP
+
+                // redisplay screen
+                UX_REDISPLAY();
             }
-        });
-#endif
+        }
+        if (ux_allowed) {
+            UX_CONTINUE_DISPLAY_APP({});
+        }
         break;
     default:
         // unknown events are acknowledged
