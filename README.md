@@ -103,7 +103,7 @@ and closing your password manager when not in use.
 ### Protecting Your Key -- Further Advanced Reading
 
 More advanced techniques for those interested in even more layers of security
-or plausible deniability features should look at 
+or plausible deniability features should look at
 [Ledger's documentation on this](https://support.ledgerwallet.com/hc/en-us/articles/115005214529-Advanced-Passphrase-options).
 
 Note that Ledger devices with different seeds will appear to `tezos-client` to be
@@ -341,7 +341,7 @@ virtual env. To have a new terminal session enter the virtualenv, run the above
 We can now install `ledgerblue`, which is the Python module designed originally for
 Ledger Blue, but also is needed for the Ledger Nano S.
 
-Although we do not yet support Ledger Blue, you must still install the following python package. 
+Although we do not yet support Ledger Blue, you must still install the following python package.
 Within the virtualenv environment -- making sure that `(ledger)` is showing up
 before your prompt -- use pip to install the `ledgerblue`
 [Python package](https://pypi.org/project/ledgerblue/).
@@ -722,6 +722,28 @@ $ tezos-client set delegate for <NEW> to <DELEGATE>
 
 Originated accounts have names beginning with `KT1` rather than `tz1`, `tz2` or `tz3`.
 
+### Proposals and Voting
+
+To submit (or upvote) a proposal, open the Wallet app on your ledger and run
+
+```
+$ tezos-client submit proposals for <ACCOUNT> <PROTOCOL-HASH>
+```
+
+The Wallet app will then ask you to confirm the various details of the proposal submission.
+
+**Note:** While `tezos-client` will let you submit multiple proposals at once with this command, submitting more than one will cause the Wallet app to show "Sign Unverified?" instead of showing each field of each proposal for your confirmation. Signing an operation that you can't confirm is not safe and it is highly recommended that you simply submit each proposal one at a time so you can properly confirm the fields on the ledger device.
+
+Voting for a proposal also requires that you have the Wallet app open. You can then run
+
+```
+$ tezos-client submit ballot for <ACCOUNT> <PROTOCOL-HASH> <yea|nay|pass>
+```
+
+The Wallet app will ask you to confirm the details of your vote.
+
+Keep in mind that only registered delegate accounts can submit proposals and vote. Each account can submit up to 20 proposals per proposal period and vote only once per voting period. For a full description of how voting works, refer to the [Tezos documentation](https://gitlab.com/tezos/tezos/blob/master/docs/whitedoc/voting.rst).
+
 ## Using the Tezos Baking Application
 
 The Tezos Baking Application supports 3 operations:
@@ -991,8 +1013,8 @@ If the Ledger Nano S app crashes when you load it, there are two primary causes:
     might have to restart the Ledger Nano S.
   * Out of date firmware: If the Ledger Nano S app doesn't work at all, make sure you are running firmware
     version 1.4.2.
-    
+
 ### Contact Us
- You can email us at tezos@obsidian.systems and request to join our Slack. 
-We have several channels about baking and one specifically for our Ledger Nano S apps. 
+ You can email us at tezos@obsidian.systems and request to join our Slack.
+We have several channels about baking and one specifically for our Ledger Nano S apps.
 You can ask questions and get answers from Obsidian staff or from the community.
