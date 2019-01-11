@@ -71,8 +71,7 @@ void switch_screen(uint32_t which) {
     if (which >= MAX_SCREEN_COUNT) THROW(EXC_MEMORY_ERROR);
     const char *label = (const char*)PIC(prompts[which]);
 
-    // This will not overwrite terminating bytes
-    strncpy(active_prompt, label, PROMPT_WIDTH);
+    strncpy(active_prompt, label, sizeof(active_prompt));
     if (callbacks[which] == NULL) THROW(EXC_MEMORY_ERROR);
     callbacks[which](active_value, sizeof(active_value), callback_data[which]);
 }
@@ -99,7 +98,6 @@ void ui_prompt(const char *const *labels, const char *const *data, callback_t ok
         const char *label = (const char *)PIC(labels[i]);
         if (i >= MAX_SCREEN_COUNT || strlen(label) > PROMPT_WIDTH) THROW(EXC_MEMORY_ERROR);
 
-        // This will not overwrite terminating bytes
         if (data != NULL) {
             register_ui_callback(i, copy_string, data[i]);
         }
