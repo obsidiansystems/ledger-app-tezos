@@ -85,12 +85,11 @@ void ui_prompt(const char *const *labels, const char *const *data, callback_t ok
         const char *label = (const char *)PIC(labels[i]);
         if (i >= MAX_SCREEN_COUNT || strlen(label) > PROMPT_WIDTH) THROW(EXC_MEMORY_ERROR);
 
-        // These will not overwrite terminating bytes
-        strncpy(prompts[i], label, PROMPT_WIDTH);
+        strncpy(prompts[i], label, sizeof(prompts[i]));
         if (data != NULL) {
             const char *value = (const char *)PIC(data[i]);
             if (strlen(value) > VALUE_WIDTH) THROW(EXC_MEMORY_ERROR);
-            strncpy(values[i], value, VALUE_WIDTH);
+            strncpy(values[i], value, sizeof(values[i]));
         }
     }
     size_t screen_count = i;
