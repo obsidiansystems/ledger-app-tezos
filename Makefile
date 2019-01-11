@@ -28,8 +28,8 @@ endif
 APP_LOAD_PARAMS=--appFlags 0 --curve ed25519 --curve secp256k1 --curve prime256r1 --path "44'/1729'" $(COMMON_LOAD_PARAMS)
 VERSION_TAG=$(shell git describe --tags | cut -f1 -d-)
 APPVERSION_M=1
-APPVERSION_N=4
-APPVERSION_P=3
+APPVERSION_N=5
+APPVERSION_P=0
 APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 
 ifneq (v$(APPVERSION), $(VERSION_TAG))
