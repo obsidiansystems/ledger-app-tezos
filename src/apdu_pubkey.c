@@ -31,7 +31,7 @@ static bool pubkey_ok(void) {
 
 #ifdef BAKING_APP
 static bool baking_ok(void) {
-    authorize_baking(global.baking.curve, bip32_path, bip32_path_length);
+    authorize_baking(global.pubkey.curve, global.pubkey.bip32_path, global.pubkey.bip32_path_length);
     pubkey_ok();
     return true;
 }
@@ -53,14 +53,14 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
 
 #ifdef BAKING_APP
     if (G_io_apdu_buffer[OFFSET_LC] == 0 && instruction == INS_AUTHORIZE_BAKING) {
-        curve = N_data.curve;
-        bip32_path_length = N_data.path_length;
-        memcpy(bip32_path, N_data.bip32_path, sizeof(*bip32_path) * bip32_path_length);
+        global.pubkey.curve = N_data.curve;
+        global.pubkey.bip32_path_length = N_data.path_length;
+        memcpy(global.pubkey.bip32_path, N_data.bip32_path, sizeof(*global.pubkey.bip32_path) * global.pubkey.bip32_path_length);
     } else {
 #endif
         global.pubkey.bip32_path_length = read_bip32_path(G_io_apdu_buffer[OFFSET_LC], global.pubkey.bip32_path, dataBuffer);
 #ifdef BAKING_APP
-        if (bip32_path_length == 0) {
+        if (global.pubkey.bip32_path_length == 0) {
             THROW(EXC_WRONG_LENGTH_FOR_INS);
         }
     }

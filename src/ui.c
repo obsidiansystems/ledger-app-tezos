@@ -62,7 +62,7 @@ const bagl_element_t ui_idle_screen[] = {
 
     {{BAGL_LABELINE, 0x01, 0, 26, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     idle_text,
+     global.ui.idle_text,
      0,
      0,
      0,
@@ -82,7 +82,7 @@ const bagl_element_t ui_idle_screen[] = {
 
     {{BAGL_LABELINE, 0x02, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     baking_auth_text,
+     global.ui.baking_auth_text,
      0,
      0,
      0,

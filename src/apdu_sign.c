@@ -51,7 +51,7 @@ static int perform_signature(bool hash_first);
 
 #ifdef BAKING_APP
 static bool bake_auth_ok(void) {
-    authorize_baking(curve, bip32_path, bip32_path_length);
+    authorize_baking(global.pubkey.curve, global.pubkey.bip32_path, global.pubkey.bip32_path_length);
     int tx = perform_signature(true);
     delayed_send(tx);
     return true;
@@ -87,11 +87,12 @@ static bool sign_reject(void) {
 #ifdef BAKING_APP
 uint32_t baking_sign_complete(void) {
     // Have raw data, can get insight into it
-    switch (magic_number) {
+    switch (global.sign.magic_number) {
         case MAGIC_BYTE_BLOCK:
         case MAGIC_BYTE_BAKING_OP:
-            guard_baking_authorized(curve, message_data, message_data_length,
-                                    bip32_path, bip32_path_length);
+            guard_baking_authorized(
+                global.pubkey.curve, global.sign.message_data, global.sign.message_data_length,
+                global.pubkey.bip32_path, global.pubkey.bip32_path_length);
             return perform_signature(true);
 
         case MAGIC_BYTE_UNSAFE_OP:
@@ -103,8 +104,10 @@ uint32_t baking_sign_complete(void) {
                 allow_operation(&allowed, OPERATION_TAG_REVEAL);
 
                 struct parsed_operation_group *ops =
-                    parse_operations(message_data, message_data_length, curve,
-                                     bip32_path_length, bip32_path, allowed);
+                    parse_operations(
+                        global.sign.message_data, global.sign.message_data_length,
+                        global.pubkey.curve, global.pubkey.bip32_path_length, global.pubkey.bip32_path,
+                        allowed);
 
                 // With < nickel fee
                 if (ops->total_fee > 50000) THROW(EXC_PARSE_ERROR);
@@ -520,7 +523,7 @@ static int perform_signature(bool hash_first) {
     uint32_t datalen = global.sign.message_data_length;
 
 #ifdef BAKING_APP
-    update_high_water_mark(message_data, message_data_length);
+    update_high_water_mark(global.sign.message_data, global.sign.message_data_length);
 #endif
 
     if (hash_first) {
