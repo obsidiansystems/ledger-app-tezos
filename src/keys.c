@@ -25,6 +25,10 @@
 #include <stdbool.h>
 #include <string.h>
 
+// The following need to be persisted for baking app
+uint8_t bip32_path_length;
+uint32_t bip32_path[MAX_BIP32_PATH];
+
 uint32_t read_bip32_path(uint32_t bytes, uint32_t *bip32_path, const uint8_t *buf) {
     uint32_t path_length = *buf;
     if (bytes < path_length * sizeof(uint32_t) + 1) THROW(EXC_WRONG_LENGTH_FOR_INS);
@@ -47,7 +51,16 @@ uint32_t read_bip32_path(uint32_t bytes, uint32_t *bip32_path, const uint8_t *bu
 struct key_pair *generate_key_pair(cx_curve_t curve, uint32_t path_length, uint32_t *bip32_path) {
     static uint8_t privateKeyData[32];
     static struct key_pair res;
-    os_perso_derive_node_bip32(curve, bip32_path, path_length, privateKeyData, NULL);
+#if CX_APILEVEL > 8
+    if (curve == CX_CURVE_Ed25519) {
+        os_perso_derive_node_bip32_seed_key(HDW_ED25519_SLIP10, curve, bip32_path, path_length,
+                                            privateKeyData, NULL, NULL, 0);
+    } else {
+#endif
+        os_perso_derive_node_bip32(curve, bip32_path, path_length, privateKeyData, NULL);
+#if CX_APILEVEL > 8
+    }
+#endif
     cx_ecfp_init_private_key(curve, privateKeyData, 32, &res.private_key);
     cx_ecfp_generate_pair(curve, &res.public_key, &res.private_key, 1);
 
@@ -80,8 +93,8 @@ cx_ecfp_public_key_t *public_key_hash(uint8_t output[HASH_SIZE], cx_curve_t curv
         default:
             THROW(EXC_WRONG_PARAM);
     }
-    blake2b_init(&hash_state, HASH_SIZE);
-    blake2b_update(&hash_state, compressed.W, compressed.W_len);
-    blake2b_final(&hash_state, output, HASH_SIZE);
+    b2b_init(&hash_state, HASH_SIZE);
+    b2b_update(&hash_state, compressed.W, compressed.W_len);
+    b2b_final(&hash_state, output, HASH_SIZE);
     return &compressed;
 }

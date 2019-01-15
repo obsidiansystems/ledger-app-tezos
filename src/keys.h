@@ -10,6 +10,10 @@
 
 #define MAX_BIP32_PATH 10
 
+// The following need to be persisted for baking app
+extern uint8_t bip32_path_length;
+extern uint32_t bip32_path[MAX_BIP32_PATH];
+
 // Throws upon error
 uint32_t read_bip32_path(uint32_t bytes, uint32_t *bip32_path, const uint8_t *buf);
 
@@ -20,6 +24,7 @@ struct key_pair {
 
 struct key_pair *generate_key_pair(cx_curve_t curve, uint32_t path_size, uint32_t *bip32_path);
 
+// TODO: Rename to KEY_HASH_SIZE
 #define HASH_SIZE 20
 #define PKH_STRING_SIZE 40
 

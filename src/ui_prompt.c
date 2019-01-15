@@ -6,6 +6,7 @@
 
 static char prompts[MAX_SCREEN_COUNT][PROMPT_WIDTH + 1]; // Additional bytes init'ed to null,
 static char values[MAX_SCREEN_COUNT][VALUE_WIDTH + 1];   // and null they shall remain.
+        // TODO: Get rid of +1
 
 #define SCREEN_FOR(SCREEN_ID) \
     {{BAGL_LABELINE, SCREEN_ID + 1, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000, \
@@ -81,11 +82,14 @@ void ui_prompt(const char *const *labels, const char *const *data, callback_t ok
 
     size_t i;
     for (i = 0; labels[i] != NULL; i++) {
-        if (i >= MAX_SCREEN_COUNT) THROW(EXC_MEMORY_ERROR);
-        // These will not overwrite terminating bytes
-        strncpy(prompts[i], (const char *)PIC(labels[i]), PROMPT_WIDTH);
+        const char *label = (const char *)PIC(labels[i]);
+        if (i >= MAX_SCREEN_COUNT || strlen(label) > PROMPT_WIDTH) THROW(EXC_MEMORY_ERROR);
+
+        strncpy(prompts[i], label, sizeof(prompts[i]));
         if (data != NULL) {
-            strncpy(values[i], (const char *)PIC(data[i]), VALUE_WIDTH);
+            const char *value = (const char *)PIC(data[i]);
+            if (strlen(value) > VALUE_WIDTH) THROW(EXC_MEMORY_ERROR);
+            strncpy(values[i], value, sizeof(values[i]));
         }
     }
     size_t screen_count = i;

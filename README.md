@@ -103,7 +103,7 @@ and closing your password manager when not in use.
 ### Protecting Your Key -- Further Advanced Reading
 
 More advanced techniques for those interested in even more layers of security
-or plausible deniability features should look at 
+or plausible deniability features should look at
 [Ledger's documentation on this](https://support.ledgerwallet.com/hc/en-us/articles/115005214529-Advanced-Passphrase-options).
 
 Note that Ledger devices with different seeds will appear to `tezos-client` to be
@@ -341,7 +341,7 @@ virtual env. To have a new terminal session enter the virtualenv, run the above
 We can now install `ledgerblue`, which is the Python module designed originally for
 Ledger Blue, but also is needed for the Ledger Nano S.
 
-Although we do not yet support Ledger Blue, you must still install the following python package. 
+Although we do not yet support Ledger Blue, you must still install the following python package.
 Within the virtualenv environment -- making sure that `(ledger)` is showing up
 before your prompt -- use pip to install the `ledgerblue`
 [Python package](https://pypi.org/project/ledgerblue/).
@@ -528,8 +528,7 @@ all Tezos paths start with this, in `tezos-client` commands it is implied.
 This section must be done regardless of whether you're going to be baking or
 only using the Tezos Wallet application.
 
-Please run, with a Tezos app (either Tezos Baking or Tezos Wallet will do) open
-on your device:
+Please run, with a Tezos app open on your device (either Tezos Baking or Tezos Wallet will do):
 
 ```
 $ tezos-client list connected ledgers
@@ -547,11 +546,12 @@ To use keys at BIP32 path m/44'/1729'/0'/0' (default Tezos key path), use one of
  tezos-client import secret key ledger_jhartzell "ledger://major-squirrel-thick-hedgehog/P-256/0'/0'"
 ```
 
-These show you how to import keys with a specific signing curve and derivation path. The
+These show you how to import keys with a specific signing curve (e.g. `ed25519`) and derivation path (e.g. `/0'/0'`). The
 animal-based name (e.g. `major-squirrel-thick-hedgehog`) is a unique identifier for your
-Ledger device, to enable the client to distinguish different Ledger devices. This is combined with
-a derivation path (which may but probably should not be empty) to indicate one of
-the possible keys on the Ledger Nano S.
+Ledger device enabling the client to distinguish different Ledger devices. This is combined with
+a derivation path (e.g. `/0'/0'`) to indicate one of the possible keys on the Ledger Nano S. Your *root* key is the full identifier without the derivation path (e.g. `major-squirrel-thick-hedgehog/ed25519` by itself) but you should not use the root key directly\*.
+
+\* *NOTE:* If you have used your root key in the past and need to import it, you can do so by simply running one of the commands but without the last derivation portion. From the example above, you would import your root key by running `tezos-client import secret key ledger_jhartzell "ledger://major-squirrel-thick-hedgehog/ed25519"`. You should avoid using your root key.
 
 The Ledger Nano S does not currently support non-hardened path components. All
 components of all paths must be hardened, which is indicated by following them
@@ -721,6 +721,28 @@ $ tezos-client set delegate for <NEW> to <DELEGATE>
 ```
 
 Originated accounts have names beginning with `KT1` rather than `tz1`, `tz2` or `tz3`.
+
+### Proposals and Voting
+
+To submit (or upvote) a proposal, open the Wallet app on your ledger and run
+
+```
+$ tezos-client submit proposals for <ACCOUNT> <PROTOCOL-HASH>
+```
+
+The Wallet app will then ask you to confirm the various details of the proposal submission.
+
+**Note:** While `tezos-client` will let you submit multiple proposals at once with this command, submitting more than one will cause the Wallet app to show "Sign Unverified?" instead of showing each field of each proposal for your confirmation. Signing an operation that you can't confirm is not safe and it is highly recommended that you simply submit each proposal one at a time so you can properly confirm the fields on the ledger device.
+
+Voting for a proposal also requires that you have the Wallet app open. You can then run
+
+```
+$ tezos-client submit ballot for <ACCOUNT> <PROTOCOL-HASH> <yea|nay|pass>
+```
+
+The Wallet app will ask you to confirm the details of your vote.
+
+Keep in mind that only registered delegate accounts can submit proposals and vote. Each account can submit up to 20 proposals per proposal period and vote only once per voting period. For a full description of how voting works, refer to the [Tezos documentation](https://gitlab.com/tezos/tezos/blob/master/docs/whitedoc/voting.rst).
 
 ## Using the Tezos Baking Application
 
@@ -991,8 +1013,8 @@ If the Ledger Nano S app crashes when you load it, there are two primary causes:
     might have to restart the Ledger Nano S.
   * Out of date firmware: If the Ledger Nano S app doesn't work at all, make sure you are running firmware
     version 1.4.2.
-    
+
 ### Contact Us
- You can email us at tezos@obsidian.systems and request to join our Slack. 
-We have several channels about baking and one specifically for our Ledger Nano S apps. 
+ You can email us at tezos@obsidian.systems and request to join our Slack.
+We have several channels about baking and one specifically for our Ledger Nano S apps.
 You can ask questions and get answers from Obsidian staff or from the community.

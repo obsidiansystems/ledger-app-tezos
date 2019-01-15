@@ -13,6 +13,12 @@ if [ "${2:-}X" != X ]; then
     app_file="$2"
 fi
 
+if [ "${3:-}X" = X ]; then
+    version="$(git -C "$rootdir" describe --tags | cut -f1 -d- | cut -f2 -dv)"
+else
+    version="$3"
+fi
+
 set -x
 python -m ledgerblue.loadApp \
     --appFlags 0x00 \
@@ -21,10 +27,11 @@ python -m ledgerblue.loadApp \
     --curve ed25519 \
     --curve secp256k1 \
     --curve prime256r1 \
-    --targetId 0x31100003 \
+    --targetId "${TARGET_ID:-0x31100004}" \
     --delete \
     --path 44"'"/1729"'" \
-    --fileName $app_file \
+    --fileName "$app_file" \
     --appName "$app_name" \
-    --appVersion 1.0.0 \
-    --icon "$(cat "$rootdir/dist/icon.hex")"
+    --appVersion "$version" \
+    --icon "$(cat "$rootdir/dist/icon.hex")" \
+    --targetVersion ""

@@ -6,6 +6,8 @@
 
 #include "keys.h"
 
+#define PROTOCOL_HASH_BASE58_STRING_SIZE 52 // e.g. "ProtoBetaBetaBetaBetaBetaBetaBetaBetaBet11111a5ug96" plus null byte
+
 typedef bool (*callback_t)(void); // return true to go back to idle screen
 
 void ui_initial_screen(void);
