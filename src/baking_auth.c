@@ -114,10 +114,7 @@ static const char *const baking_values[] = {
 
 // TODO: Unshare code with next function
 void prompt_contract_for_baking(struct parsed_contract *contract, callback_t ok_cb, callback_t cxl_cb) {
-    if (!parsed_contract_to_string(address_display_data, sizeof(address_display_data), contract)) {
-        THROW(EXC_WRONG_VALUES);
-    }
-
+    parsed_contract_to_string(address_display_data, sizeof(address_display_data), contract);
     ui_prompt(get_baking_prompts(), baking_values, ok_cb, cxl_cb);
 }
 #endif
@@ -129,9 +126,7 @@ void prompt_address(
         bool baking,
         cx_curve_t curve, const cx_ecfp_public_key_t *key, callback_t ok_cb,
         callback_t cxl_cb) {
-    if (!pubkey_to_pkh_string(address_display_data, sizeof(address_display_data), curve, key)) {
-        THROW(EXC_WRONG_VALUES);
-    }
+    pubkey_to_pkh_string(address_display_data, sizeof(address_display_data), curve, key);
 
 #ifdef BAKING_APP
     if (baking) {

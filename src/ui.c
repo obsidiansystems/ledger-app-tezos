@@ -1,9 +1,11 @@
 #include "ui.h"
 
 #include "ui_menu.h"
+#include "ui_prompt.h"
 
 #include "baking_auth.h"
 #include "keys.h"
+#include "memory.h"
 #include "to_string.h"
 
 #include <stdbool.h>
@@ -108,9 +110,10 @@ static bool do_nothing(void) {
 static void ui_idle(void) {
 #ifdef BAKING_APP
     update_auth_text();
-    ui_display(ui_idle_screen, sizeof(ui_idle_screen)/sizeof(*ui_idle_screen),
+    ui_display(ui_idle_screen, NUM_ELEMENTS(ui_idle_screen),
                do_nothing, exit_app, 2);
 #else
+    cxl_callback = exit_app;
     main_menu();
 #endif
 }
@@ -124,6 +127,7 @@ void ui_initial_screen(void) {
 #ifdef BAKING_APP
     change_idle_display(N_data.highest_level);
 #endif
+    clear_ui_callbacks();
     ui_idle();
 }
 
@@ -156,30 +160,27 @@ unsigned button_handler(unsigned button_mask, __attribute__((unused)) unsigned b
             return 0;
     }
     if (callback()) {
+        clear_ui_callbacks();
         ui_idle();
     }
     return 0;
 }
 
 const bagl_element_t *prepro(const bagl_element_t *element) {
-    // Always display elements with userid 0
-    if (element->component.userid == 0) return element;
+    if (element->component.userid == BAGL_STATIC_ELEMENT) return element;
 
+    static const uint32_t pause_millis = 1500;
     uint32_t min = 2000;
-    uint32_t div = 2;
+    static const uint32_t div = 2;
 
     if (is_idling()) {
         min = 4000;
     }
 
-    if (ux_step == element->component.userid - 1) {
+    if (ux_step == element->component.userid - 1 || element->component.userid == BAGL_SCROLLING_ELEMENT) {
         // timeouts are in millis
-        if (ux_step_count > 1) {
-            UX_CALLBACK_SET_INTERVAL(MAX(min,
-                                         (1500 + bagl_label_roundtrip_duration_ms(element, 7)) / div));
-        } else {
-            UX_CALLBACK_SET_INTERVAL(30000 / PROMPT_CYCLES);
-        }
+        UX_CALLBACK_SET_INTERVAL(MAX(min,
+                                     (pause_millis + bagl_label_roundtrip_duration_ms(element, 7)) / div));
         return element;
     } else {
         return NULL;
@@ -194,6 +195,9 @@ void ui_display(const bagl_element_t *elems, size_t sz, callback_t ok_c, callbac
     ux_step_count = step_count;
     ok_callback = ok_c;
     cxl_callback = cxl_c;
+    if (!is_idling()) {
+        switch_screen(0);
+    }
     ux.elements = elems;
     ux.elements_count = sz;
     ux.button_push_handler = button_handler;
@@ -225,6 +229,9 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
             if (ux.callback_interval_ms == 0) {
                 // prepare next screen
                 ux_step = (ux_step + 1) % ux_step_count;
+                if (!is_idling()) {
+                    switch_screen(ux_step);
+                }
 
                 // check if we've timed out
                 if (ux_step == 0) {
