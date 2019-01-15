@@ -151,5 +151,5 @@ extern "C" {
 }
 #endif
 
-extern b2b_state hash_state;
+extern b2b_state hash_state;  // IMPORTANT: NOT initted by init_globals. TODO: Use blake2b from SDK.
 #endif

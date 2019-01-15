@@ -60,12 +60,17 @@ typedef struct {
       const void *callback_data[MAX_SCREEN_COUNT];
       char active_prompt[PROMPT_WIDTH + 1];
       char active_value[VALUE_WIDTH + 1];
+
+      // This will and must always be static memory full of constants
+      const char *const *prompts;
     } prompt;
   } ui;
 
   struct {
     WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
     nvram_data new_data;  // Staging area for setting N_data
+
+    char address_display_data[VALUE_WIDTH];
   } baking_auth;
 } globals_t;
 

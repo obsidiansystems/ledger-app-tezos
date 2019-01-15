@@ -20,7 +20,7 @@
 #include "blake2.h"
 #include "blake2-impl.h"
 
-b2b_state hash_state;
+b2b_state hash_state; // IMPORTANT: NOT initted by init_globals.
 
 static const uint64_t b2b_IV[8] =
 {

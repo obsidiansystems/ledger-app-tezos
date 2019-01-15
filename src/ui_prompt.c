@@ -7,9 +7,6 @@
 
 #include <string.h>
 
-// This will and must always be static memory full of constants
-static const char *const *prompts;
-
 static const bagl_element_t ui_multi_screen[] = {
     {{BAGL_RECTANGLE, BAGL_STATIC_ELEMENT, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
       0, 0},
@@ -64,7 +61,7 @@ static const bagl_element_t ui_multi_screen[] = {
 
 void switch_screen(uint32_t which) {
     if (which >= MAX_SCREEN_COUNT) THROW(EXC_MEMORY_ERROR);
-    const char *label = (const char*)PIC(prompts[which]);
+    const char *label = (const char*)PIC(global.ui.prompt.prompts[which]);
 
     strncpy(global.ui.prompt.active_prompt, label, sizeof(global.ui.prompt.active_prompt));
     if (global.ui.prompt.callbacks[which] == NULL) THROW(EXC_MEMORY_ERROR);
@@ -88,7 +85,7 @@ void clear_ui_callbacks(void) {
 __attribute__((noreturn))
 void ui_prompt(const char *const *labels, const char *const *data, ui_callback_t ok_c, ui_callback_t cxl_c) {
     check_null(labels);
-    prompts = labels;
+    global.ui.prompt.prompts = labels;
 
     size_t i;
     for (i = 0; labels[i] != NULL; i++) {

@@ -86,11 +86,9 @@ void update_auth_text(void) {
     }
 }
 
-static char address_display_data[VALUE_WIDTH];
-
 static const char *const pubkey_values[] = {
     "Public Key",
-    address_display_data,
+    global.baking_auth.address_display_data,
     NULL,
 };
 
@@ -107,13 +105,14 @@ static char const * const * get_baking_prompts() {
 
 static const char *const baking_values[] = {
     "With Public Key?",
-    address_display_data,
+    global.baking_auth.address_display_data,
     NULL,
 };
 
 // TODO: Unshare code with next function
 void prompt_contract_for_baking(struct parsed_contract *contract, ui_callback_t ok_cb, ui_callback_t cxl_cb) {
-    parsed_contract_to_string(address_display_data, sizeof(address_display_data), contract);
+    parsed_contract_to_string(
+        global.baking_auth.address_display_data, sizeof(global.baking_auth.address_display_data), contract);
     ui_prompt(get_baking_prompts(), baking_values, ok_cb, cxl_cb);
 }
 #endif
@@ -125,7 +124,8 @@ void prompt_address(
         bool baking,
         cx_curve_t curve, const cx_ecfp_public_key_t *key, ui_callback_t ok_cb,
         ui_callback_t cxl_cb) {
-    pubkey_to_pkh_string(address_display_data, sizeof(address_display_data), curve, key);
+    pubkey_to_pkh_string(
+        global.baking_auth.address_display_data, sizeof(global.baking_auth.address_display_data), curve, key);
 
 #ifdef BAKING_APP
     if (baking) {

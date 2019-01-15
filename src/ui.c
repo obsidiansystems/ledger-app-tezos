@@ -24,7 +24,7 @@ void require_pin(void) {
 }
 
 #ifdef BAKING_APP
-const bagl_element_t ui_idle_screen[] = {
+static const bagl_element_t ui_idle_screen[] = {
     // type                               userid    x    y   w    h  str rad
     // fill      fg        bg      fid iid  txt   touchparams...       ]
     {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
@@ -136,7 +136,7 @@ static void timeout(void) {
     }
 }
 
-unsigned button_handler(unsigned button_mask, __attribute__((unused)) unsigned button_mask_counter) {
+static unsigned button_handler(unsigned button_mask, __attribute__((unused)) unsigned button_mask_counter) {
     ui_callback_t callback;
     switch (button_mask) {
         case BUTTON_EVT_RELEASED | BUTTON_LEFT:
