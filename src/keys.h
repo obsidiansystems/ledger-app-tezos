@@ -7,12 +7,7 @@
 #include "cx.h"
 
 #include "exception.h"
-
-#define MAX_BIP32_PATH 10
-
-// The following need to be persisted for baking app
-extern uint8_t bip32_path_length;
-extern uint32_t bip32_path[MAX_BIP32_PATH];
+#include "globals.h"
 
 // Throws upon error
 uint32_t read_bip32_path(uint32_t bytes, uint32_t *bip32_path, const uint8_t *buf);

@@ -14,38 +14,64 @@ void init_globals(void);
 #   define TEZOS_BUFSIZE 256
 #endif
 
-extern level_t reset_level;
-extern cx_ecfp_public_key_t public_key;
-extern cx_curve_t curve;
+#define INS_MAX 0x0B
 
-extern uint8_t message_data[TEZOS_BUFSIZE];
-extern uint32_t message_data_length;
-extern cx_curve_t curve;
+typedef struct {
+  void *stack_root;
+  apdu_handler handlers[INS_MAX];
 
-extern bool is_hash_state_inited;
-extern uint8_t magic_number;
-extern bool hash_only;
+  struct {
+    level_t reset_level;
+  } baking;
 
-// UI
-extern ux_state_t ux;
-extern unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
+  struct {
+    cx_ecfp_public_key_t public_key;
+    cx_curve_t curve;
 
-extern ui_callback_t ok_callback;
-extern ui_callback_t cxl_callback;
+    // The following need to be persisted for baking app
+    uint8_t bip32_path_length;
+    uint32_t bip32_path[MAX_BIP32_PATH];
+  } pubkey;
 
-extern uint32_t ux_step;
-extern uint32_t ux_step_count;
+  struct {
+    uint8_t message_data[TEZOS_BUFSIZE];
+    uint32_t message_data_length;
+    cx_curve_t curve;
 
-extern uint32_t timeout_cycle_count;
+    bool is_hash_state_inited;
+    uint8_t magic_number;
+    bool hash_only;
+  } sign;
 
-extern char idle_text[16];
-extern char baking_auth_text[PKH_STRING_SIZE];
+  struct {
+    ux_state_t ux;
+    unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
-// UI Prompt
-extern string_generation_callback callbacks[MAX_SCREEN_COUNT];
-extern char active_prompt[PROMPT_WIDTH + 1];
-extern char active_value[VALUE_WIDTH + 1];
+    ui_callback_t ok_callback;
+    ui_callback_t cxl_callback;
 
-// Baking Auth
-extern WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
-extern nvram_data new_data;  // Staging area for setting N_data
+    uint32_t ux_step;
+    uint32_t ux_step_count;
+
+    uint32_t timeout_cycle_count;
+
+    char idle_text[16];
+    char baking_auth_text[PKH_STRING_SIZE];
+
+    struct {
+      string_generation_callback callbacks[MAX_SCREEN_COUNT];
+      const void *callback_data[MAX_SCREEN_COUNT];
+      char active_prompt[PROMPT_WIDTH + 1];
+      char active_value[VALUE_WIDTH + 1];
+    } prompt;
+  } ui;
+
+  struct {
+    WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
+    nvram_data new_data;  // Staging area for setting N_data
+  } baking_auth;
+} globals_t;
+
+extern globals_t global;
+
+extern unsigned int app_stack_canary; // From SDK

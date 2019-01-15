@@ -1,11 +1,10 @@
-#include "globals.h"
-
 #include "apdu_sign.h"
 
 #include "apdu.h"
 #include "baking_auth.h"
 #include "base58.h"
 #include "blake2.h"
+#include "globals.h"
 #include "keys.h"
 #include "memory.h"
 #include "protocol.h"
@@ -21,31 +20,31 @@
 #define B2B_BLOCKBYTES 128
 
 static void conditional_init_hash_state(void) {
-    if (!is_hash_state_inited) {
+    if (!global.sign.is_hash_state_inited) {
         b2b_init(&hash_state, SIGN_HASH_SIZE);
-        is_hash_state_inited = true;
+        global.sign.is_hash_state_inited = true;
     }
 }
 
 static void hash_buffer(void) {
-    const uint8_t *current = message_data;
-    while (message_data_length > B2B_BLOCKBYTES) {
+    const uint8_t *current = global.sign.message_data;
+    while (global.sign.message_data_length > B2B_BLOCKBYTES) {
         conditional_init_hash_state();
         b2b_update(&hash_state, current, B2B_BLOCKBYTES);
-        message_data_length -= B2B_BLOCKBYTES;
+        global.sign.message_data_length -= B2B_BLOCKBYTES;
         current += B2B_BLOCKBYTES;
     }
     // TODO use circular buffer at some point
-    memmove(message_data, current, message_data_length);
+    memmove(global.sign.message_data, current, global.sign.message_data_length);
 }
 
 static void finish_hashing(uint8_t *hash, size_t hash_size) {
     hash_buffer();
     conditional_init_hash_state();
-    b2b_update(&hash_state, message_data, message_data_length);
+    b2b_update(&hash_state, global.sign.message_data, global.sign.message_data_length);
     b2b_final(&hash_state, hash, hash_size);
-    message_data_length = 0;
-    is_hash_state_inited = false;
+    global.sign.message_data_length = 0;
+    global.sign.is_hash_state_inited = false;
 }
 
 static int perform_signature(bool hash_first);
@@ -72,11 +71,11 @@ static bool sign_unsafe_ok(void) {
 #endif
 
 static void clear_data(void) {
-    bip32_path_length = 0;
-    message_data_length = 0;
-    is_hash_state_inited = false;
-    magic_number = 0;
-    hash_only = false;
+    global.pubkey.bip32_path_length = 0;
+    global.sign.message_data_length = 0;
+    global.sign.is_hash_state_inited = false;
+    global.sign.magic_number = 0;
+    global.sign.hash_only = false;
 }
 
 static bool sign_reject(void) {
@@ -429,17 +428,18 @@ uint32_t wallet_sign_complete(uint8_t instruction) {
         };
         ui_prompt(prehashed_prompts, insecure_values, sign_unsafe_ok, sign_reject);
     } else {
-        switch (magic_number) {
+        switch (global.sign.magic_number) {
             case MAGIC_BYTE_BLOCK:
             case MAGIC_BYTE_BAKING_OP:
             default:
                 THROW(EXC_PARSE_ERROR);
             case MAGIC_BYTE_UNSAFE_OP:
-                if (is_hash_state_inited) {
+                if (global.sign.is_hash_state_inited) {
                     goto unsafe;
                 }
-                if (!prompt_transaction(message_data, message_data_length, curve,
-                                        bip32_path_length, bip32_path, sign_ok, sign_reject)) {
+                if (!prompt_transaction(
+                        global.sign.message_data, global.sign.message_data_length, global.pubkey.curve,
+                        global.pubkey.bip32_path_length, global.pubkey.bip32_path, sign_ok, sign_reject)) {
                     goto unsafe;
                 }
             case MAGIC_BYTE_UNSAFE_OP2:
@@ -466,19 +466,19 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
     switch (p1 & ~P1_LAST_MARKER) {
     case P1_FIRST:
         clear_data();
-        os_memset(message_data, 0, sizeof(message_data));
-        message_data_length = 0;
-        bip32_path_length = read_bip32_path(dataLength, bip32_path, dataBuffer);
-        curve = curve_code_to_curve(G_io_apdu_buffer[OFFSET_CURVE]);
+        os_memset(global.sign.message_data, 0, sizeof(global.sign.message_data));
+        global.sign.message_data_length = 0;
+        global.pubkey.bip32_path_length = read_bip32_path(dataLength, global.pubkey.bip32_path, dataBuffer);
+        global.pubkey.curve = curve_code_to_curve(G_io_apdu_buffer[OFFSET_CURVE]);
         return_ok();
 #ifndef BAKING_APP
     case P1_HASH_ONLY_NEXT:
         // This is a debugging Easter egg
-        hash_only = true;
+        global.sign.hash_only = true;
         // FALL THROUGH
 #endif
     case P1_NEXT:
-        if (bip32_path_length == 0) {
+        if (global.pubkey.bip32_path_length == 0) {
             THROW(EXC_WRONG_LENGTH_FOR_INS);
         }
         break;
@@ -486,8 +486,8 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
         THROW(EXC_WRONG_PARAM);
     }
 
-    if (instruction != INS_SIGN_UNSAFE && magic_number == 0) {
-        magic_number = get_magic_byte(dataBuffer, dataLength);
+    if (instruction != INS_SIGN_UNSAFE && global.sign.magic_number == 0) {
+        global.sign.magic_number = get_magic_byte(dataBuffer, dataLength);
     }
 
 #ifndef BAKING_APP
@@ -496,12 +496,12 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
     }
 #endif
 
-    if (message_data_length + dataLength > sizeof(message_data)) {
+    if (global.sign.message_data_length + dataLength > sizeof(global.sign.message_data)) {
         THROW(EXC_PARSE_ERROR);
     }
 
-    os_memmove(message_data + message_data_length, dataBuffer, dataLength);
-    message_data_length += dataLength;
+    os_memmove(global.sign.message_data + global.sign.message_data_length, dataBuffer, dataLength);
+    global.sign.message_data_length += dataLength;
 
     if (!last) {
         return_ok();
@@ -516,8 +516,8 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
 
 static int perform_signature(bool hash_first) {
     uint8_t hash[SIGN_HASH_SIZE];
-    uint8_t *data = message_data;
-    uint32_t datalen = message_data_length;
+    uint8_t *data = global.sign.message_data;
+    uint32_t datalen = global.sign.message_data_length;
 
 #ifdef BAKING_APP
     update_high_water_mark(message_data, message_data_length);
@@ -530,7 +530,7 @@ static int perform_signature(bool hash_first) {
         datalen = SIGN_HASH_SIZE;
 
 #ifndef BAKING_APP
-        if (hash_only) {
+        if (global.sign.hash_only) {
             memcpy(G_io_apdu_buffer, data, datalen);
             uint32_t tx = datalen;
 
@@ -541,10 +541,11 @@ static int perform_signature(bool hash_first) {
 #endif
     }
 
-    struct key_pair *pair = generate_key_pair(curve, bip32_path_length, bip32_path);
+    struct key_pair *pair = generate_key_pair(
+        global.pubkey.curve, global.pubkey.bip32_path_length, global.pubkey.bip32_path);
 
     uint32_t tx;
-    switch (curve) {
+    switch (global.pubkey.curve) {
     case CX_CURVE_Ed25519: {
         tx = cx_eddsa_sign(&pair->private_key,
                            0,

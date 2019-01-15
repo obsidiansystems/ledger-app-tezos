@@ -13,11 +13,11 @@
 
 static int provide_pubkey(void) {
     int tx = 0;
-    G_io_apdu_buffer[tx++] = public_key.W_len;
+    G_io_apdu_buffer[tx++] = global.pubkey.public_key.W_len;
     os_memmove(G_io_apdu_buffer + tx,
-               public_key.W,
-               public_key.W_len);
-    tx += public_key.W_len;
+               global.pubkey.public_key.W,
+               global.pubkey.public_key.W_len);
+    tx += global.pubkey.public_key.W_len;
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;
     return tx;
@@ -31,7 +31,7 @@ static bool pubkey_ok(void) {
 
 #ifdef BAKING_APP
 static bool baking_ok(void) {
-    authorize_baking(curve, bip32_path, bip32_path_length);
+    authorize_baking(global.baking.curve, bip32_path, bip32_path_length);
     pubkey_ok();
     return true;
 }
@@ -49,7 +49,7 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
         require_hid();
     }
 
-    curve = curve_code_to_curve(G_io_apdu_buffer[OFFSET_CURVE]);
+    global.pubkey.curve = curve_code_to_curve(G_io_apdu_buffer[OFFSET_CURVE]);
 
 #ifdef BAKING_APP
     if (G_io_apdu_buffer[OFFSET_LC] == 0 && instruction == INS_AUTHORIZE_BAKING) {
@@ -58,16 +58,16 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
         memcpy(bip32_path, N_data.bip32_path, sizeof(*bip32_path) * bip32_path_length);
     } else {
 #endif
-        bip32_path_length = read_bip32_path(G_io_apdu_buffer[OFFSET_LC], bip32_path, dataBuffer);
+        global.pubkey.bip32_path_length = read_bip32_path(G_io_apdu_buffer[OFFSET_LC], global.pubkey.bip32_path, dataBuffer);
 #ifdef BAKING_APP
         if (bip32_path_length == 0) {
             THROW(EXC_WRONG_LENGTH_FOR_INS);
         }
     }
 #endif
-    struct key_pair *pair = generate_key_pair(curve, bip32_path_length, bip32_path);
+    struct key_pair *pair = generate_key_pair(global.pubkey.curve, global.pubkey.bip32_path_length, global.pubkey.bip32_path);
     os_memset(&pair->private_key, 0, sizeof(pair->private_key));
-    memcpy(&public_key, &pair->public_key, sizeof(public_key));
+    memcpy(&global.pubkey.public_key, &pair->public_key, sizeof(global.pubkey.public_key));
 
     if (instruction == INS_GET_PUBLIC_KEY) {
         return provide_pubkey();
@@ -87,6 +87,6 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
 #ifdef BAKING_APP
         }
 #endif
-        prompt_address(bake, curve, &public_key, cb, delay_reject);
+        prompt_address(bake, global.pubkey.curve, &global.pubkey.public_key, cb, delay_reject);
     }
 }

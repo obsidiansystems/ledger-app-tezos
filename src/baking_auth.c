@@ -17,10 +17,10 @@ bool is_valid_level(level_t lvl) {
 
 void write_highest_level(level_t lvl, bool is_endorsement) {
     if (!is_valid_level(lvl)) return;
-    memcpy(&new_data, &N_data, sizeof(new_data));
-    new_data.highest_level = lvl;
-    new_data.had_endorsement = is_endorsement;
-    nvm_write((void*)&N_data, &new_data, sizeof(N_data));
+    memcpy(&global.baking_auth.new_data, &N_data, sizeof(global.baking_auth.new_data));
+    global.baking_auth.new_data.highest_level = lvl;
+    global.baking_auth.new_data.had_endorsement = is_endorsement;
+    nvm_write((void*)&N_data, &global.baking_auth.new_data, sizeof(N_data));
     change_idle_display(N_data.highest_level);
 }
 
@@ -29,12 +29,12 @@ void authorize_baking(cx_curve_t curve, uint32_t *bip32_path, uint8_t path_lengt
         return;
     }
 
-    new_data.highest_level = N_data.highest_level;
-    new_data.had_endorsement = N_data.had_endorsement;
-    new_data.curve = curve;
-    memcpy(new_data.bip32_path, bip32_path, path_length * sizeof(*bip32_path));
-    new_data.path_length = path_length;
-    nvm_write((void*)&N_data, &new_data, sizeof(N_data));
+    global.baking_auth.new_data.highest_level = N_data.highest_level;
+    global.baking_auth.new_data.had_endorsement = N_data.had_endorsement;
+    global.baking_auth.new_data.curve = curve;
+    memcpy(global.baking_auth.new_data.bip32_path, bip32_path, path_length * sizeof(*bip32_path));
+    global.baking_auth.new_data.path_length = path_length;
+    nvm_write((void*)&N_data, &global.baking_auth.new_data, sizeof(N_data));
     change_idle_display(N_data.highest_level);
 }
 
@@ -76,12 +76,13 @@ void update_high_water_mark(void *data, int datalen) {
 
 void update_auth_text(void) {
     if (N_data.path_length == 0) {
-        strcpy(baking_auth_text, "No Key Authorized");
+        strcpy(global.ui.baking_auth_text, "No Key Authorized");
     } else {
         struct key_pair *pair = generate_key_pair(N_data.curve, N_data.path_length, N_data.bip32_path);
         os_memset(&pair->private_key, 0, sizeof(pair->private_key));
-        pubkey_to_pkh_string(baking_auth_text, sizeof(baking_auth_text), N_data.curve,
-                             &pair->public_key);
+        pubkey_to_pkh_string(
+            global.ui.baking_auth_text, sizeof(global.ui.baking_auth_text),
+            N_data.curve, &pair->public_key);
     }
 }
 

@@ -56,13 +56,11 @@ void main_loop(apdu_handler handlers[INS_MAX]) {
                 }
 
                 uint8_t instruction = G_io_apdu_buffer[OFFSET_INS];
-                apdu_handler cb;
-                if (instruction >= INS_MAX) {
-                    cb = handle_apdu_error;
-                } else {
-                    cb = handlers[instruction];
-                }
-                uint32_t tx = cb(instruction);
+                const apdu_handler cb = (instruction >= INS_MAX)
+                    ? handle_apdu_error
+                    : handlers[instruction];
+
+                const uint32_t tx = cb(instruction);
                 rx = io_exchange(CHANNEL_APDU, tx);
             }
             CATCH(ASYNC_EXCEPTION) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "exception.h"
+#include "globals.h"
 #include "keys.h"
 
 #include "ui.h"
@@ -22,10 +23,6 @@
 
 #define INS_VERSION 0x00
 #define INS_GIT 0x09
-#define INS_MAX 0x0B
-
-// Return number of bytes to transmit (tx)
-typedef uint32_t (*apdu_handler)(uint8_t instruction);
 
 __attribute__((noreturn))
 void main_loop(apdu_handler handlers[INS_MAX]);
@@ -56,12 +53,9 @@ uint32_t handle_apdu_error(uint8_t instruction);
 uint32_t handle_apdu_version(uint8_t instruction);
 uint32_t handle_apdu_git(uint8_t instruction);
 
-extern uint32_t app_stack_canary;
-
-extern void *stack_root;
 static inline void throw_stack_size() {
     uint8_t st;
     // uint32_t tmp1 = (uint32_t)&st - (uint32_t)&app_stack_canary;
-    uint32_t tmp2 = (uint32_t)stack_root - (uint32_t)&st;
+    uint32_t tmp2 = (uint32_t)global.stack_root - (uint32_t)&st;
     THROW(0x9000 + tmp2);
 }
