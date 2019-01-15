@@ -1,3 +1,5 @@
+#include "globals.h"
+
 #include "apdu.h"
 #include "baking_auth.h"
 #include "apdu_baking.h"
@@ -8,8 +10,6 @@
 #include "ui_prompt.h"
 
 #include <string.h>
-
-static level_t reset_level;
 
 static bool reset_ok(void);
 

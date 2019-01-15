@@ -1,3 +1,4 @@
+#include "globals.h"
 #include "ui.h"
 
 #include "ui_menu.h"
@@ -11,21 +12,9 @@
 #include <stdbool.h>
 #include <string.h>
 
-ux_state_t ux;
-unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
-
-static callback_t ok_callback;
-static callback_t cxl_callback;
-
 static unsigned button_handler(unsigned button_mask, unsigned button_mask_counter);
 
-static uint32_t ux_step, ux_step_count;
-
 #define PROMPT_CYCLES 3
-static uint32_t timeout_cycle_count;
-
-static char idle_text[16];
-char baking_auth_text[PKH_STRING_SIZE];
 
 void require_pin(void) {
     bolos_ux_params_t params;
@@ -148,7 +137,7 @@ static void timeout(void) {
 }
 
 unsigned button_handler(unsigned button_mask, __attribute__((unused)) unsigned button_mask_counter) {
-    callback_t callback;
+    ui_callback_t callback;
     switch (button_mask) {
         case BUTTON_EVT_RELEASED | BUTTON_LEFT:
             callback = cxl_callback;
@@ -187,7 +176,7 @@ const bagl_element_t *prepro(const bagl_element_t *element) {
     }
 }
 
-void ui_display(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback_t cxl_c,
+void ui_display(const bagl_element_t *elems, size_t sz, ui_callback_t ok_c, ui_callback_t cxl_c,
                 uint32_t step_count) {
     // Adapted from definition of UX_DISPLAY in header file
     timeout_cycle_count = 0;

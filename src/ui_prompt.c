@@ -1,3 +1,5 @@
+#include "globals.h"
+
 #include "ui_prompt.h"
 
 #include "exception.h"
@@ -9,11 +11,7 @@
 // This will and must always be static memory full of constants
 static const char *const *prompts;
 
-static string_generation_callback callbacks[MAX_SCREEN_COUNT];
 static const void *callback_data[MAX_SCREEN_COUNT];
-
-static char active_prompt[PROMPT_WIDTH + 1];
-static char active_value[VALUE_WIDTH + 1];
 
 static const bagl_element_t ui_multi_screen[] = {
     {{BAGL_RECTANGLE, BAGL_STATIC_ELEMENT, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
@@ -89,7 +87,7 @@ void clear_ui_callbacks(void) {
 }
 
 __attribute__((noreturn))
-void ui_prompt(const char *const *labels, const char *const *data, callback_t ok_c, callback_t cxl_c) {
+void ui_prompt(const char *const *labels, const char *const *data, ui_callback_t ok_c, ui_callback_t cxl_c) {
     check_null(labels);
     prompts = labels;
 

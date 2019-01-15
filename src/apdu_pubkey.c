@@ -1,3 +1,5 @@
+#include "globals.h"
+
 #include "apdu_pubkey.h"
 
 #include "apdu.h"
@@ -8,10 +10,6 @@
 #include "ui.h"
 
 #include <string.h>
-
-static cx_ecfp_public_key_t public_key;
-static cx_curve_t curve;
-
 
 static int provide_pubkey(void) {
     int tx = 0;
@@ -75,7 +73,7 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
         return provide_pubkey();
     } else {
         // instruction == INS_PROMPT_PUBLIC_KEY || instruction == INS_AUTHORIZE_BAKING
-        callback_t cb;
+        ui_callback_t cb;
         bool bake;
 #ifdef BAKING_APP
         if (instruction == INS_AUTHORIZE_BAKING) {

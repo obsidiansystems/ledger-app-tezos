@@ -1,3 +1,5 @@
+#include "globals.h"
+
 #include "apdu_sign.h"
 
 #include "apdu.h"
@@ -15,23 +17,8 @@
 
 #include <string.h>
 
-// Where does this number come from?
-#ifdef BAKING_APP
-#   define TEZOS_BUFSIZE 512
-#else
-#   define TEZOS_BUFSIZE 256
-#endif
-
 #define SIGN_HASH_SIZE 32
 #define B2B_BLOCKBYTES 128
-
-static uint8_t message_data[TEZOS_BUFSIZE];
-static uint32_t message_data_length;
-static cx_curve_t curve;
-
-static bool is_hash_state_inited;
-static uint8_t magic_number;
-static bool hash_only;
 
 static void conditional_init_hash_state(void) {
     if (!is_hash_state_inited) {
@@ -157,7 +144,7 @@ const char *const insecure_values[] = {
 // and do not return, but rather throw ASYNC.
 static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
                                size_t path_length, uint32_t *bip32_path,
-                               callback_t ok, callback_t cxl) {
+                               ui_callback_t ok, ui_callback_t cxl) {
     struct parsed_operation_group *ops;
 
 #ifndef TEZOS_DEBUG

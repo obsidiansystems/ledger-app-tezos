@@ -1,3 +1,4 @@
+#include "globals.h"
 #include "apdu.h"
 #include "baking_auth.h"
 #include "keys.h"
@@ -9,9 +10,6 @@
 #include "cx.h"
 
 #include <string.h>
-
-WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
-static nvram_data new_data;  // Staging area for setting N_data
 
 bool is_valid_level(level_t lvl) {
     return !(lvl & 0xC0000000);
@@ -113,7 +111,7 @@ static const char *const baking_values[] = {
 };
 
 // TODO: Unshare code with next function
-void prompt_contract_for_baking(struct parsed_contract *contract, callback_t ok_cb, callback_t cxl_cb) {
+void prompt_contract_for_baking(struct parsed_contract *contract, ui_callback_t ok_cb, ui_callback_t cxl_cb) {
     parsed_contract_to_string(address_display_data, sizeof(address_display_data), contract);
     ui_prompt(get_baking_prompts(), baking_values, ok_cb, cxl_cb);
 }
@@ -124,8 +122,8 @@ void prompt_address(
         __attribute__((unused))
 #endif
         bool baking,
-        cx_curve_t curve, const cx_ecfp_public_key_t *key, callback_t ok_cb,
-        callback_t cxl_cb) {
+        cx_curve_t curve, const cx_ecfp_public_key_t *key, ui_callback_t ok_cb,
+        ui_callback_t cxl_cb) {
     pubkey_to_pkh_string(address_display_data, sizeof(address_display_data), curve, key);
 
 #ifdef BAKING_APP
