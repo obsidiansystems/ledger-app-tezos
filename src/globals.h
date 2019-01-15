@@ -44,9 +44,6 @@ typedef struct {
   } sign;
 
   struct {
-    ux_state_t ux;
-    unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
-
     ui_callback_t ok_callback;
     ui_callback_t cxl_callback;
 
@@ -75,3 +72,7 @@ typedef struct {
 extern globals_t global;
 
 extern unsigned int app_stack_canary; // From SDK
+
+// Used by macros that we don't control.
+extern ux_state_t ux;
+extern unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
