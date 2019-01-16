@@ -16,8 +16,10 @@ void init_globals(void);
 
 #define INS_MAX 0x0B
 
+#define PRIVATE_KEY_DATA_SIZE 32
+
 struct priv_generate_key_pair {
-    uint8_t privateKeyData[32];
+    uint8_t privateKeyData[PRIVATE_KEY_DATA_SIZE];
     struct key_pair res;
 };
 

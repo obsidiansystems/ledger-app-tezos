@@ -61,7 +61,7 @@ struct key_pair *generate_key_pair(cx_curve_t curve, uint32_t path_length, uint3
 #if CX_APILEVEL > 8
     }
 #endif
-    cx_ecfp_init_private_key(curve, priv->privateKeyData, 32, &priv->res.private_key);
+    cx_ecfp_init_private_key(curve, priv->privateKeyData, sizeof(priv->privateKeyData), &priv->res.private_key);
     cx_ecfp_generate_pair(curve, &priv->res.public_key, &priv->res.private_key, 1);
 
     if (curve == CX_CURVE_Ed25519) {
