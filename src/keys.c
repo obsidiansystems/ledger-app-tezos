@@ -18,9 +18,12 @@
 #include "keys.h"
 
 #include "apdu.h"
-#include "os.h"
 #include "blake2.h"
+#include "globals.h"
 #include "protocol.h"
+
+// Order matters
+#include "os.h"
 
 #include <stdbool.h>
 #include <string.h>
@@ -45,53 +48,56 @@ uint32_t read_bip32_path(uint32_t bytes, uint32_t *bip32_path, const uint8_t *bu
 }
 
 struct key_pair *generate_key_pair(cx_curve_t curve, uint32_t path_length, uint32_t *bip32_path) {
-    static uint8_t privateKeyData[32];
-    static struct key_pair res;
+    struct priv_generate_key_pair *const priv = &global.priv.generate_key_pair;
+
 #if CX_APILEVEL > 8
     if (curve == CX_CURVE_Ed25519) {
-        os_perso_derive_node_bip32_seed_key(HDW_ED25519_SLIP10, curve, bip32_path, path_length,
-                                            privateKeyData, NULL, NULL, 0);
+        os_perso_derive_node_bip32_seed_key(
+            HDW_ED25519_SLIP10, curve, bip32_path, path_length,
+            priv->privateKeyData, NULL, NULL, 0);
     } else {
 #endif
-        os_perso_derive_node_bip32(curve, bip32_path, path_length, privateKeyData, NULL);
+        os_perso_derive_node_bip32(curve, bip32_path, path_length, priv->privateKeyData, NULL);
 #if CX_APILEVEL > 8
     }
 #endif
-    cx_ecfp_init_private_key(curve, privateKeyData, 32, &res.private_key);
-    cx_ecfp_generate_pair(curve, &res.public_key, &res.private_key, 1);
+    cx_ecfp_init_private_key(curve, priv->privateKeyData, 32, &priv->res.private_key);
+    cx_ecfp_generate_pair(curve, &priv->res.public_key, &priv->res.private_key, 1);
 
     if (curve == CX_CURVE_Ed25519) {
-        cx_edward_compress_point(curve, res.public_key.W, res.public_key.W_len);
-        res.public_key.W_len = 33;
+        cx_edward_compress_point(
+            curve,
+            priv->res.public_key.W,
+            priv->res.public_key.W_len);
+        priv->res.public_key.W_len = 33;
     }
-    os_memset(privateKeyData, 0, sizeof(privateKeyData));
-    return &res;
+    os_memset(priv->privateKeyData, 0, sizeof(priv->privateKeyData));
+    return &priv->res;
 }
 
-// TODO: Should we get rid of "restrict" here? It's not in header.
 cx_ecfp_public_key_t *public_key_hash(uint8_t output[HASH_SIZE], cx_curve_t curve,
                                       const cx_ecfp_public_key_t *restrict public_key) {
-    static cx_ecfp_public_key_t compressed;
+    cx_ecfp_public_key_t *const compressed = &global.priv.public_key_hash.compressed;
     switch (curve) {
         case CX_CURVE_Ed25519:
             {
-                compressed.W_len = public_key->W_len - 1;
-                memcpy(compressed.W, public_key->W + 1, compressed.W_len);
+                compressed->W_len = public_key->W_len - 1;
+                memcpy(compressed->W, public_key->W + 1, compressed->W_len);
                 break;
             }
         case CX_CURVE_SECP256K1:
         case CX_CURVE_SECP256R1:
             {
-                memcpy(compressed.W, public_key->W, public_key->W_len);
-                compressed.W[0] = 0x02 + (public_key->W[64] & 0x01);
-                compressed.W_len = 33;
+                memcpy(compressed->W, public_key->W, public_key->W_len);
+                compressed->W[0] = 0x02 + (public_key->W[64] & 0x01);
+                compressed->W_len = 33;
                 break;
             }
         default:
             THROW(EXC_WRONG_PARAM);
     }
     b2b_init(&hash_state, HASH_SIZE);
-    b2b_update(&hash_state, compressed.W, compressed.W_len);
+    b2b_update(&hash_state, compressed->W, compressed->W_len);
     b2b_final(&hash_state, output, HASH_SIZE);
-    return &compressed;
+    return compressed;
 }

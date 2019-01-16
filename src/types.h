@@ -17,6 +17,12 @@ typedef bool (*ui_callback_t)(void); // return true to go back to idle screen
 // function pointers.
 typedef void (*string_generation_callback)(/* char *buffer, size_t buffer_size, const void *data */);
 
+// Keys
+struct key_pair {
+    cx_ecfp_public_key_t public_key;
+    cx_ecfp_private_key_t private_key;
+};
+
 // Baking Auth
 #define MAX_BIP32_PATH 10
 typedef struct {
@@ -46,3 +52,66 @@ typedef struct {
     _Static_assert(sizeof(str) <= VALUE_WIDTH + 1/*null byte*/, str " won't fit in the UI.".); \
     str; \
   })
+
+
+// Operations
+#define PROTOCOL_HASH_SIZE 32
+
+// TODO: Rename to KEY_HASH_SIZE
+#define HASH_SIZE 20
+
+struct parsed_contract {
+    uint8_t originated;
+    uint8_t curve_code; // TEZOS_NO_CURVE in originated case
+                        // An implicit contract with TEZOS_NO_CURVE means not present
+    uint8_t hash[HASH_SIZE];
+};
+
+struct parsed_proposal {
+    uint32_t voting_period;
+    // TODO: Make 32 bit version of number_to_string_indirect
+    uint8_t protocol_hash[PROTOCOL_HASH_SIZE];
+};
+
+enum ballot_vote {
+    BALLOT_VOTE_YEA,
+    BALLOT_VOTE_NAY,
+    BALLOT_VOTE_PASS,
+};
+
+struct parsed_ballot {
+    uint32_t voting_period;
+    uint8_t protocol_hash[PROTOCOL_HASH_SIZE];
+    enum ballot_vote vote;
+};
+
+enum operation_tag {
+    OPERATION_TAG_NONE = -1, // Sentinal value, as 0 is possibly used for something
+    OPERATION_TAG_PROPOSAL = 5,
+    OPERATION_TAG_BALLOT = 6,
+    OPERATION_TAG_REVEAL = 7,
+    OPERATION_TAG_TRANSACTION = 8,
+    OPERATION_TAG_ORIGINATION = 9,
+    OPERATION_TAG_DELEGATION = 10,
+};
+
+
+struct parsed_operation {
+    enum operation_tag tag;
+    struct parsed_contract source;
+    struct parsed_contract destination;
+    struct parsed_contract delegate; // For originations only
+    struct parsed_proposal proposal; // For proposals only
+    struct parsed_ballot ballot; // For ballots only
+    uint64_t amount; // 0 where inappropriate
+    uint32_t flags;  // Interpretation depends on operation type
+};
+
+struct parsed_operation_group {
+    cx_ecfp_public_key_t public_key; // compressed
+    uint64_t total_fee;
+    uint64_t total_storage_limit;
+    bool has_reveal;
+    struct parsed_contract signing;
+    struct parsed_operation operation;
+};

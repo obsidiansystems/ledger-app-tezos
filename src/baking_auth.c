@@ -1,11 +1,13 @@
-#include "globals.h"
-#include "apdu.h"
 #include "baking_auth.h"
+
+#include "apdu.h"
+#include "globals.h"
 #include "keys.h"
 #include "protocol.h"
-#include "ui_prompt.h"
 #include "to_string.h"
+#include "ui_prompt.h"
 
+// Order matters
 #include "os.h"
 #include "cx.h"
 

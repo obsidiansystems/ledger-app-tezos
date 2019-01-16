@@ -9,10 +9,11 @@
 #include "memory.h"
 #include "protocol.h"
 #include "to_string.h"
+#include "ui.h"
 #include "ui_prompt.h"
 
+// Order matters
 #include "cx.h"
-#include "ui.h"
 
 #include <string.h>
 

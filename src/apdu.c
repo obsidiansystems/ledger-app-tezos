@@ -19,7 +19,7 @@ unsigned int handle_apdu_version(uint8_t __attribute__((unused)) instruction) {
 }
 
 unsigned int handle_apdu_git(uint8_t __attribute__((unused)) instruction) {
-    static char commit[] = COMMIT;
+    static const char commit[] = COMMIT;
     memcpy(G_io_apdu_buffer, commit, sizeof(commit));
 
     uint32_t tx = sizeof(commit);

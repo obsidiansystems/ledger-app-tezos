@@ -1,9 +1,10 @@
 #include "operations.h"
 
 #include "apdu.h"
+#include "globals.h"
 #include "memory.h"
-#include "ui.h"
 #include "to_string.h"
+#include "ui.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -136,14 +137,15 @@ static inline void parse_contract(struct parsed_contract *out, const struct cont
 struct parsed_operation_group *parse_operations(const void *data, size_t length, cx_curve_t curve,
                                                 size_t path_length, uint32_t *bip32_path,
                                                 allowed_operation_set ops) {
-    static struct parsed_operation_group out;
     check_null(data);
     check_null(bip32_path);
-    memset(&out, 0, sizeof(out));
 
-    out.operation.tag = OPERATION_TAG_NONE;
+    struct parsed_operation_group *const out = &global.priv.parse_operations.out;
+    memset(out, 0, sizeof(*out));
 
-    compute_pkh(curve, path_length, bip32_path, &out); // sets up "signing" and "public_key" members
+    out->operation.tag = OPERATION_TAG_NONE;
+
+    compute_pkh(curve, path_length, bip32_path, out); // sets up "signing" and "public_key" members
 
     size_t ix = 0;
 
@@ -153,7 +155,7 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
 
     // Start out with source = signing, for reveals
     // TODO: This is slightly hackish
-    memcpy(&out.operation.source, &out.signing, sizeof(out.signing));
+    memcpy(&out->operation.source, &out->signing, sizeof(out->signing));
 
     while (ix < length) {
         const enum operation_tag tag = NEXT_BYTE(data, &ix, length);  // 1 byte is always aligned
@@ -163,55 +165,55 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
         if (tag == OPERATION_TAG_PROPOSAL || tag == OPERATION_TAG_BALLOT) {
             // These tags don't have the "originated" byte so we have to parse PKH differently.
             const struct implicit_contract *implicit_source = NEXT_TYPE(struct implicit_contract);
-            out.operation.source.originated = 0;
-            out.operation.source.curve_code = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &implicit_source->curve_code);
-            memcpy(out.operation.source.hash, implicit_source->pkh, sizeof(out.operation.source.hash));
+            out->operation.source.originated = 0;
+            out->operation.source.curve_code = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &implicit_source->curve_code);
+            memcpy(out->operation.source.hash, implicit_source->pkh, sizeof(out->operation.source.hash));
         } else {
             const struct contract *source = NEXT_TYPE(struct contract);
-            parse_contract(&out.operation.source, source);
+            parse_contract(&out->operation.source, source);
 
-            out.total_fee += PARSE_Z(data, &ix, length); // fee
+            out->total_fee += PARSE_Z(data, &ix, length); // fee
             PARSE_Z(data, &ix, length); // counter
             PARSE_Z(data, &ix, length); // gas limit
-            out.total_storage_limit += PARSE_Z(data, &ix, length); // storage limit
+            out->total_storage_limit += PARSE_Z(data, &ix, length); // storage limit
         }
 
-        // out.operation.source IS NORMALIZED AT THIS POINT
+        // out->operation.source IS NORMALIZED AT THIS POINT
 
         if (tag == OPERATION_TAG_REVEAL) {
             // Public key up next! Ensure it matches signing key.
             // Ignore source :-) and do not parse it from hdr.
             // We don't much care about reveals, they have very little in the way of bad security
             // implications and any fees have already been accounted for
-            if (NEXT_BYTE(data, &ix, length) != out.signing.curve_code) PARSE_ERROR();
+            if (NEXT_BYTE(data, &ix, length) != out->signing.curve_code) PARSE_ERROR();
 
-            size_t klen = out.public_key.W_len;
+            size_t klen = out->public_key.W_len;
             advance_ix(&ix, length, klen);
-            if (memcmp(out.public_key.W, data + ix - klen, klen) != 0) PARSE_ERROR();
+            if (memcmp(out->public_key.W, data + ix - klen, klen) != 0) PARSE_ERROR();
 
-            out.has_reveal = true;
+            out->has_reveal = true;
             continue;
         }
 
-        if (out.operation.tag != OPERATION_TAG_NONE) {
+        if (out->operation.tag != OPERATION_TAG_NONE) {
             // We are only currently allowing one non-reveal operation
             PARSE_ERROR();
         }
 
         // This is the one allowable non-reveal operation per set
 
-        out.operation.tag = (uint8_t)tag;
+        out->operation.tag = (uint8_t)tag;
 
         // If the source is an implicit contract,...
-        if (out.operation.source.originated == 0) {
+        if (out->operation.source.originated == 0) {
             // ... it had better match our key, otherwise why are we signing it?
-            if (COMPARE(&out.operation.source, &out.signing)) return false;
+            if (COMPARE(&out->operation.source, &out->signing)) return false;
         }
         // OK, it passes muster.
 
         // This should by default be blanked out
-        out.operation.delegate.curve_code = TEZOS_NO_CURVE;
-        out.operation.delegate.originated = 0;
+        out->operation.delegate.curve_code = TEZOS_NO_CURVE;
+        out->operation.delegate.originated = 0;
 
         switch (tag) {
             case OPERATION_TAG_PROPOSAL:
@@ -222,8 +224,8 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
                     const size_t payload_size = READ_UNALIGNED_BIG_ENDIAN(int32_t, &proposal_data->num_bytes);
                     if (payload_size != PROTOCOL_HASH_SIZE) PARSE_ERROR(); // We only accept exactly 1 proposal hash.
 
-                    out.operation.proposal.voting_period = READ_UNALIGNED_BIG_ENDIAN(int32_t, &proposal_data->period);
-                    memcpy(out.operation.proposal.protocol_hash, proposal_data->hash, sizeof(out.operation.proposal.protocol_hash));
+                    out->operation.proposal.voting_period = READ_UNALIGNED_BIG_ENDIAN(int32_t, &proposal_data->period);
+                    memcpy(out->operation.proposal.protocol_hash, proposal_data->hash, sizeof(out->operation.proposal.protocol_hash));
                 }
                 break;
             case OPERATION_TAG_BALLOT:
@@ -231,19 +233,19 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
                     const struct ballot_contents *ballot_data = NEXT_TYPE(struct ballot_contents);
                     if (ix != length) PARSE_ERROR();
 
-                    out.operation.ballot.voting_period = READ_UNALIGNED_BIG_ENDIAN(int32_t, &ballot_data->period);
-                    memcpy(out.operation.ballot.protocol_hash, ballot_data->proposal, sizeof(out.operation.ballot.protocol_hash));
+                    out->operation.ballot.voting_period = READ_UNALIGNED_BIG_ENDIAN(int32_t, &ballot_data->period);
+                    memcpy(out->operation.ballot.protocol_hash, ballot_data->proposal, sizeof(out->operation.ballot.protocol_hash));
 
                     const int8_t ballot_vote = READ_UNALIGNED_BIG_ENDIAN(int8_t, &ballot_data->ballot);
                     switch (ballot_vote) {
                         case 0:
-                            out.operation.ballot.vote = BALLOT_VOTE_YEA;
+                            out->operation.ballot.vote = BALLOT_VOTE_YEA;
                             break;
                         case 1:
-                            out.operation.ballot.vote = BALLOT_VOTE_NAY;
+                            out->operation.ballot.vote = BALLOT_VOTE_NAY;
                             break;
                         case 2:
-                            out.operation.ballot.vote = BALLOT_VOTE_PASS;
+                            out->operation.ballot.vote = BALLOT_VOTE_PASS;
                             break;
                         default:
                             PARSE_ERROR();
@@ -255,11 +257,11 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
                     uint8_t delegate_present = NEXT_BYTE(data, &ix, length);
                     if (delegate_present) {
                         const struct delegation_contents *dlg = NEXT_TYPE(struct delegation_contents);
-                        parse_implicit(&out.operation.destination, dlg->curve_code, dlg->hash);
+                        parse_implicit(&out->operation.destination, dlg->curve_code, dlg->hash);
                     } else {
                         // Encode "not present"
-                        out.operation.destination.originated = 0;
-                        out.operation.destination.curve_code = TEZOS_NO_CURVE;
+                        out->operation.destination.originated = 0;
+                        out->operation.destination.curve_code = TEZOS_NO_CURVE;
                     }
                 }
                 break;
@@ -271,28 +273,28 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
                     } __attribute__((packed));
                     const struct origination_header *hdr = NEXT_TYPE(struct origination_header);
 
-                    parse_implicit(&out.operation.destination, hdr->curve_code, hdr->hash);
-                    out.operation.amount = PARSE_Z(data, &ix, length);
+                    parse_implicit(&out->operation.destination, hdr->curve_code, hdr->hash);
+                    out->operation.amount = PARSE_Z(data, &ix, length);
                     if (NEXT_BYTE(data, &ix, length) != 0) {
-                        out.operation.flags |= ORIGINATION_FLAG_SPENDABLE;
+                        out->operation.flags |= ORIGINATION_FLAG_SPENDABLE;
                     }
                     if (NEXT_BYTE(data, &ix, length) != 0) {
-                        out.operation.flags |= ORIGINATION_FLAG_DELEGATABLE;
+                        out->operation.flags |= ORIGINATION_FLAG_DELEGATABLE;
                     }
                     if (NEXT_BYTE(data, &ix, length) != 0) {
                         // Has delegate
                         const struct delegation_contents *dlg = NEXT_TYPE(struct delegation_contents);
-                        parse_implicit(&out.operation.delegate, dlg->curve_code, dlg->hash);
+                        parse_implicit(&out->operation.delegate, dlg->curve_code, dlg->hash);
                     }
                     if (NEXT_BYTE(data, &ix, length) != 0) PARSE_ERROR(); // Has script
                 }
                 break;
             case OPERATION_TAG_TRANSACTION:
                 {
-                    out.operation.amount = PARSE_Z(data, &ix, length);
+                    out->operation.amount = PARSE_Z(data, &ix, length);
 
                     const struct contract *destination = NEXT_TYPE(struct contract);
-                    parse_contract(&out.operation.destination, destination);
+                    parse_contract(&out->operation.destination, destination);
 
                     uint8_t params = NEXT_BYTE(data, &ix, length);
                     if (params) PARSE_ERROR(); // TODO: Support params
@@ -303,9 +305,9 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
         }
     }
 
-    if (out.operation.tag == OPERATION_TAG_NONE && !out.has_reveal) {
+    if (out->operation.tag == OPERATION_TAG_NONE && !out->has_reveal) {
         PARSE_ERROR(); // Must have at least one op
     }
 
-    return &out; // Success!
+    return out; // Success!
 }

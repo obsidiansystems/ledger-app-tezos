@@ -3,8 +3,9 @@
 #include "exception.h"
 #include "globals.h"
 #include "keys.h"
-
 #include "ui.h"
+
+// Order matters
 #include "os.h"
 
 #include <stdbool.h>

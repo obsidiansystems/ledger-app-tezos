@@ -1,13 +1,13 @@
-#include "globals.h"
-
 #include "apdu_pubkey.h"
 
 #include "apdu.h"
 #include "baking_auth.h"
+#include "globals.h"
 #include "keys.h"
-
-#include "cx.h"
 #include "ui.h"
+
+// Order matters
+#include "cx.h"
 
 #include <string.h>
 

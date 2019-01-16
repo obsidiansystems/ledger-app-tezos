@@ -24,11 +24,6 @@
 
 __attribute__((noreturn))
 void app_main(void) {
-    uint8_t tag;
-    init_globals();
-    global.stack_root = &tag;
-
-
     // TODO: Consider using static initialization of a const, instead of this
     for (size_t i = 0; i < NUM_ELEMENTS(global.handlers); i++) {
         global.handlers[i] = handle_apdu_error;

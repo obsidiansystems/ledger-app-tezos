@@ -16,6 +16,11 @@ void init_globals(void);
 
 #define INS_MAX 0x0B
 
+struct priv_generate_key_pair {
+    uint8_t privateKeyData[32];
+    struct key_pair res;
+};
+
 typedef struct {
   void *stack_root;
   apdu_handler handlers[INS_MAX];
@@ -67,11 +72,22 @@ typedef struct {
   } ui;
 
   struct {
-    WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
     nvram_data new_data;  // Staging area for setting N_data
 
     char address_display_data[VALUE_WIDTH];
   } baking_auth;
+
+  struct {
+    struct priv_generate_key_pair generate_key_pair;
+
+    struct {
+      cx_ecfp_public_key_t compressed;
+    } public_key_hash;
+
+    struct {
+      struct parsed_operation_group out;
+    } parse_operations;
+  } priv;
 } globals_t;
 
 extern globals_t global;
@@ -81,3 +97,7 @@ extern unsigned int app_stack_canary; // From SDK
 // Used by macros that we don't control.
 extern ux_state_t ux;
 extern unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
+
+extern WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
+
+#define N_data (*(WIDE nvram_data*)PIC(&N_data_real))

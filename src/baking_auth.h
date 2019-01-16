@@ -1,14 +1,11 @@
 #pragma once
 
+#include "apdu.h"
+#include "operations.h"
+#include "protocol.h"
+
 #include <stdbool.h>
 #include <stdint.h>
-
-#include "apdu.h"
-#include "globals.h"
-#include "protocol.h"
-#include "operations.h"
-
-#define N_data (*(WIDE nvram_data*)PIC(&global.baking_auth.N_data_real))
 
 void authorize_baking(cx_curve_t curve, uint32_t *bip32_path, uint8_t pathLength);
 void guard_baking_authorized(cx_curve_t curve, void *data, int datalen, uint32_t *bip32_path,
