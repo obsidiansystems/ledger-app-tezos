@@ -66,7 +66,7 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
     }
 #endif
     struct key_pair *pair = generate_key_pair(global.pubkey.curve, global.pubkey.bip32_path_length, global.pubkey.bip32_path);
-    os_memset(&pair->private_key, 0, sizeof(pair->private_key));
+    memset(&pair->private_key, 0, sizeof(pair->private_key));
     memcpy(&global.pubkey.public_key, &pair->public_key, sizeof(global.pubkey.public_key));
 
     if (instruction == INS_GET_PUBLIC_KEY) {

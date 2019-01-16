@@ -108,7 +108,7 @@ static inline uint64_t parse_z(const void *data, size_t *ix, size_t length, uint
 static inline void compute_pkh(cx_curve_t curve, size_t path_length, uint32_t *bip32_path,
                         struct parsed_operation_group *out) {
     struct key_pair *pair = generate_key_pair(curve, path_length, bip32_path);
-    os_memset(&pair->private_key, 0, sizeof(pair->private_key));
+    memset(&pair->private_key, 0, sizeof(pair->private_key));
 
     cx_ecfp_public_key_t *key = public_key_hash(out->signing.hash, curve, &pair->public_key);
     memcpy(&out->public_key, key, sizeof(out->public_key));

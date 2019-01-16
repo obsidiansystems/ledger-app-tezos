@@ -81,7 +81,7 @@ void update_auth_text(void) {
         strcpy(global.ui.baking_auth_text, "No Key Authorized");
     } else {
         struct key_pair *pair = generate_key_pair(N_data.curve, N_data.path_length, N_data.bip32_path);
-        os_memset(&pair->private_key, 0, sizeof(pair->private_key));
+        memset(&pair->private_key, 0, sizeof(pair->private_key));
         pubkey_to_pkh_string(
             global.ui.baking_auth_text, sizeof(global.ui.baking_auth_text),
             N_data.curve, &pair->public_key);

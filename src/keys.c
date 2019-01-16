@@ -71,7 +71,7 @@ struct key_pair *generate_key_pair(cx_curve_t curve, uint32_t path_length, uint3
             priv->res.public_key.W_len);
         priv->res.public_key.W_len = 33;
     }
-    os_memset(priv->privateKeyData, 0, sizeof(priv->privateKeyData));
+    memset(priv->privateKeyData, 0, sizeof(priv->privateKeyData));
     return &priv->res;
 }
 

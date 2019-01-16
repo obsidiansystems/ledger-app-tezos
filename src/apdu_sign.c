@@ -470,7 +470,7 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
     switch (p1 & ~P1_LAST_MARKER) {
     case P1_FIRST:
         clear_data();
-        os_memset(global.sign.message_data, 0, sizeof(global.sign.message_data));
+        memset(global.sign.message_data, 0, sizeof(global.sign.message_data));
         global.sign.message_data_length = 0;
         global.pubkey.bip32_path_length = read_bip32_path(dataLength, global.pubkey.bip32_path, dataBuffer);
         global.pubkey.curve = curve_code_to_curve(G_io_apdu_buffer[OFFSET_CURVE]);
@@ -584,7 +584,7 @@ static int perform_signature(bool hash_first) {
         THROW(EXC_WRONG_PARAM); // This should not be able to happen.
     }
 
-    os_memset(&pair->private_key, 0, sizeof(pair->private_key));
+    memset(&pair->private_key, 0, sizeof(pair->private_key));
 
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;
