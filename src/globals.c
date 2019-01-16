@@ -16,14 +16,12 @@ globals_t global;
 ux_state_t ux;
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
-// DO NOT TRY TO ZERO THIS. This can only be written via an system call.
+// DO NOT TRY TO INIT THIS. This can only be written via an system call.
 // The "N_" is *significant*. It tells the linker to put this in NVRAM.
 WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
 
 void init_globals(void) {
   memset(&global, 0, sizeof(global));
-
-  // DO NOT INITIALIZE THESE. They are, apparently, initialized by the SDK.
   memset(&ux, 0, sizeof(ux));
   memset(G_io_seproxyhal_spi_buffer, 0, sizeof(G_io_seproxyhal_spi_buffer));
 }
