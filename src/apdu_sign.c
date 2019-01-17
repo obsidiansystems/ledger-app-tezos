@@ -22,7 +22,7 @@
 
 static void conditional_init_hash_state(void) {
     if (!global.u.sign.is_hash_state_inited) {
-        b2b_init(&hash_state, SIGN_HASH_SIZE);
+        b2b_init(&global.blake2b.hash_state, SIGN_HASH_SIZE);
         global.u.sign.is_hash_state_inited = true;
     }
 }
@@ -31,7 +31,7 @@ static void hash_buffer(void) {
     const uint8_t *current = global.u.sign.message_data;
     while (global.u.sign.message_data_length > B2B_BLOCKBYTES) {
         conditional_init_hash_state();
-        b2b_update(&hash_state, current, B2B_BLOCKBYTES);
+        b2b_update(&global.blake2b.hash_state, current, B2B_BLOCKBYTES);
         global.u.sign.message_data_length -= B2B_BLOCKBYTES;
         current += B2B_BLOCKBYTES;
     }
@@ -42,8 +42,8 @@ static void hash_buffer(void) {
 static void finish_hashing(uint8_t *hash, size_t hash_size) {
     hash_buffer();
     conditional_init_hash_state();
-    b2b_update(&hash_state, global.u.sign.message_data, global.u.sign.message_data_length);
-    b2b_final(&hash_state, hash, hash_size);
+    b2b_update(&global.blake2b.hash_state, global.u.sign.message_data, global.u.sign.message_data_length);
+    b2b_final(&global.blake2b.hash_state, hash, hash_size);
     global.u.sign.message_data_length = 0;
     global.u.sign.is_hash_state_inited = false;
 }

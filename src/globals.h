@@ -1,5 +1,6 @@
 #pragma once
 
+#include "blake2.h"
 #include "types.h"
 
 #include <stdbool.h>
@@ -81,6 +82,10 @@ typedef struct {
 
     char address_display_data[VALUE_WIDTH];
   } baking_auth;
+
+  struct {
+    b2b_state hash_state;
+  } blake2b; // TODO: Use blake2b from SDK
 
   struct {
     struct priv_generate_key_pair generate_key_pair;
