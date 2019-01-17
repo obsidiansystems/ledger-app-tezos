@@ -124,9 +124,7 @@ way, the baking account won't actually store the vast majority of the tez.
 To use these apps, you must be sure to have [up-to-date
 firmware](https://support.ledgerwallet.com/hc/en-us/articles/360002731113)
 on the Ledger device. This code was tested with version
-1.4.2. Please use Ledger's tools, including their [Chrome
-app](https://www.ledgerwallet.com/apps/manager), to do this. Note that
-you can't talk to the Ledger device's OS itself while an application is running.
+1.5.5. Please use [Ledger Live](https://www.ledger.com/pages/ledger-live) to do this.
 
 ### udev rules (Linux only)
 
@@ -448,7 +446,7 @@ described in the last sections, run this command:
 ```
 $ python \
     -m ledgerblue.deleteApp \
-    --targetId 0x31100003 \
+    --targetId 0x31100004 \
     --appName "Tezos"
 ```
 
@@ -1012,7 +1010,7 @@ If the Ledger Nano S app crashes when you load it, there are two primary causes:
     the operation in question, cancel it from the device before pressing Ctrl-C, otherwise you
     might have to restart the Ledger Nano S.
   * Out of date firmware: If the Ledger Nano S app doesn't work at all, make sure you are running firmware
-    version 1.4.2.
+    version 1.5.5.
 
 ### Contact Us
  You can email us at tezos@obsidian.systems and request to join our Slack.
