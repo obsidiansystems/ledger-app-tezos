@@ -27,9 +27,9 @@ unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
         THROW(EXC_PARSE_ERROR);
     }
 
-    global.baking.reset_level = lvl;
+    global.u.baking.reset_level = lvl;
 
-    register_ui_callback(0, number_to_string_indirect32, &global.baking.reset_level);
+    register_ui_callback(0, number_to_string_indirect32, &global.u.baking.reset_level);
 
     static const char *const reset_prompts[] = {
         PROMPT("Reset HWM"),
@@ -39,7 +39,7 @@ unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
 }
 
 bool reset_ok(void) {
-    write_highest_level(global.baking.reset_level, false); // We have not yet had an endorsement at this level
+    write_highest_level(global.u.baking.reset_level, false); // We have not yet had an endorsement at this level
 
     uint32_t tx = 0;
     G_io_apdu_buffer[tx++] = 0x90;

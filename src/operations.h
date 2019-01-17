@@ -24,9 +24,6 @@ static inline void clear_operation_set(allowed_operation_set *ops) {
     *ops = 0;
 }
 
-#define ORIGINATION_FLAG_SPENDABLE 1
-#define ORIGINATION_FLAG_DELEGATABLE 2
-
 
 // Throws upon invalid data.
 // Allows arbitrarily many "REVEAL" operations but only one operation of any other type,

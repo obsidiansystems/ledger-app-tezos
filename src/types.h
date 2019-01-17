@@ -95,6 +95,10 @@ enum operation_tag {
     OPERATION_TAG_DELEGATION = 10,
 };
 
+// TODO: Make this an enum.
+// Flags for parsed_operation.flag
+#define ORIGINATION_FLAG_SPENDABLE 1
+#define ORIGINATION_FLAG_DELEGATABLE 2
 
 struct parsed_operation {
     enum operation_tag tag;

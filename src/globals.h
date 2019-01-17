@@ -27,28 +27,31 @@ typedef struct {
   void *stack_root;
   apdu_handler handlers[INS_MAX];
 
-  struct {
-    level_t reset_level;
-  } baking;
+  union {
+    struct {
+      level_t reset_level;
+    } baking;
 
-  struct {
-    cx_ecfp_public_key_t public_key;
-    cx_curve_t curve;
+    struct {
+      cx_ecfp_public_key_t public_key;
+      uint8_t bip32_path_length;
+      uint32_t bip32_path[MAX_BIP32_PATH];
+      cx_curve_t curve;
+    } pubkey;
 
-    // The following need to be persisted for baking app
-    uint8_t bip32_path_length;
-    uint32_t bip32_path[MAX_BIP32_PATH];
-  } pubkey;
+    struct {
+      uint8_t bip32_path_length;
+      uint32_t bip32_path[MAX_BIP32_PATH];
+      cx_curve_t curve;
 
-  struct {
-    uint8_t message_data[TEZOS_BUFSIZE];
-    uint32_t message_data_length;
-    cx_curve_t curve;
+      uint8_t message_data[TEZOS_BUFSIZE];
+      uint32_t message_data_length;
 
-    bool is_hash_state_inited;
-    uint8_t magic_number;
-    bool hash_only;
-  } sign;
+      bool is_hash_state_inited;
+      uint8_t magic_number;
+      bool hash_only;
+    } sign;
+  } u;
 
   struct {
     ui_callback_t ok_callback;
