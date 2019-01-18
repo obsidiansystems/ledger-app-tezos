@@ -1012,6 +1012,40 @@ If the Ledger Nano S app crashes when you load it, there are two primary causes:
   * Out of date firmware: If the Ledger Nano S app doesn't work at all, make sure you are running firmware
     version 1.5.5.
 
+### Error 191 on macOS
+
+If you get an error from `tezos-client` that looks like
+
+```
+client.signer.ledger: APDU level error: Unexpected sequence number (expected 0, got 191)
+```
+
+then your installation of `tezos-client` was built with an older version of HIDAPI that doesn't work well with macOS (see [#30](https://github.com/obsidiansystems/ledger-app-tezos/issues/30)).
+
+To fix this you need to get the yet-unreleased fixes from the [HIDAPI library](https://github.com/signal11/hidapi) and rebuilt `tezos-client`.
+
+If you got HIDAPI from Homebrew, you can update to the `master` branch of HIDAPI like this:
+
+```shell
+$ brew install hidapi --HEAD
+```
+
+The full rebuild of tezos-client with HIDAPI's `master` branch looks like:
+
+```shell
+$ brew unlink hidapi   # remove the current one
+$ brew install autoconf autmake libtool  # Just keep installing stuff until the following command succeeds:
+$ brew install hidapi --HEAD
+```
+
+Then rebuild `ocaml-hidapi` with Tezos, so in the `tezos` repository:
+
+```shell
+$ opam reinstall hidapi
+$ make all build-test
+$ ./tezos-client list connected ledgers  # should now work consistently
+```
+
 ### Contact Us
  You can email us at tezos@obsidian.systems and request to join our Slack.
 We have several channels about baking and one specifically for our Ledger Nano S apps.
