@@ -1022,7 +1022,7 @@ client.signer.ledger: APDU level error: Unexpected sequence number (expected 0, 
 
 then your installation of `tezos-client` was built with an older version of HIDAPI that doesn't work well with macOS (see [#30](https://github.com/obsidiansystems/ledger-app-tezos/issues/30)).
 
-To fix this you need to get the yet-unreleased fixes from the [HIDAPI library](https://github.com/signal11/hidapi) and rebuilt `tezos-client`.
+To fix this you need to get the yet-unreleased fixes from the [HIDAPI library](https://github.com/signal11/hidapi) and rebuild `tezos-client`.
 
 If you got HIDAPI from Homebrew, you can update to the `master` branch of HIDAPI like this:
 
@@ -1030,7 +1030,7 @@ If you got HIDAPI from Homebrew, you can update to the `master` branch of HIDAPI
 $ brew install hidapi --HEAD
 ```
 
-The full rebuild of tezos-client with HIDAPI's `master` branch looks like:
+The full rebuild of `tezos-client` with HIDAPI's `master` branch looks like:
 
 ```shell
 $ brew unlink hidapi   # remove the current one
@@ -1038,7 +1038,7 @@ $ brew install autoconf autmake libtool  # Just keep installing stuff until the 
 $ brew install hidapi --HEAD
 ```
 
-Then rebuild `ocaml-hidapi` with Tezos, so in the `tezos` repository:
+Then rebuild `ocaml-hidapi` with Tezos. In the `tezos` repository:
 
 ```shell
 $ opam reinstall hidapi
