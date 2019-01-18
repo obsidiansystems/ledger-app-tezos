@@ -1,4 +1,4 @@
-{ pkgs, commitHash, ... }:
+{ pkgs ? import <nixpkgs> {}, commit, ... }:
 let
 
   fetchThunk = p:
@@ -24,7 +24,7 @@ let
     export BOLOS_SDK='${bolosSdk}'
     export BOLOS_ENV='${bolosEnv}'
     export APP='${if bakingApp then "tezos_baking" else "tezos_wallet"}'
-    export COMMIT='${commitHash}'
+    export COMMIT='${commit}'
     make clean
     make
     EOF
