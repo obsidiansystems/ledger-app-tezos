@@ -30,17 +30,25 @@ else ifeq ($(APP),tezos_wallet)
 APPNAME = "Tezos Wallet"
 endif
 APP_LOAD_PARAMS=--appFlags 0 --curve ed25519 --curve secp256k1 --curve prime256r1 --path "44'/1729'" $(COMMON_LOAD_PARAMS)
-VERSION_TAG=$(shell git describe --tags | cut -f1 -d-)
+VERSION_TAG ?= $(shell git describe --tags 2>/dev/null | cut -f1 -d-)
 APPVERSION_M=1
 APPVERSION_N=5
 APPVERSION_P=0
 APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 
-ifneq (v$(APPVERSION), $(VERSION_TAG))
+# Only warn about version tags if specified/inferred
+ifeq ($(VERSION_TAG),)
+  $(warning VERSION_TAG not checked)
+else
+  ifneq (v$(APPVERSION), $(VERSION_TAG))
     $(warning "Version-Tag Mismatch: v$(APPVERSION) version and $(VERSION_TAG) tag")
+  endif
 endif
 
-COMMIT := $(shell git describe --abbrev=8 --always)
+COMMIT ?= $(shell git describe --abbrev=8 --always 2>/dev/null)
+ifeq ($(COMMIT),)
+  $(error COMMIT not specified and could not be determined with git)
+endif
 
 ICONNAME=icon.gif
 ################

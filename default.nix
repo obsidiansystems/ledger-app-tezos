@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, commitHash, ... }:
 let
 
   fetchThunk = p:
@@ -24,6 +24,7 @@ let
     export BOLOS_SDK='${bolosSdk}'
     export BOLOS_ENV='${bolosEnv}'
     export APP='${if bakingApp then "tezos_baking" else "tezos_wallet"}'
+    export COMMIT='${commitHash}'
     make clean
     make
     EOF
