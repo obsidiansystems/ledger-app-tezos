@@ -11,7 +11,7 @@ let
   fhs = pkgs.callPackage nix/fhs.nix {};
   bolosEnv = pkgs.callPackage nix/bolos-env.nix {};
   bolosSdk = fetchThunk nix/dep/nanos-secure-sdk;
-  src = ./.;
+  src = pkgs.lib.sources.cleanSource ./.;
 
   app = bakingApp: pkgs.runCommand "ledger-app-tezos-${if bakingApp then "baking" else "wallet"}" {} ''
     set -Eeuo pipefail
