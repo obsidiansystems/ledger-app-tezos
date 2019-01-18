@@ -32,6 +32,10 @@ let
     mkdir -p "$out"
     cp -R bin "$out"
     cp -R debug "$out"
+
+    echo
+    echo ">>>> Application size: <<<<"
+    '${pkgs.binutils-unwrapped}/bin/size' "$out/bin/app.elf"
   '';
 in rec {
   wallet = app false;
