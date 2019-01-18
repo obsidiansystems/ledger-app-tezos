@@ -248,7 +248,7 @@ $ export BOLOS_ENV=$PWD/bolos_env
 To build the Tezos Wallet app:
 
 ```
-$ env BAKING_APP= make
+$ APP=tezos_wallet make
 $ mv bin/app.hex wallet.hex
 ```
 If this results in an error message that includes this line (possibly repeatedly):
@@ -267,17 +267,17 @@ Note that if you build *both* apps, you need to run `make clean` before building
 the second one. So, to build both apps run:
 
 ```
-$ env BAKING_APP= make
+$ APP=tezos_wallet make
 $ mv bin/app.hex wallet.hex
 $ make clean
-$ env BAKING_APP=Y make
+$ APP=tezos_baking make
 $ mv bin/app.hex baking.hex
 ```
 
 To build just the Tezos Baking App:
 
 ```
-$ env BAKING_APP=Y make
+$ APP=tezos_baking make
 $ mv bin/app.hex baking.hex
 ```
 
