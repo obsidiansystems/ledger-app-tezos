@@ -1,17 +1,17 @@
-#include "apdu.h"
 #include "baking_auth.h"
+
+#include "apdu.h"
+#include "globals.h"
 #include "keys.h"
 #include "protocol.h"
-#include "ui_prompt.h"
 #include "to_string.h"
+#include "ui_prompt.h"
 
+// Order matters
 #include "os.h"
 #include "cx.h"
 
 #include <string.h>
-
-WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
-static nvram_data new_data;  // Staging area for setting N_data
 
 bool is_valid_level(level_t lvl) {
     return !(lvl & 0xC0000000);
@@ -19,10 +19,10 @@ bool is_valid_level(level_t lvl) {
 
 void write_highest_level(level_t lvl, bool is_endorsement) {
     if (!is_valid_level(lvl)) return;
-    memcpy(&new_data, &N_data, sizeof(new_data));
-    new_data.highest_level = lvl;
-    new_data.had_endorsement = is_endorsement;
-    nvm_write((void*)&N_data, &new_data, sizeof(N_data));
+    memcpy(&global.baking_auth.new_data, &N_data, sizeof(global.baking_auth.new_data));
+    global.baking_auth.new_data.highest_level = lvl;
+    global.baking_auth.new_data.had_endorsement = is_endorsement;
+    nvm_write((void*)&N_data, &global.baking_auth.new_data, sizeof(N_data));
     change_idle_display(N_data.highest_level);
 }
 
@@ -31,12 +31,12 @@ void authorize_baking(cx_curve_t curve, uint32_t *bip32_path, uint8_t path_lengt
         return;
     }
 
-    new_data.highest_level = N_data.highest_level;
-    new_data.had_endorsement = N_data.had_endorsement;
-    new_data.curve = curve;
-    memcpy(new_data.bip32_path, bip32_path, path_length * sizeof(*bip32_path));
-    new_data.path_length = path_length;
-    nvm_write((void*)&N_data, &new_data, sizeof(N_data));
+    global.baking_auth.new_data.highest_level = N_data.highest_level;
+    global.baking_auth.new_data.had_endorsement = N_data.had_endorsement;
+    global.baking_auth.new_data.curve = curve;
+    memcpy(global.baking_auth.new_data.bip32_path, bip32_path, path_length * sizeof(*bip32_path));
+    global.baking_auth.new_data.path_length = path_length;
+    nvm_write((void*)&N_data, &global.baking_auth.new_data, sizeof(N_data));
     change_idle_display(N_data.highest_level);
 }
 
@@ -78,20 +78,19 @@ void update_high_water_mark(void *data, int datalen) {
 
 void update_auth_text(void) {
     if (N_data.path_length == 0) {
-        strcpy(baking_auth_text, "No Key Authorized");
+        strcpy(global.ui.baking_auth_text, "No Key Authorized");
     } else {
         struct key_pair *pair = generate_key_pair(N_data.curve, N_data.path_length, N_data.bip32_path);
-        os_memset(&pair->private_key, 0, sizeof(pair->private_key));
-        pubkey_to_pkh_string(baking_auth_text, sizeof(baking_auth_text), N_data.curve,
-                             &pair->public_key);
+        memset(&pair->private_key, 0, sizeof(pair->private_key));
+        pubkey_to_pkh_string(
+            global.ui.baking_auth_text, sizeof(global.ui.baking_auth_text),
+            N_data.curve, &pair->public_key);
     }
 }
 
-static char address_display_data[VALUE_WIDTH];
-
 static const char *const pubkey_values[] = {
     "Public Key",
-    address_display_data,
+    global.baking_auth.address_display_data,
     NULL,
 };
 
@@ -108,13 +107,14 @@ static char const * const * get_baking_prompts() {
 
 static const char *const baking_values[] = {
     "With Public Key?",
-    address_display_data,
+    global.baking_auth.address_display_data,
     NULL,
 };
 
 // TODO: Unshare code with next function
-void prompt_contract_for_baking(struct parsed_contract *contract, callback_t ok_cb, callback_t cxl_cb) {
-    parsed_contract_to_string(address_display_data, sizeof(address_display_data), contract);
+void prompt_contract_for_baking(struct parsed_contract *contract, ui_callback_t ok_cb, ui_callback_t cxl_cb) {
+    parsed_contract_to_string(
+        global.baking_auth.address_display_data, sizeof(global.baking_auth.address_display_data), contract);
     ui_prompt(get_baking_prompts(), baking_values, ok_cb, cxl_cb);
 }
 #endif
@@ -124,9 +124,10 @@ void prompt_address(
         __attribute__((unused))
 #endif
         bool baking,
-        cx_curve_t curve, const cx_ecfp_public_key_t *key, callback_t ok_cb,
-        callback_t cxl_cb) {
-    pubkey_to_pkh_string(address_display_data, sizeof(address_display_data), curve, key);
+        cx_curve_t curve, const cx_ecfp_public_key_t *key, ui_callback_t ok_cb,
+        ui_callback_t cxl_cb) {
+    pubkey_to_pkh_string(
+        global.baking_auth.address_display_data, sizeof(global.baking_auth.address_display_data), curve, key);
 
 #ifdef BAKING_APP
     if (baking) {

@@ -1,15 +1,17 @@
+#include "apdu_baking.h"
+
 #include "apdu.h"
 #include "baking_auth.h"
-#include "apdu_baking.h"
-#include "cx.h"
-#include "os.h"
+#include "globals.h"
 #include "protocol.h"
 #include "to_string.h"
 #include "ui_prompt.h"
 
-#include <string.h>
+// Order matters
+#include "cx.h"
+#include "os.h"
 
-static level_t reset_level;
+#include <string.h>
 
 static bool reset_ok(void);
 
@@ -25,9 +27,9 @@ unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
         THROW(EXC_PARSE_ERROR);
     }
 
-    reset_level = lvl;
+    global.u.baking.reset_level = lvl;
 
-    register_ui_callback(0, number_to_string_indirect32, &reset_level);
+    register_ui_callback(0, number_to_string_indirect32, &global.u.baking.reset_level);
 
     static const char *const reset_prompts[] = {
         PROMPT("Reset HWM"),
@@ -37,7 +39,7 @@ unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
 }
 
 bool reset_ok(void) {
-    write_highest_level(reset_level, false); // We have not yet had an endorsement at this level
+    write_highest_level(global.u.baking.reset_level, false); // We have not yet had an endorsement at this level
 
     uint32_t tx = 0;
     G_io_apdu_buffer[tx++] = 0x90;

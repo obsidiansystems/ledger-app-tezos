@@ -6,6 +6,7 @@
 
 #include "os.h"
 #include "cx.h"
+#include "types.h"
 
 #define MAGIC_BYTE_INVALID 0x00
 #define MAGIC_BYTE_BLOCK 0x01
@@ -13,8 +14,6 @@
 #define MAGIC_BYTE_UNSAFE_OP 0x03
 #define MAGIC_BYTE_UNSAFE_OP2 0x04
 #define MAGIC_BYTE_UNSAFE_OP3 0x05
-
-typedef uint32_t level_t;
 
 static inline uint8_t get_magic_byte(const uint8_t *data, size_t length) {
     if (data == NULL || length == 0) return MAGIC_BYTE_INVALID;

@@ -7,29 +7,15 @@
 #include "cx.h"
 
 #include "exception.h"
-
-#define MAX_BIP32_PATH 10
-
-// The following need to be persisted for baking app
-extern uint8_t bip32_path_length;
-extern uint32_t bip32_path[MAX_BIP32_PATH];
+#include "types.h"
 
 // Throws upon error
 uint32_t read_bip32_path(uint32_t bytes, uint32_t *bip32_path, const uint8_t *buf);
 
-struct key_pair {
-    cx_ecfp_public_key_t public_key;
-    cx_ecfp_private_key_t private_key;
-};
-
 struct key_pair *generate_key_pair(cx_curve_t curve, uint32_t path_size, uint32_t *bip32_path);
 
-// TODO: Rename to KEY_HASH_SIZE
-#define HASH_SIZE 20
-#define PKH_STRING_SIZE 40
-
 cx_ecfp_public_key_t *public_key_hash(uint8_t output[HASH_SIZE], cx_curve_t curve,
-                                      const cx_ecfp_public_key_t *public_key);
+                                      const cx_ecfp_public_key_t *restrict public_key);
 
 enum curve_code {
     TEZOS_ED,
