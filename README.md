@@ -1012,9 +1012,9 @@ If the Ledger Nano S app crashes when you load it, there are two primary causes:
   * Out of date firmware: If the Ledger Nano S app doesn't work at all, make sure you are running firmware
     version 1.5.5.
 
-### Error 191 on macOS
+### Error "Unexpected sequence number (expected 0, got 191)" on macOS
 
-If you get an error from `tezos-client` that looks like
+If `tezos-client` on macOS intermittently fails with an error that looks like
 
 ```
 client.signer.ledger: APDU level error: Unexpected sequence number (expected 0, got 191)
@@ -1030,7 +1030,7 @@ If you got HIDAPI from Homebrew, you can update to the `master` branch of HIDAPI
 $ brew install hidapi --HEAD
 ```
 
-The full rebuild of `tezos-client` with HIDAPI's `master` branch looks like:
+Then start a full rebuild of `tezos-client` with HIDAPI's `master` branch:
 
 ```shell
 $ brew unlink hidapi   # remove the current one
@@ -1038,13 +1038,15 @@ $ brew install autoconf autmake libtool  # Just keep installing stuff until the 
 $ brew install hidapi --HEAD
 ```
 
-Then rebuild `ocaml-hidapi` with Tezos. In the `tezos` repository:
+Finally, rebuild `ocaml-hidapi` with Tezos. In the `tezos` repository:
 
 ```shell
 $ opam reinstall hidapi
 $ make all build-test
 $ ./tezos-client list connected ledgers  # should now work consistently
 ```
+
+Note that you may still see warnings similar to `Unexpected sequence number (expected 0, got 191)` even after this update. The reason is that there is a separate, more cosmetic, issue in `tezos-client` itself which has already been fixed but may not be in your branch yet (see the [merge request](https://gitlab.com/tezos/tezos/merge_requests/600)).
 
 ### Contact Us
  You can email us at tezos@obsidian.systems and request to join our Slack.
