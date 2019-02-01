@@ -4,6 +4,7 @@
 #include "os_io_seproxyhal.h"
 
 #include <stdbool.h>
+#include <string.h>
 
 // Return number of bytes to transmit (tx)
 typedef uint32_t (*apdu_handler)(uint8_t instruction);
@@ -25,13 +26,33 @@ struct key_pair {
 
 // Baking Auth
 #define MAX_BIP32_PATH 10
+
+typedef struct {
+    uint8_t length;
+    uint32_t components[MAX_BIP32_PATH];
+} bip32_path_t;
+
+static inline void copy_bip32_path(bip32_path_t *const out, bip32_path_t const *const in) {
+    memcpy(out->components, in->components, in->length * sizeof(*in->components));
+    out->length = in->length;
+}
+
+static inline bool bip32_paths_eq(bip32_path_t const *const a, bip32_path_t const *const b) {
+    return a == b || (
+            a != NULL &&
+            b != NULL &&
+            a->length == b->length &&
+            memcmp(a->components, b->components, a->length * sizeof(*a->components)) == 0
+        );
+}
+
 typedef struct {
     cx_curve_t curve;
     level_t highest_level;
     bool had_endorsement;
-    uint8_t path_length;
-    uint32_t bip32_path[MAX_BIP32_PATH];
+    bip32_path_t bip32_path;
 } nvram_data;
+
 
 #define PKH_STRING_SIZE 40
 #define PROTOCOL_HASH_BASE58_STRING_SIZE 52 // e.g. "ProtoBetaBetaBetaBetaBetaBetaBetaBetaBet11111a5ug96" plus null byte

@@ -31,5 +31,6 @@ static inline void clear_operation_set(allowed_operation_set *ops) {
 
 // Returns pointer to static data -- non-reentrant as hell.
 struct parsed_operation_group *
-parse_operations(const void *data, size_t length, cx_curve_t curve, size_t path_length,
-                 uint32_t *bip32_path, allowed_operation_set ops);
+parse_operations(const void *data, size_t length, cx_curve_t curve,
+                 bip32_path_t const *const bip32_path,
+                 allowed_operation_set ops);

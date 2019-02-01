@@ -52,7 +52,7 @@ static int perform_signature(bool hash_first);
 
 #ifdef BAKING_APP
 static bool bake_auth_ok(void) {
-    authorize_baking(global.u.sign.curve, global.u.sign.bip32_path, global.u.sign.bip32_path_length);
+    authorize_baking(global.u.sign.curve, &global.u.sign.bip32_path);
     int tx = perform_signature(true);
     delayed_send(tx);
     return true;
@@ -72,7 +72,7 @@ static bool sign_unsafe_ok(void) {
 #endif
 
 static void clear_data(void) {
-    global.u.sign.bip32_path_length = 0;
+    global.u.sign.bip32_path.length = 0;
     global.u.sign.message_data_length = 0;
     global.u.sign.is_hash_state_inited = false;
     global.u.sign.magic_number = 0;
@@ -93,7 +93,7 @@ uint32_t baking_sign_complete(void) {
         case MAGIC_BYTE_BAKING_OP:
             guard_baking_authorized(
                 global.u.sign.curve, global.u.sign.message_data, global.u.sign.message_data_length,
-                global.u.sign.bip32_path, global.u.sign.bip32_path_length);
+                &global.u.sign.bip32_path);
             return perform_signature(true);
 
         case MAGIC_BYTE_UNSAFE_OP:
@@ -107,8 +107,7 @@ uint32_t baking_sign_complete(void) {
                 struct parsed_operation_group *ops =
                     parse_operations(
                         global.u.sign.message_data, global.u.sign.message_data_length,
-                        global.u.sign.curve, global.u.sign.bip32_path_length, global.u.sign.bip32_path,
-                        allowed);
+                        global.u.sign.curve, &global.u.sign.bip32_path, allowed);
 
                 // With < nickel fee
                 if (ops->total_fee > 50000) THROW(EXC_PARSE_ERROR);
@@ -146,8 +145,9 @@ const char *const insecure_values[] = {
 // Return false if the transaction isn't easily parseable, otherwise prompt with given callbacks
 // and do not return, but rather throw ASYNC.
 static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
-                               size_t path_length, uint32_t *bip32_path,
+                               bip32_path_t const *const bip32_path,
                                ui_callback_t ok, ui_callback_t cxl) {
+    check_null(bip32_path);
     struct parsed_operation_group *ops;
 
 #ifndef TEZOS_DEBUG
@@ -167,7 +167,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
             allow_operation(&allowed, OPERATION_TAG_TRANSACTION);
             // TODO: Add still other operations
 
-            ops = parse_operations(data, length, curve, path_length, bip32_path, allowed);
+            ops = parse_operations(data, length, curve, bip32_path, allowed);
 #ifndef TEZOS_DEBUG
         }
         CATCH_OTHER(e) {
@@ -443,7 +443,7 @@ uint32_t wallet_sign_complete(uint8_t instruction) {
                 }
                 if (!prompt_transaction(
                         global.u.sign.message_data, global.u.sign.message_data_length, global.u.sign.curve,
-                        global.u.sign.bip32_path_length, global.u.sign.bip32_path, sign_ok, sign_reject)) {
+                        &global.u.sign.bip32_path, sign_ok, sign_reject)) {
                     goto unsafe;
                 }
             case MAGIC_BYTE_UNSAFE_OP2:
@@ -472,7 +472,7 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
         clear_data();
         memset(global.u.sign.message_data, 0, sizeof(global.u.sign.message_data));
         global.u.sign.message_data_length = 0;
-        global.u.sign.bip32_path_length = read_bip32_path(dataLength, global.u.sign.bip32_path, dataBuffer);
+        read_bip32_path(&global.u.sign.bip32_path, dataBuffer, dataLength);
         global.u.sign.curve = curve_code_to_curve(G_io_apdu_buffer[OFFSET_CURVE]);
         return_ok();
 #ifndef BAKING_APP
@@ -482,7 +482,7 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
         // FALL THROUGH
 #endif
     case P1_NEXT:
-        if (global.u.sign.bip32_path_length == 0) {
+        if (global.u.sign.bip32_path.length == 0) {
             THROW(EXC_WRONG_LENGTH_FOR_INS);
         }
         break;
@@ -545,8 +545,7 @@ static int perform_signature(bool hash_first) {
 #endif
     }
 
-    struct key_pair *pair = generate_key_pair(
-        global.u.sign.curve, global.u.sign.bip32_path_length, global.u.sign.bip32_path);
+    struct key_pair *const pair = generate_key_pair(global.u.sign.curve, &global.u.sign.bip32_path);
 
     uint32_t tx;
     switch (global.u.sign.curve) {

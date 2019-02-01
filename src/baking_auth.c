@@ -3,6 +3,7 @@
 #include "apdu.h"
 #include "globals.h"
 #include "keys.h"
+#include "memory.h"
 #include "protocol.h"
 #include "to_string.h"
 #include "ui_prompt.h"
@@ -26,16 +27,14 @@ void write_highest_level(level_t lvl, bool is_endorsement) {
     change_idle_display(N_data.highest_level);
 }
 
-void authorize_baking(cx_curve_t curve, uint32_t *bip32_path, uint8_t path_length) {
-    if (bip32_path == NULL || path_length > MAX_BIP32_PATH || path_length == 0) {
-        return;
-    }
+void authorize_baking(cx_curve_t curve, bip32_path_t const *const bip32_path) {
+    check_null(bip32_path);
+    if (bip32_path->length > NUM_ELEMENTS(N_data.bip32_path.components) || bip32_path->length == 0) return;
 
     global.baking_auth.new_data.highest_level = N_data.highest_level;
     global.baking_auth.new_data.had_endorsement = N_data.had_endorsement;
     global.baking_auth.new_data.curve = curve;
-    memcpy(global.baking_auth.new_data.bip32_path, bip32_path, path_length * sizeof(*bip32_path));
-    global.baking_auth.new_data.path_length = path_length;
+    copy_bip32_path(&global.baking_auth.new_data.bip32_path, bip32_path);
     nvm_write((void*)&N_data, &global.baking_auth.new_data, sizeof(N_data));
     change_idle_display(N_data.highest_level);
 }
@@ -49,21 +48,19 @@ bool is_level_authorized(level_t level, bool is_endorsement) {
     return is_endorsement && !N_data.had_endorsement;
 }
 
-bool is_path_authorized(cx_curve_t curve, uint32_t *bip32_path, uint8_t path_length) {
-    return bip32_path != NULL &&
-        path_length != 0 &&
-        path_length == N_data.path_length &&
+bool is_path_authorized(cx_curve_t curve, bip32_path_t const *const bip32_path) {
+    check_null(bip32_path);
+    return
         curve == N_data.curve &&
-        memcmp(bip32_path, N_data.bip32_path, path_length * sizeof(*bip32_path)) == 0;
+        bip32_path->length > 0 &&
+        bip32_paths_eq(bip32_path, &N_data.bip32_path);
 }
 
-void guard_baking_authorized(cx_curve_t curve, void *data, int datalen, uint32_t *bip32_path,
-                             uint8_t path_length) {
-    if (!is_path_authorized(curve, bip32_path, path_length)) THROW(EXC_SECURITY);
+void guard_baking_authorized(cx_curve_t curve, void *data, int datalen, bip32_path_t const *const bip32_path) {
+    if (!is_path_authorized(curve, bip32_path)) THROW(EXC_SECURITY);
 
     struct parsed_baking_data baking_info;
     if (!parse_baking_data(data, datalen, &baking_info)) THROW(EXC_PARSE_ERROR);
-
     if (!is_level_authorized(baking_info.level, baking_info.is_endorsement)) THROW(EXC_WRONG_VALUES);
 }
 
@@ -77,10 +74,10 @@ void update_high_water_mark(void *data, int datalen) {
 }
 
 void update_auth_text(void) {
-    if (N_data.path_length == 0) {
+    if (N_data.bip32_path.length == 0) {
         strcpy(global.ui.baking_auth_text, "No Key Authorized");
     } else {
-        struct key_pair *pair = generate_key_pair(N_data.curve, N_data.path_length, N_data.bip32_path);
+        struct key_pair *pair = generate_key_pair(N_data.curve, &N_data.bip32_path);
         memset(&pair->private_key, 0, sizeof(pair->private_key));
         pubkey_to_pkh_string(
             global.ui.baking_auth_text, sizeof(global.ui.baking_auth_text),

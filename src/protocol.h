@@ -22,7 +22,7 @@ static inline uint8_t get_magic_byte(const uint8_t *data, size_t length) {
 
 #define READ_UNALIGNED_BIG_ENDIAN(type, in) \
     ({ \
-        const uint8_t *bytes = (uint8_t*)in; \
+        uint8_t const *bytes = (uint8_t const *)in; \
         uint8_t out_bytes[sizeof(type)]; \
         type res; \
 \
@@ -33,3 +33,7 @@ static inline uint8_t get_magic_byte(const uint8_t *data, size_t length) {
 \
         res; \
     })
+
+// Same as READ_UNALIGNED_BIG_ENDIAN but helps keep track of how many bytes
+// have been read by adding sizeof(type) to the given counter.
+#define CONSUME_UNALIGNED_BIG_ENDIAN(counter, type, addr) ({ counter += sizeof(type); READ_UNALIGNED_BIG_ENDIAN(type, addr); })

@@ -76,13 +76,13 @@ unsigned int handle_apdu_hwm(__attribute__((unused)) uint8_t instruction) {
 }
 
 unsigned int handle_apdu_query_auth_key(__attribute__((unused)) uint8_t instruction) {
-    uint32_t tx = 0;
+    uint8_t const length = N_data.bip32_path.length;
 
-    uint8_t length = N_data.path_length;
+    uint32_t tx = 0;
     G_io_apdu_buffer[tx++] = length;
 
     for (uint8_t i = 0; i < length; ++i) {
-        tx = send_word_big_endian(tx, N_data.bip32_path[i]);
+        tx = send_word_big_endian(tx, N_data.bip32_path.components[i]);
     }
 
     G_io_apdu_buffer[tx++] = 0x90;

@@ -33,14 +33,12 @@ typedef struct {
 
     struct {
       cx_ecfp_public_key_t public_key;
-      uint8_t bip32_path_length;
-      uint32_t bip32_path[MAX_BIP32_PATH];
+      bip32_path_t bip32_path;
       cx_curve_t curve;
     } pubkey;
 
     struct {
-      uint8_t bip32_path_length;
-      uint32_t bip32_path[MAX_BIP32_PATH];
+      bip32_path_t bip32_path;
       cx_curve_t curve;
 
       uint8_t message_data[TEZOS_BUFSIZE];

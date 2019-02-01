@@ -105,9 +105,9 @@ static inline uint64_t parse_z(const void *data, size_t *ix, size_t length, uint
     val; \
 })
 
-static inline void compute_pkh(cx_curve_t curve, size_t path_length, uint32_t *bip32_path,
-                        struct parsed_operation_group *out) {
-    struct key_pair *pair = generate_key_pair(curve, path_length, bip32_path);
+static inline void compute_pkh(cx_curve_t curve, bip32_path_t const *const bip32_path,
+                        struct parsed_operation_group *const out) {
+    check_null(bip32_path);
     memset(&pair->private_key, 0, sizeof(pair->private_key));
 
     cx_ecfp_public_key_t *key = public_key_hash(out->signing.hash, curve, &pair->public_key);
@@ -135,7 +135,7 @@ static inline void parse_contract(struct parsed_contract *out, const struct cont
 }
 
 struct parsed_operation_group *parse_operations(const void *data, size_t length, cx_curve_t curve,
-                                                size_t path_length, uint32_t *bip32_path,
+                                                bip32_path_t const *const bip32_path,
                                                 allowed_operation_set ops) {
     check_null(data);
     check_null(bip32_path);
@@ -145,7 +145,7 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
 
     out->operation.tag = OPERATION_TAG_NONE;
 
-    compute_pkh(curve, path_length, bip32_path, out); // sets up "signing" and "public_key" members
+    compute_pkh(curve, bip32_path, out); // sets up "signing" and "public_key" members
 
     size_t ix = 0;
 

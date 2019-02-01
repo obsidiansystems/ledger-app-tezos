@@ -7,10 +7,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-void authorize_baking(cx_curve_t curve, uint32_t *bip32_path, uint8_t pathLength);
-void guard_baking_authorized(cx_curve_t curve, void *data, int datalen, uint32_t *bip32_path,
-                             uint8_t path_length);
-bool is_path_authorized(cx_curve_t curve, uint32_t *bip32_path, uint8_t path_length);
+void authorize_baking(cx_curve_t curve, bip32_path_t const *const bip32_path);
+void guard_baking_authorized(cx_curve_t curve, void *data, int datalen, bip32_path_t const *const bip32_path);
+bool is_path_authorized(cx_curve_t curve, bip32_path_t const *const bip32_path);
 void update_high_water_mark(void *data, int datalen);
 void write_highest_level(level_t level, bool is_endorsement);
 bool is_level_authorized(level_t level, bool is_endorsement);
