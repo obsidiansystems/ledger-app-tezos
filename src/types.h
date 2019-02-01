@@ -11,7 +11,7 @@ typedef uint32_t (*apdu_handler)(uint8_t instruction);
 
 typedef uint32_t level_t;
 
-#define CHAIN_ID_BASE58_STRING_SIZE (15 + 1) // with null termination
+#define CHAIN_ID_BASE58_STRING_SIZE sizeof("NetXdQprcVkpaWU")
 
 #define MAX_INT_DIGITS 20
 
@@ -73,25 +73,23 @@ typedef struct {
 } nvram_data;
 
 
-#define PKH_STRING_SIZE 40
-#define PROTOCOL_HASH_BASE58_STRING_SIZE 52 // e.g. "ProtoBetaBetaBetaBetaBetaBetaBetaBetaBet11111a5ug96" plus null byte
+#define PKH_STRING_SIZE 40 // includes null byte // TODO: use sizeof for this.
+#define PROTOCOL_HASH_BASE58_STRING_SIZE sizeof("ProtoBetaBetaBetaBetaBetaBetaBetaBetaBet11111a5ug96")
 
 #define MAX_SCREEN_COUNT 7 // Current maximum usage
 #define PROMPT_WIDTH 16
 #define VALUE_WIDTH PROTOCOL_HASH_BASE58_STRING_SIZE
 
 // Macros to wrap a static prompt and value strings and ensure they aren't too long.
-#define PROMPT(str) \
-  ({ \
+#define PROMPT(str) ({ \
     _Static_assert(sizeof(str) <= PROMPT_WIDTH + 1/*null byte*/ , str " won't fit in the UI prompt."); \
     str; \
-  })
+})
 
-#define STATIC_UI_VALUE(str) \
-  ({ \
+#define STATIC_UI_VALUE(str) ({ \
     _Static_assert(sizeof(str) <= VALUE_WIDTH + 1/*null byte*/, str " won't fit in the UI.".); \
     str; \
-  })
+})
 
 
 // Operations
