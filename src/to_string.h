@@ -26,4 +26,4 @@ void microtez_to_string_indirect(char *dest, uint32_t buff_size, const uint64_t 
 
 // This is designed to be called with potentially unrelocated pointers from rodata tables
 // for the src argument, so performs PIC on src.
-void copy_string(char *dest, uint32_t buff_size, const char *src);
+void copy_string(char *const dest, size_t const buff_size, char const *const src);

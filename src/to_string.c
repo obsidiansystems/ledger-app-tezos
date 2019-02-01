@@ -190,9 +190,9 @@ size_t microtez_to_string(char *dest, uint64_t number) {
     return off;
 }
 
-void copy_string(char *dest, uint32_t buff_size, const char *src_in) {
-    const char *src = (const char *)PIC(src_in);
+void copy_string(char *const dest, size_t const buff_size, char const *const src) {
+    char const *const src_in = (char const *)PIC(src);
     // I don't care that we will loop through the string twice, latency is not an issue
-    if (strlen(src) >= buff_size) THROW(EXC_WRONG_LENGTH);
-    strcpy(dest, src);
+    if (strlen(src_in) >= buff_size) THROW(EXC_WRONG_LENGTH);
+    strcpy(dest, src_in);
 }
