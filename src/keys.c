@@ -74,8 +74,17 @@ struct key_pair *generate_key_pair(cx_curve_t const curve, bip32_path_t const *c
     return &priv->res;
 }
 
-cx_ecfp_public_key_t *public_key_hash(uint8_t output[HASH_SIZE], cx_curve_t curve,
-                                      const cx_ecfp_public_key_t *restrict public_key) {
+cx_ecfp_public_key_t const *generate_public_key(cx_curve_t const curve, bip32_path_t const *const bip32_path) {
+    check_null(bip32_path);
+    struct key_pair *const pair = generate_key_pair(curve, bip32_path);
+    memset(&pair->private_key, 0, sizeof(pair->private_key));
+    return &pair->public_key;
+}
+
+cx_ecfp_public_key_t const *public_key_hash(
+    uint8_t output[HASH_SIZE], cx_curve_t curve,
+    cx_ecfp_public_key_t const *const restrict public_key)
+{
     cx_ecfp_public_key_t *const compressed = &global.priv.public_key_hash.compressed;
     switch (curve) {
         case CX_CURVE_Ed25519:

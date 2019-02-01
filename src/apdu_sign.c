@@ -147,6 +147,7 @@ const char *const insecure_values[] = {
 static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
                                bip32_path_t const *const bip32_path,
                                ui_callback_t ok, ui_callback_t cxl) {
+    check_null(data);
     check_null(bip32_path);
     struct parsed_operation_group *ops;
 

@@ -92,9 +92,8 @@ __attribute__((noreturn)) unsigned int handle_apdu_setup(__attribute__((unused))
         if (consumed != buff_size) THROW(EXC_WRONG_LENGTH);
     }
 
-    struct key_pair *const pair = generate_key_pair(G.curve, &G.bip32_path);
-    memset(&pair->private_key, 0, sizeof(pair->private_key));
-    memcpy(&G.public_key, &pair->public_key, sizeof(G.public_key));
+    cx_ecfp_public_key_t const *const pubkey = generate_public_key(G.curve, &G.bip32_path);
+    memcpy(&G.public_key, pubkey, sizeof(G.public_key));
 
     prompt_setup(ok, delay_reject);
 }

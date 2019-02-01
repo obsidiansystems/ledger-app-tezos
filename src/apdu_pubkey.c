@@ -27,33 +27,29 @@ static bool baking_ok(void) {
 unsigned int handle_apdu_get_public_key(uint8_t instruction) {
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
 
-    if (G_io_apdu_buffer[OFFSET_P1] != 0) {
-        THROW(EXC_WRONG_PARAM);
-    }
+    if (READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_P1]) != 0) THROW(EXC_WRONG_PARAM);
 
     // do not expose pks without prompt over U2F (browser support)
-    if (instruction == INS_GET_PUBLIC_KEY) {
-        require_hid();
-    }
+    if (instruction == INS_GET_PUBLIC_KEY) require_hid();
 
-    G.curve = curve_code_to_curve(G_io_apdu_buffer[OFFSET_CURVE]);
+    uint8_t const curve_code = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]);
+    G.curve = curve_code_to_curve(curve_code);
+
+    size_t const cdata_size = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]);
 
 #ifdef BAKING_APP
-    if (G_io_apdu_buffer[OFFSET_LC] == 0 && instruction == INS_AUTHORIZE_BAKING) {
+    if (cdata_size == 0 && instruction == INS_AUTHORIZE_BAKING) {
         G.curve = N_data.curve;
         copy_bip32_path(&G.bip32_path, &N_data.bip32_path);
     } else {
 #endif
-        read_bip32_path(&G.bip32_path, dataBuffer, G_io_apdu_buffer[OFFSET_LC]);
+        read_bip32_path(&G.bip32_path, dataBuffer, cdata_size);
 #ifdef BAKING_APP
-        if (G.bip32_path.length == 0) {
-            THROW(EXC_WRONG_LENGTH_FOR_INS);
-        }
+        if (G.bip32_path.length == 0) THROW(EXC_WRONG_LENGTH_FOR_INS);
     }
 #endif
-    struct key_pair *pair = generate_key_pair(G.curve, &G.bip32_path);
-    memset(&pair->private_key, 0, sizeof(pair->private_key));
-    memcpy(&G.public_key, &pair->public_key, sizeof(G.public_key));
+    cx_ecfp_public_key_t const *const pubkey = generate_public_key(G.curve, &G.bip32_path);
+    memcpy(&G.public_key, pubkey, sizeof(G.public_key));
 
     if (instruction == INS_GET_PUBLIC_KEY) {
         return provide_pubkey(G_io_apdu_buffer, &G.public_key);
