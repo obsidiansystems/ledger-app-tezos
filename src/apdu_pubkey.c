@@ -11,21 +11,8 @@
 
 #define G global.u.pubkey
 
-static uint32_t provide_pubkey(void) {
-    uint32_t tx = 0;
-    G_io_apdu_buffer[tx++] = G.public_key.W_len;
-    os_memmove(G_io_apdu_buffer + tx,
-               G.public_key.W,
-               G.public_key.W_len);
-    tx += G.public_key.W_len;
-    G_io_apdu_buffer[tx++] = 0x90;
-    G_io_apdu_buffer[tx++] = 0x00;
-    return tx;
-}
-
 static bool pubkey_ok(void) {
-    uint32_t const tx = provide_pubkey();
-    delayed_send(tx);
+    delayed_send(provide_pubkey(G_io_apdu_buffer, &G.public_key));
     return true;
 }
 
@@ -69,7 +56,7 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
     memcpy(&G.public_key, &pair->public_key, sizeof(G.public_key));
 
     if (instruction == INS_GET_PUBLIC_KEY) {
-        return provide_pubkey();
+        return provide_pubkey(G_io_apdu_buffer, &G.public_key);
     } else {
         // instruction == INS_PROMPT_PUBLIC_KEY || instruction == INS_AUTHORIZE_BAKING
         ui_callback_t cb;

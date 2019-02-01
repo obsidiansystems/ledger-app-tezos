@@ -59,6 +59,8 @@ static inline void require_hid(void) {
     }
 }
 
+size_t provide_pubkey(uint8_t *const io_buffer, cx_ecfp_public_key_t const *const pubkey);
+
 uint32_t handle_apdu_error(uint8_t instruction);
 uint32_t handle_apdu_version(uint8_t instruction);
 uint32_t handle_apdu_git(uint8_t instruction);

@@ -5,6 +5,16 @@
 #include <stdint.h>
 #include <string.h>
 
+size_t provide_pubkey(uint8_t *const io_buffer, cx_ecfp_public_key_t const *const pubkey) {
+    size_t tx = 0;
+    io_buffer[tx++] = pubkey->W_len;
+    memmove(io_buffer + tx, pubkey->W, pubkey->W_len);
+    tx += pubkey->W_len;
+    io_buffer[tx++] = 0x90;
+    io_buffer[tx++] = 0x00;
+    return tx;
+}
+
 unsigned int handle_apdu_error(uint8_t __attribute__((unused)) instruction) {
     THROW(EXC_INVALID_INS);
 }

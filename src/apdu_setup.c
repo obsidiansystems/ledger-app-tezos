@@ -21,17 +21,6 @@ struct setup_wire {
     struct bip32_path_wire bip32_path;
 } __attribute__((packed));
 
-
-static size_t provide_pubkey(uint8_t *const io_buffer, cx_ecfp_public_key_t const *const pubkey) {
-    size_t tx = 0;
-    io_buffer[tx++] = pubkey->W_len;
-    memmove(io_buffer + tx, pubkey->W, pubkey->W_len);
-    tx += pubkey->W_len;
-    io_buffer[tx++] = 0x90;
-    io_buffer[tx++] = 0x00;
-    return tx;
-}
-
 static bool ok(void) {
     UPDATE_NVRAM(ram, {
         ram->curve = G.curve;
