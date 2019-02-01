@@ -1,6 +1,10 @@
 #include "globals.h"
 
+#include "exception.h"
+#include "to_string.h"
+
 #include <string.h>
+
 
 // WARNING: ***************************************************
 // Non-const globals MUST NOT HAVE AN INITIALIZER.
@@ -16,12 +20,36 @@ globals_t global;
 ux_state_t ux;
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
-// DO NOT TRY TO INIT THIS. This can only be written via an system call.
-// The "N_" is *significant*. It tells the linker to put this in NVRAM.
-WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
-
 void init_globals(void) {
   memset(&global, 0, sizeof(global));
   memset(&ux, 0, sizeof(ux));
   memset(G_io_seproxyhal_spi_buffer, 0, sizeof(G_io_seproxyhal_spi_buffer));
 }
+
+// #ifdef BAKING_APP
+// DO NOT TRY TO INIT THIS. This can only be written via an system call.
+// The "N_" is *significant*. It tells the linker to put this in NVRAM.
+WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
+
+high_watermark_t *select_hwm_by_chain(chain_id_t const chain_id, nvram_data *const ram) {
+  check_null(ram);
+  return chain_id.v == ram->main_chain_id.v || ram->main_chain_id.v == 0
+      ? &ram->hwm.main
+      : &ram->hwm.test;
+}
+
+void update_baking_idle_screens(void) {
+    number_to_string(global.ui.baking_idle_screens.hwm, N_data.hwm.main.highest_level);
+
+    if (N_data.bip32_path.length == 0) {
+        STRCPY(global.ui.baking_idle_screens.pkh, "No Key Authorized");
+    } else {
+        cx_ecfp_public_key_t const *const pubkey = generate_public_key(N_data.curve, &N_data.bip32_path);
+        pubkey_to_pkh_string(
+            global.ui.baking_idle_screens.pkh, sizeof(global.ui.baking_idle_screens.pkh),
+            N_data.curve, pubkey);
+    }
+
+    chain_id_to_string_with_aliases(global.ui.baking_idle_screens.chain, sizeof(global.ui.baking_idle_screens.chain), &N_data.main_chain_id);
+}
+//#endif

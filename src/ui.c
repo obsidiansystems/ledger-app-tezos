@@ -119,21 +119,6 @@ static bool do_nothing(void) {
 }
 #endif
 
-static void update_baking_idle_screens(void) {
-    number_to_string(G.baking_idle_screens.hwm, N_data.hwm.main.highest_level);
-
-    if (N_data.bip32_path.length == 0) {
-        STRCPY(G.baking_idle_screens.pkh, "No Key Authorized");
-    } else {
-        cx_ecfp_public_key_t const *const pubkey = generate_public_key(N_data.curve, &N_data.bip32_path);
-        pubkey_to_pkh_string(
-            G.baking_idle_screens.pkh, sizeof(G.baking_idle_screens.pkh),
-            N_data.curve, pubkey);
-    }
-
-    chain_id_to_string_with_aliases(G.baking_idle_screens.chain, sizeof(G.baking_idle_screens.chain), &N_data.main_chain_id);
-}
-
 static void ui_idle(void) {
 #ifdef BAKING_APP
     update_baking_idle_screens();

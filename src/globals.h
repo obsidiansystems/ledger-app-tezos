@@ -120,9 +120,20 @@ extern unsigned int app_stack_canary; // From SDK
 extern ux_state_t ux;
 extern unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
+static inline void throw_stack_size() {
+    uint8_t st;
+    // uint32_t tmp1 = (uint32_t)&st - (uint32_t)&app_stack_canary;
+    uint32_t tmp2 = (uint32_t)global.stack_root - (uint32_t)&st;
+    THROW(0x9000 + tmp2);
+}
+
+// #ifdef BAKING_APP
 extern WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
 
 #define N_data (*(WIDE nvram_data*)PIC(&N_data_real))
+
+void update_baking_idle_screens(void);
+high_watermark_t *select_hwm_by_chain(chain_id_t const chain_id, nvram_data *const ram);
 
 // Properly updates NVRAM data to prevent any clobbering of data.
 // 'out_param' defines the name of a pointer to the nvram_data struct
@@ -132,18 +143,6 @@ extern WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
     memcpy(&global.baking_auth.new_data, &N_data, sizeof(global.baking_auth.new_data)); \
     body; \
     nvm_write((void*)&N_data, &global.baking_auth.new_data, sizeof(N_data)); \
+    update_baking_idle_screens(); \
 })
-
-static inline high_watermark_t *select_hwm_by_chain(chain_id_t const chain_id, nvram_data *const ram) {
-  check_null(ram);
-  return chain_id.v == ram->main_chain_id.v || ram->main_chain_id.v == 0
-      ? &ram->hwm.main
-      : &ram->hwm.test;
-}
-
-static inline void throw_stack_size() {
-    uint8_t st;
-    // uint32_t tmp1 = (uint32_t)&st - (uint32_t)&app_stack_canary;
-    uint32_t tmp2 = (uint32_t)global.stack_root - (uint32_t)&st;
-    THROW(0x9000 + tmp2);
-}
+//#endif
