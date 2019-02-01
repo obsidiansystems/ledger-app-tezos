@@ -96,9 +96,22 @@ static bool do_nothing(void) {
 }
 #endif
 
+static void update_baking_idle_screens(void) {
+    number_to_string(global.ui.idle_text, N_data.hwm.main.highest_level);
+
+    if (N_data.bip32_path.length == 0) {
+        strcpy(global.ui.baking_auth_text, "No Key Authorized");
+    } else {
+        cx_ecfp_public_key_t const *const pubkey = generate_public_key(N_data.curve, &N_data.bip32_path);
+        pubkey_to_pkh_string(
+            global.ui.baking_auth_text, sizeof(global.ui.baking_auth_text),
+            N_data.curve, pubkey);
+    }
+}
+
 static void ui_idle(void) {
 #ifdef BAKING_APP
-    update_auth_text();
+    update_baking_idle_screens();
     ui_display(ui_idle_screen, NUM_ELEMENTS(ui_idle_screen),
                do_nothing, exit_app, 2);
 #else
@@ -107,14 +120,9 @@ static void ui_idle(void) {
 #endif
 }
 
-void change_idle_display(uint32_t new) {
-    number_to_string(global.ui.idle_text, new);
-    update_auth_text();
-}
-
 void ui_initial_screen(void) {
 #ifdef BAKING_APP
-    change_idle_display(N_data.hwm.main.highest_level);
+    update_baking_idle_screens();
 #endif
     clear_ui_callbacks();
     ui_idle();
@@ -127,7 +135,7 @@ static bool is_idling(void) {
 static void timeout(void) {
     if (is_idling()) {
         // Idle app timeout
-        update_auth_text();
+        update_baking_idle_screens();
         global.ui.timeout_cycle_count = 0;
         UX_REDISPLAY();
     } else {

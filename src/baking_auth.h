@@ -13,7 +13,6 @@ void guard_baking_authorized(cx_curve_t curve, void *data, int datalen, bip32_pa
 bool is_path_authorized(cx_curve_t curve, bip32_path_t const *const bip32_path);
 void update_high_water_mark(void *data, int datalen);
 bool is_valid_level(level_t level);
-void update_auth_text(void);
 
 void prompt_contract_for_baking(struct parsed_contract *contract, ui_callback_t ok_cb, ui_callback_t cxl_cb);
 void prompt_address(bool bake, cx_curve_t curve,

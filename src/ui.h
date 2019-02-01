@@ -18,4 +18,3 @@ void ui_display(const bagl_element_t *elems, size_t sz, ui_callback_t ok_c, ui_c
                 uint32_t step_count);
 unsigned char io_event(unsigned char channel);
 void io_seproxyhal_display(const bagl_element_t *element);
-void change_idle_display(uint32_t new);

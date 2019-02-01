@@ -25,7 +25,6 @@ static void write_high_watermark(parsed_baking_data_t const *const in) {
         dest->highest_level = in->level;
         dest->had_endorsement = in->is_endorsement;
     });
-    change_idle_display(N_data.hwm.main.highest_level);
 }
 
 void authorize_baking(cx_curve_t curve, bip32_path_t const *const bip32_path) {
@@ -36,7 +35,6 @@ void authorize_baking(cx_curve_t curve, bip32_path_t const *const bip32_path) {
         ram->curve = curve;
         copy_bip32_path(&ram->bip32_path, bip32_path);
     });
-    change_idle_display(N_data.hwm.main.highest_level);
 }
 
 static bool is_level_authorized(parsed_baking_data_t const *const baking_info) {
@@ -75,17 +73,6 @@ void update_high_water_mark(void *data, int datalen) {
         return; // Must be signing a delegation
     }
     write_high_watermark(&baking_info);
-}
-
-void update_auth_text(void) {
-    if (N_data.bip32_path.length == 0) {
-        strcpy(global.ui.baking_auth_text, "No Key Authorized");
-    } else {
-        cx_ecfp_public_key_t const *const pubkey = generate_public_key(N_data.curve, &N_data.bip32_path);
-        pubkey_to_pkh_string(
-            global.ui.baking_auth_text, sizeof(global.ui.baking_auth_text),
-            N_data.curve, pubkey);
-    }
 }
 
 static const char *const pubkey_values[] = {
