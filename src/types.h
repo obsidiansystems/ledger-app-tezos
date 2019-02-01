@@ -119,3 +119,11 @@ struct parsed_operation_group {
     struct parsed_contract signing;
     struct parsed_operation operation;
 };
+
+// Maximum number of APDU instructions
+#define INS_MAX 0x0B
+
+#define APDU_INS(x) ({ \
+    _Static_assert(x <= INS_MAX, "APDU instruction is out of bounds"); \
+    x; \
+})

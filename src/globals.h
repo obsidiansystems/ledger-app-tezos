@@ -15,8 +15,6 @@ void init_globals(void);
 #   define TEZOS_BUFSIZE 256
 #endif
 
-#define INS_MAX 0x0B
-
 #define PRIVATE_KEY_DATA_SIZE 32
 
 struct priv_generate_key_pair {
