@@ -14,6 +14,7 @@ void pubkey_to_pkh_string(char *buff, uint32_t buff_size, cx_curve_t curve,
 void protocol_hash_to_string(char *buff, const size_t buff_size, const uint8_t hash[PROTOCOL_HASH_SIZE]);
 void parsed_contract_to_string(char *buff, uint32_t buff_size, const struct parsed_contract *contract);
 void chain_id_to_string(char *buff, size_t const buff_size, chain_id_t const chain_id);
+void chain_id_to_string_with_aliases(char *const out, size_t const out_size, chain_id_t const *const chain_id);
 
 // dest must be at least MAX_INT_DIGITS
 size_t number_to_string(char *dest, uint64_t number);

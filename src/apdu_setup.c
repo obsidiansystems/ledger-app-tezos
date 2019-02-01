@@ -64,7 +64,7 @@ __attribute__((noreturn)) static void prompt_setup(
 
     SET_STATIC_UI_VALUE(TYPE_INDEX, "Baking?");
     register_ui_callback(ADDRESS_INDEX, pubkey_to_string, &G.public_key);
-    register_ui_callback(CHAIN_INDEX, chain_id_to_string, &G.main_chain_id);
+    register_ui_callback(CHAIN_INDEX, chain_id_to_string_with_aliases, &G.main_chain_id);
     register_ui_callback(MAIN_HWM_INDEX, number_to_string_indirect32, &G.hwm.main);
     register_ui_callback(TEST_HWM_INDEX, number_to_string_indirect32, &G.hwm.test);
 

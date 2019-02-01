@@ -131,13 +131,7 @@ static void update_baking_idle_screens(void) {
             N_data.curve, pubkey);
     }
 
-    if (N_data.main_chain_id.v == 0) {
-        STRCPY(G.baking_idle_screens.chain, "any");
-    } else if (N_data.main_chain_id.v == mainnet_chain_id.v) {
-        STRCPY(G.baking_idle_screens.chain, "mainnet");
-    } else {
-        chain_id_to_string(G.baking_idle_screens.chain, sizeof(G.baking_idle_screens.chain), N_data.main_chain_id);
-    }
+    chain_id_to_string_with_aliases(G.baking_idle_screens.chain, sizeof(G.baking_idle_screens.chain), &N_data.main_chain_id);
 }
 
 static void ui_idle(void) {
