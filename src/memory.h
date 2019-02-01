@@ -7,3 +7,8 @@
     memcmp(a, b, sizeof(*a)); \
 })
 #define NUM_ELEMENTS(a) (sizeof(a)/sizeof(*a))
+
+
+// Macro that produces a compile-error showing the sizeof the argument.
+#define ERROR_WITH_NUMBER_EXPANSION(x) char (*__kaboom)[x] = 1;
+#define SIZEOF_ERROR(x)  ERROR_WITH_NUMBER_EXPANSION(sizeof(x));

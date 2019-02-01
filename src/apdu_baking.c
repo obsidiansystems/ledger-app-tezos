@@ -3,15 +3,14 @@
 #include "apdu.h"
 #include "baking_auth.h"
 #include "globals.h"
+#include "os_cx.h"
 #include "protocol.h"
 #include "to_string.h"
 #include "ui_prompt.h"
 
-// Order matters
-#include "cx.h"
-#include "os.h"
-
 #include <string.h>
+
+#define G global.u.baking
 
 static bool reset_ok(void);
 
@@ -21,15 +20,12 @@ unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
     if (dataLength != sizeof(int)) {
         THROW(EXC_WRONG_LENGTH_FOR_INS);
     }
-    level_t lvl = READ_UNALIGNED_BIG_ENDIAN(level_t, dataBuffer);
+    level_t const lvl = READ_UNALIGNED_BIG_ENDIAN(level_t, dataBuffer);
+    if (!is_valid_level(lvl)) THROW(EXC_PARSE_ERROR);
 
-    if (!is_valid_level(lvl)) {
-        THROW(EXC_PARSE_ERROR);
-    }
+    G.reset_level = lvl;
 
-    global.u.baking.reset_level = lvl;
-
-    register_ui_callback(0, number_to_string_indirect32, &global.u.baking.reset_level);
+    register_ui_callback(0, number_to_string_indirect32, &G.reset_level);
 
     static const char *const reset_prompts[] = {
         PROMPT("Reset HWM"),
@@ -39,7 +35,12 @@ unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
 }
 
 bool reset_ok(void) {
-    write_highest_level(global.u.baking.reset_level, false); // We have not yet had an endorsement at this level
+    UPDATE_NVRAM(ram, {
+        ram->hwm.main.highest_level = G.reset_level;
+        ram->hwm.main.had_endorsement = false;
+        ram->hwm.test.highest_level = G.reset_level;
+        ram->hwm.test.had_endorsement = false;
+    });
 
     uint32_t tx = 0;
     G_io_apdu_buffer[tx++] = 0x90;
@@ -64,25 +65,33 @@ uint32_t send_word_big_endian(uint32_t tx, uint32_t word) {
     return tx + i;
 }
 
-unsigned int handle_apdu_hwm(__attribute__((unused)) uint8_t instruction) {
+unsigned int handle_apdu_all_hwm(__attribute__((unused)) uint8_t instruction) {
     uint32_t tx = 0;
-
-    level_t level = N_data.highest_level;
-    tx = send_word_big_endian(tx, level);
-
+    tx = send_word_big_endian(tx, N_data.hwm.main.highest_level);
+    tx = send_word_big_endian(tx, N_data.hwm.test.highest_level);
+    tx = send_word_big_endian(tx, N_data.main_chain_id.v);
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;
     return tx;
 }
 
-unsigned int handle_apdu_query_auth_key(__attribute__((unused)) uint8_t instruction) {
+unsigned int handle_apdu_main_hwm(__attribute__((unused)) uint8_t instruction) {
     uint32_t tx = 0;
+    tx = send_word_big_endian(tx, N_data.hwm.main.highest_level);
+    G_io_apdu_buffer[tx++] = 0x90;
+    G_io_apdu_buffer[tx++] = 0x00;
+    return tx;
+}
 
-    uint8_t length = N_data.path_length;
+
+unsigned int handle_apdu_query_auth_key(__attribute__((unused)) uint8_t instruction) {
+    uint8_t const length = N_data.bip32_path.length;
+
+    uint32_t tx = 0;
     G_io_apdu_buffer[tx++] = length;
 
     for (uint8_t i = 0; i < length; ++i) {
-        tx = send_word_big_endian(tx, N_data.bip32_path[i]);
+        tx = send_word_big_endian(tx, N_data.bip32_path.components[i]);
     }
 
     G_io_apdu_buffer[tx++] = 0x90;

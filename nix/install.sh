@@ -1,23 +1,24 @@
 #!/usr/bin/env bash
-set -Eeuxo pipefail
+set -Eeuo pipefail
 
-rootdir=$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )
+root="$(git rev-parse --show-toplevel)"
 
-: "${VERSION:=${2:-"$(git -C "$rootdir" describe --tags | cut -f1 -d- | cut -f2 -dv)"}}"
+: "${VERSION:=${2:-"$(git -C "$root" describe --tags | cut -f1 -d- | cut -f2 -dv)"}}"
 
 install-wallet() {
-  "$rootdir/install.sh" 'Tezos Wallet' "$("$rootdir/nix/build.sh" -A wallet)/bin/app.hex" "$VERSION"
+  "$root/install.sh" 'Tezos Wallet' "$("$root/nix/build.sh" -A wallet)" "$VERSION"
 }
 install-baking() {
-  "$rootdir/install.sh" 'Tezos Baking' "$("$rootdir/nix/build.sh" -A baking)/bin/app.hex" "$VERSION"
+  "$root/install.sh" 'Tezos Baking' "$("$root/nix/build.sh" -A baking)" "$VERSION"
 }
 
-export rootdir
+export root
 export VERSION
 export -f install-wallet
 export -f install-baking
 
-nix-shell "$rootdir/nix/ledgerblue.nix" -A shell --run "$(cat <<EOF
+nix-shell "$root/nix/ledgerblue.nix" -A shell --run "$(cat <<EOF
+set -Eeuo pipefail
 if [ "${1:-}" = "wallet" ]; then
   install-wallet
 elif [ "${1:-}" = "baking" ]; then

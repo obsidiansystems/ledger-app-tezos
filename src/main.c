@@ -15,10 +15,11 @@
 *  limitations under the License.
 ********************************************************************************/
 
-#include "apdu.h"
-#include "apdu_pubkey.h"
-#include "apdu_sign.h"
 #include "apdu_baking.h"
+#include "apdu_pubkey.h"
+#include "apdu_setup.h"
+#include "apdu_sign.h"
+#include "apdu.h"
 #include "globals.h"
 #include "memory.h"
 
@@ -28,19 +29,20 @@ void app_main(void) {
     for (size_t i = 0; i < NUM_ELEMENTS(global.handlers); i++) {
         global.handlers[i] = handle_apdu_error;
     }
-    global.handlers[INS_VERSION] = handle_apdu_version;
-    global.handlers[INS_GET_PUBLIC_KEY] = handle_apdu_get_public_key;
-    global.handlers[INS_PROMPT_PUBLIC_KEY] = handle_apdu_get_public_key;
+    global.handlers[APDU_INS(INS_VERSION)] = handle_apdu_version;
+    global.handlers[APDU_INS(INS_GET_PUBLIC_KEY)] = handle_apdu_get_public_key;
+    global.handlers[APDU_INS(INS_PROMPT_PUBLIC_KEY)] = handle_apdu_get_public_key;
+    global.handlers[APDU_INS(INS_SIGN)] = handle_apdu_sign;
+    global.handlers[APDU_INS(INS_GIT)] = handle_apdu_git;
 #ifdef BAKING_APP
-    global.handlers[INS_AUTHORIZE_BAKING] = handle_apdu_get_public_key;
-    global.handlers[INS_RESET] = handle_apdu_reset;
-    global.handlers[INS_QUERY_AUTH_KEY] = handle_apdu_query_auth_key;
-    global.handlers[INS_QUERY_HWM] = handle_apdu_hwm;
+    global.handlers[APDU_INS(INS_AUTHORIZE_BAKING)] = handle_apdu_get_public_key;
+    global.handlers[APDU_INS(INS_RESET)] = handle_apdu_reset;
+    global.handlers[APDU_INS(INS_QUERY_AUTH_KEY)] = handle_apdu_query_auth_key;
+    global.handlers[APDU_INS(INS_QUERY_MAIN_HWM)] = handle_apdu_main_hwm;
+    global.handlers[APDU_INS(INS_SETUP)] = handle_apdu_setup;
+    global.handlers[APDU_INS(INS_QUERY_ALL_HWM)] = handle_apdu_all_hwm;
+#else
+    global.handlers[APDU_INS(INS_SIGN_UNSAFE)] = handle_apdu_sign;
 #endif
-    global.handlers[INS_SIGN] = handle_apdu_sign;
-#ifndef BAKING_APP
-    global.handlers[INS_SIGN_UNSAFE] = handle_apdu_sign;
-#endif
-    global.handlers[INS_GIT] = handle_apdu_git;
     main_loop(global.handlers);
 }

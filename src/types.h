@@ -4,11 +4,23 @@
 #include "os_io_seproxyhal.h"
 
 #include <stdbool.h>
+#include <string.h>
 
 // Return number of bytes to transmit (tx)
 typedef uint32_t (*apdu_handler)(uint8_t instruction);
 
 typedef uint32_t level_t;
+
+#define CHAIN_ID_BASE58_STRING_SIZE sizeof("NetXdQprcVkpaWU")
+
+#define MAX_INT_DIGITS 20
+
+typedef struct {
+    uint32_t v;
+} chain_id_t;
+
+// Mainnet Chain ID: NetXdQprcVkpaWU
+static chain_id_t const mainnet_chain_id = { .v = 0x7A06A770 };
 
 // UI
 typedef bool (*ui_callback_t)(void); // return true to go back to idle screen
@@ -25,33 +37,59 @@ struct key_pair {
 
 // Baking Auth
 #define MAX_BIP32_PATH 10
+
 typedef struct {
-    cx_curve_t curve;
+    uint8_t length;
+    uint32_t components[MAX_BIP32_PATH];
+} bip32_path_t;
+
+static inline void copy_bip32_path(bip32_path_t *const out, bip32_path_t const *const in) {
+    memcpy(out->components, in->components, in->length * sizeof(*in->components));
+    out->length = in->length;
+}
+
+static inline bool bip32_paths_eq(bip32_path_t const *const a, bip32_path_t const *const b) {
+    return a == b || (
+            a != NULL &&
+            b != NULL &&
+            a->length == b->length &&
+            memcmp(a->components, b->components, a->length * sizeof(*a->components)) == 0
+        );
+}
+
+typedef struct {
     level_t highest_level;
     bool had_endorsement;
-    uint8_t path_length;
-    uint32_t bip32_path[MAX_BIP32_PATH];
+} high_watermark_t;
+
+typedef struct {
+    chain_id_t main_chain_id;
+    struct {
+        high_watermark_t main;
+        high_watermark_t test;
+    } hwm;
+    cx_curve_t curve;
+    bip32_path_t bip32_path;
 } nvram_data;
 
-#define PKH_STRING_SIZE 40
-#define PROTOCOL_HASH_BASE58_STRING_SIZE 52 // e.g. "ProtoBetaBetaBetaBetaBetaBetaBetaBetaBet11111a5ug96" plus null byte
+
+#define PKH_STRING_SIZE 40 // includes null byte // TODO: use sizeof for this.
+#define PROTOCOL_HASH_BASE58_STRING_SIZE sizeof("ProtoBetaBetaBetaBetaBetaBetaBetaBetaBet11111a5ug96")
 
 #define MAX_SCREEN_COUNT 7 // Current maximum usage
 #define PROMPT_WIDTH 16
 #define VALUE_WIDTH PROTOCOL_HASH_BASE58_STRING_SIZE
 
 // Macros to wrap a static prompt and value strings and ensure they aren't too long.
-#define PROMPT(str) \
-  ({ \
+#define PROMPT(str) ({ \
     _Static_assert(sizeof(str) <= PROMPT_WIDTH + 1/*null byte*/ , str " won't fit in the UI prompt."); \
     str; \
-  })
+})
 
-#define STATIC_UI_VALUE(str) \
-  ({ \
+#define STATIC_UI_VALUE(str) ({ \
     _Static_assert(sizeof(str) <= VALUE_WIDTH + 1/*null byte*/, str " won't fit in the UI.".); \
     str; \
-  })
+})
 
 
 // Operations
@@ -119,3 +157,16 @@ struct parsed_operation_group {
     struct parsed_contract signing;
     struct parsed_operation operation;
 };
+
+// Maximum number of APDU instructions
+#define INS_MAX 0x0C
+
+#define APDU_INS(x) ({ \
+    _Static_assert(x <= INS_MAX, "APDU instruction is out of bounds"); \
+    x; \
+})
+
+#define STRCPY(buff, x) ({ \
+    _Static_assert(sizeof(buff) >= sizeof(x) && sizeof(*x) == sizeof(char), "String won't fit in buffer"); \
+    strcpy(buff, x); \
+})

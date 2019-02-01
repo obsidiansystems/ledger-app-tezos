@@ -3,19 +3,25 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include "os.h"
-#include "cx.h"
 
 #include "exception.h"
+#include "os_cx.h"
 #include "types.h"
 
-// Throws upon error
-uint32_t read_bip32_path(uint32_t bytes, uint32_t *bip32_path, const uint8_t *buf);
+struct bip32_path_wire {
+    uint8_t length;
+    uint32_t components[0];
+} __attribute__((packed));
 
-struct key_pair *generate_key_pair(cx_curve_t curve, uint32_t path_size, uint32_t *bip32_path);
+// throws
+size_t read_bip32_path(bip32_path_t *const out, uint8_t const *const in, size_t const in_size);
 
-cx_ecfp_public_key_t *public_key_hash(uint8_t output[HASH_SIZE], cx_curve_t curve,
-                                      const cx_ecfp_public_key_t *restrict public_key);
+struct key_pair *generate_key_pair(cx_curve_t const curve, bip32_path_t const *const bip32_path);
+cx_ecfp_public_key_t const *generate_public_key(cx_curve_t const curve, bip32_path_t const *const bip32_path);
+
+cx_ecfp_public_key_t const *public_key_hash(
+    uint8_t output[HASH_SIZE], cx_curve_t curve,
+    cx_ecfp_public_key_t const *const restrict public_key);
 
 enum curve_code {
     TEZOS_ED,

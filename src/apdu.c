@@ -5,6 +5,16 @@
 #include <stdint.h>
 #include <string.h>
 
+size_t provide_pubkey(uint8_t *const io_buffer, cx_ecfp_public_key_t const *const pubkey) {
+    size_t tx = 0;
+    io_buffer[tx++] = pubkey->W_len;
+    memmove(io_buffer + tx, pubkey->W, pubkey->W_len);
+    tx += pubkey->W_len;
+    io_buffer[tx++] = 0x90;
+    io_buffer[tx++] = 0x00;
+    return tx;
+}
+
 unsigned int handle_apdu_error(uint8_t __attribute__((unused)) instruction) {
     THROW(EXC_INVALID_INS);
 }
@@ -55,7 +65,7 @@ void main_loop(apdu_handler handlers[INS_MAX]) {
                     THROW(EXC_WRONG_LENGTH);
                 }
 
-                uint8_t instruction = G_io_apdu_buffer[OFFSET_INS];
+                const uint8_t instruction = G_io_apdu_buffer[OFFSET_INS];
                 const apdu_handler cb = (instruction >= INS_MAX)
                     ? handle_apdu_error
                     : handlers[instruction];

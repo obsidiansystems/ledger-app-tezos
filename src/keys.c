@@ -20,44 +20,43 @@
 #include "apdu.h"
 #include "blake2.h"
 #include "globals.h"
+#include "memory.h"
 #include "protocol.h"
-
-// Order matters
-#include "os.h"
+#include "types.h"
 
 #include <stdbool.h>
 #include <string.h>
 
-uint32_t read_bip32_path(uint32_t bytes, uint32_t *bip32_path, const uint8_t *buf) {
-    uint32_t path_length = *buf;
-    if (bytes < path_length * sizeof(uint32_t) + 1) THROW(EXC_WRONG_LENGTH_FOR_INS);
+size_t read_bip32_path(bip32_path_t *const out, uint8_t const *const in, size_t const in_size) {
+    struct bip32_path_wire const *const buf_as_bip32 = (struct bip32_path_wire const *)in;
 
-    buf++;
+    if (in_size < sizeof(buf_as_bip32->length)) THROW(EXC_WRONG_LENGTH_FOR_INS);
 
-    if (path_length == 0 || path_length > MAX_BIP32_PATH) {
-        screen_printf("Invalid path\n");
-        THROW(EXC_WRONG_VALUES);
+    size_t ix = 0;
+    out->length = CONSUME_UNALIGNED_BIG_ENDIAN(ix, uint8_t, &buf_as_bip32->length);
+
+    if (in_size - ix < out->length * sizeof(*buf_as_bip32->components)) THROW(EXC_WRONG_LENGTH_FOR_INS);
+    if (out->length == 0 || out->length > NUM_ELEMENTS(out->components)) THROW(EXC_WRONG_VALUES);
+
+    for (size_t i = 0; i < out->length; i++) {
+        out->components[i] = CONSUME_UNALIGNED_BIG_ENDIAN(ix, uint32_t, &buf_as_bip32->components[i]);
     }
 
-    for (size_t i = 0; i < path_length; i++) {
-        bip32_path[i] = READ_UNALIGNED_BIG_ENDIAN(uint32_t, (uint32_t*)buf);
-        buf += 4;
-    }
-
-    return path_length;
+    return ix;
 }
 
-struct key_pair *generate_key_pair(cx_curve_t curve, uint32_t path_length, uint32_t *bip32_path) {
+struct key_pair *generate_key_pair(cx_curve_t const curve, bip32_path_t const *const bip32_path) {
+    check_null(bip32_path);
     struct priv_generate_key_pair *const priv = &global.priv.generate_key_pair;
 
 #if CX_APILEVEL > 8
     if (curve == CX_CURVE_Ed25519) {
         os_perso_derive_node_bip32_seed_key(
-            HDW_ED25519_SLIP10, curve, bip32_path, path_length,
+            HDW_ED25519_SLIP10, curve, bip32_path->components, bip32_path->length,
             priv->privateKeyData, NULL, NULL, 0);
     } else {
 #endif
-        os_perso_derive_node_bip32(curve, bip32_path, path_length, priv->privateKeyData, NULL);
+        os_perso_derive_node_bip32(curve, bip32_path->components, bip32_path->length, priv->privateKeyData, NULL);
 #if CX_APILEVEL > 8
     }
 #endif
@@ -75,8 +74,17 @@ struct key_pair *generate_key_pair(cx_curve_t curve, uint32_t path_length, uint3
     return &priv->res;
 }
 
-cx_ecfp_public_key_t *public_key_hash(uint8_t output[HASH_SIZE], cx_curve_t curve,
-                                      const cx_ecfp_public_key_t *restrict public_key) {
+cx_ecfp_public_key_t const *generate_public_key(cx_curve_t const curve, bip32_path_t const *const bip32_path) {
+    check_null(bip32_path);
+    struct key_pair *const pair = generate_key_pair(curve, bip32_path);
+    memset(&pair->private_key, 0, sizeof(pair->private_key));
+    return &pair->public_key;
+}
+
+cx_ecfp_public_key_t const *public_key_hash(
+    uint8_t output[HASH_SIZE], cx_curve_t curve,
+    cx_ecfp_public_key_t const *const restrict public_key)
+{
     cx_ecfp_public_key_t *const compressed = &global.priv.public_key_hash.compressed;
     switch (curve) {
         case CX_CURVE_Ed25519:

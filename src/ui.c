@@ -12,6 +12,8 @@
 #include <stdbool.h>
 #include <string.h>
 
+#define G global.ui
+
 static unsigned button_handler(unsigned button_mask, unsigned button_mask_counter);
 
 #define PROMPT_CYCLES 3
@@ -62,7 +64,7 @@ static const bagl_element_t ui_idle_screen[] = {
 
     {{BAGL_LABELINE, 0x01, 0, 26, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     global.ui.idle_text,
+     G.baking_idle_screens.hwm,
      0,
      0,
      0,
@@ -82,13 +84,34 @@ static const bagl_element_t ui_idle_screen[] = {
 
     {{BAGL_LABELINE, 0x02, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     global.ui.baking_auth_text,
+     G.baking_idle_screens.pkh,
      0,
      0,
      0,
      NULL,
      NULL,
      NULL},
+
+    {{BAGL_LABELINE, 0x03, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Chain",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x03, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     G.baking_idle_screens.chain,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
 };
 
 static bool do_nothing(void) {
@@ -98,37 +121,32 @@ static bool do_nothing(void) {
 
 static void ui_idle(void) {
 #ifdef BAKING_APP
-    update_auth_text();
+    update_baking_idle_screens();
     ui_display(ui_idle_screen, NUM_ELEMENTS(ui_idle_screen),
-               do_nothing, exit_app, 2);
+               do_nothing, exit_app, 3);
 #else
-    global.ui.cxl_callback = exit_app;
+    G.cxl_callback = exit_app;
     main_menu();
 #endif
 }
 
-void change_idle_display(uint32_t new) {
-    number_to_string(global.ui.idle_text, new);
-    update_auth_text();
-}
-
 void ui_initial_screen(void) {
 #ifdef BAKING_APP
-    change_idle_display(N_data.highest_level);
+    update_baking_idle_screens();
 #endif
     clear_ui_callbacks();
     ui_idle();
 }
 
 static bool is_idling(void) {
-    return global.ui.cxl_callback == exit_app;
+    return G.cxl_callback == exit_app;
 }
 
 static void timeout(void) {
     if (is_idling()) {
         // Idle app timeout
-        update_auth_text();
-        global.ui.timeout_cycle_count = 0;
+        update_baking_idle_screens();
+        G.timeout_cycle_count = 0;
         UX_REDISPLAY();
     } else {
         // Prompt timeout -- simulate cancel button
@@ -140,10 +158,10 @@ static unsigned button_handler(unsigned button_mask, __attribute__((unused)) uns
     ui_callback_t callback;
     switch (button_mask) {
         case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-            callback = global.ui.cxl_callback;
+            callback = G.cxl_callback;
             break;
         case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
-            callback = global.ui.ok_callback;
+            callback = G.ok_callback;
             break;
         default:
             return 0;
@@ -166,7 +184,7 @@ const bagl_element_t *prepro(const bagl_element_t *element) {
         min = 4000;
     }
 
-    if (global.ui.ux_step == element->component.userid - 1 || element->component.userid == BAGL_SCROLLING_ELEMENT) {
+    if (G.ux_step == element->component.userid - 1 || element->component.userid == BAGL_SCROLLING_ELEMENT) {
         // timeouts are in millis
         UX_CALLBACK_SET_INTERVAL(MAX(min,
                                      (pause_millis + bagl_label_roundtrip_duration_ms(element, 7)) / div));
@@ -179,11 +197,11 @@ const bagl_element_t *prepro(const bagl_element_t *element) {
 void ui_display(const bagl_element_t *elems, size_t sz, ui_callback_t ok_c, ui_callback_t cxl_c,
                 uint32_t step_count) {
     // Adapted from definition of UX_DISPLAY in header file
-    global.ui.timeout_cycle_count = 0;
-    global.ui.ux_step = 0;
-    global.ui.ux_step_count = step_count;
-    global.ui.ok_callback = ok_c;
-    global.ui.cxl_callback = cxl_c;
+    G.timeout_cycle_count = 0;
+    G.ux_step = 0;
+    G.ux_step_count = step_count;
+    G.ok_callback = ok_c;
+    G.cxl_callback = cxl_c;
     if (!is_idling()) {
         switch_screen(0);
     }
@@ -217,15 +235,15 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
             ux.callback_interval_ms -= MIN(ux.callback_interval_ms, 100);
             if (ux.callback_interval_ms == 0) {
                 // prepare next screen
-                global.ui.ux_step = (global.ui.ux_step + 1) % global.ui.ux_step_count;
+                G.ux_step = (G.ux_step + 1) % G.ux_step_count;
                 if (!is_idling()) {
-                    switch_screen(global.ui.ux_step);
+                    switch_screen(G.ux_step);
                 }
 
                 // check if we've timed out
-                if (global.ui.ux_step == 0) {
-                    global.ui.timeout_cycle_count++;
-                    if (global.ui.timeout_cycle_count == PROMPT_CYCLES) {
+                if (G.ux_step == 0) {
+                    G.timeout_cycle_count++;
+                    if (G.timeout_cycle_count == PROMPT_CYCLES) {
                         timeout();
                         break; // timeout() will often display a new screen
                     }

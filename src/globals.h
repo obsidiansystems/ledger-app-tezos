@@ -15,13 +15,22 @@ void init_globals(void);
 #   define TEZOS_BUFSIZE 256
 #endif
 
-#define INS_MAX 0x0B
-
 #define PRIVATE_KEY_DATA_SIZE 32
 
 struct priv_generate_key_pair {
     uint8_t privateKeyData[PRIVATE_KEY_DATA_SIZE];
     struct key_pair res;
+};
+
+struct apdu_setup_globals {
+    bip32_path_t bip32_path;
+    cx_curve_t curve;
+    cx_ecfp_public_key_t public_key;
+    chain_id_t main_chain_id;
+    struct {
+        level_t main;
+        level_t test;
+    } hwm;
 };
 
 typedef struct {
@@ -35,14 +44,12 @@ typedef struct {
 
     struct {
       cx_ecfp_public_key_t public_key;
-      uint8_t bip32_path_length;
-      uint32_t bip32_path[MAX_BIP32_PATH];
+      bip32_path_t bip32_path;
       cx_curve_t curve;
     } pubkey;
 
     struct {
-      uint8_t bip32_path_length;
-      uint32_t bip32_path[MAX_BIP32_PATH];
+      bip32_path_t bip32_path;
       cx_curve_t curve;
 
       uint8_t message_data[TEZOS_BUFSIZE];
@@ -52,6 +59,8 @@ typedef struct {
       uint8_t magic_number;
       bool hash_only;
     } sign;
+
+    struct apdu_setup_globals setup;
   } u;
 
   struct {
@@ -63,8 +72,11 @@ typedef struct {
 
     uint32_t timeout_cycle_count;
 
-    char idle_text[16];
-    char baking_auth_text[PKH_STRING_SIZE];
+    struct {
+        char hwm[MAX_INT_DIGITS + 1]; // with null termination
+        char pkh[PKH_STRING_SIZE];
+        char chain[CHAIN_ID_BASE58_STRING_SIZE];
+    } baking_idle_screens;
 
     struct {
       string_generation_callback callbacks[MAX_SCREEN_COUNT];
@@ -108,6 +120,29 @@ extern unsigned int app_stack_canary; // From SDK
 extern ux_state_t ux;
 extern unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
+static inline void throw_stack_size() {
+    uint8_t st;
+    // uint32_t tmp1 = (uint32_t)&st - (uint32_t)&app_stack_canary;
+    uint32_t tmp2 = (uint32_t)global.stack_root - (uint32_t)&st;
+    THROW(0x9000 + tmp2);
+}
+
+// #ifdef BAKING_APP
 extern WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
 
 #define N_data (*(WIDE nvram_data*)PIC(&N_data_real))
+
+void update_baking_idle_screens(void);
+high_watermark_t *select_hwm_by_chain(chain_id_t const chain_id, nvram_data *const ram);
+
+// Properly updates NVRAM data to prevent any clobbering of data.
+// 'out_param' defines the name of a pointer to the nvram_data struct
+// that 'body' can change to apply updates.
+#define UPDATE_NVRAM(out_name, body) ({ \
+    nvram_data *const out_name = &global.baking_auth.new_data; \
+    memcpy(&global.baking_auth.new_data, &N_data, sizeof(global.baking_auth.new_data)); \
+    body; \
+    nvm_write((void*)&N_data, &global.baking_auth.new_data, sizeof(N_data)); \
+    update_baking_idle_screens(); \
+})
+//#endif
