@@ -74,6 +74,9 @@ typedef struct {
 
     char idle_text[16];
     char baking_auth_text[PKH_STRING_SIZE];
+    struct {
+        char chain[CHAIN_ID_BASE58_STRING_SIZE];
+    } baking_idle_screens;
 
     struct {
       string_generation_callback callbacks[MAX_SCREEN_COUNT];

@@ -165,3 +165,8 @@ struct parsed_operation_group {
     _Static_assert(x <= INS_MAX, "APDU instruction is out of bounds"); \
     x; \
 })
+
+#define STRCPY(buff, x) ({ \
+    _Static_assert(sizeof(buff) >= sizeof(x) && sizeof(*x) == sizeof(char), "String won't fit in buffer"); \
+    strcpy(buff, x); \
+})

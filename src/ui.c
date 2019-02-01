@@ -91,6 +91,27 @@ static const bagl_element_t ui_idle_screen[] = {
      NULL,
      NULL,
      NULL},
+
+    {{BAGL_LABELINE, 0x03, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     "Chain",
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, 0x03, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     G.baking_idle_screens.chain,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
 };
 
 static bool do_nothing(void) {
@@ -102,12 +123,20 @@ static void update_baking_idle_screens(void) {
     number_to_string(G.idle_text, N_data.hwm.main.highest_level);
 
     if (N_data.bip32_path.length == 0) {
-        strcpy(G.baking_auth_text, "No Key Authorized");
+        STRCPY(G.baking_auth_text, "No Key Authorized");
     } else {
         cx_ecfp_public_key_t const *const pubkey = generate_public_key(N_data.curve, &N_data.bip32_path);
         pubkey_to_pkh_string(
             G.baking_auth_text, sizeof(G.baking_auth_text),
             N_data.curve, pubkey);
+    }
+
+    if (N_data.main_chain_id.v == 0) {
+        STRCPY(G.baking_idle_screens.chain, "any");
+    } else if (N_data.main_chain_id.v == mainnet_chain_id.v) {
+        STRCPY(G.baking_idle_screens.chain, "mainnet");
+    } else {
+        chain_id_to_string(G.baking_idle_screens.chain, sizeof(G.baking_idle_screens.chain), N_data.main_chain_id);
     }
 }
 
@@ -115,7 +144,7 @@ static void ui_idle(void) {
 #ifdef BAKING_APP
     update_baking_idle_screens();
     ui_display(ui_idle_screen, NUM_ELEMENTS(ui_idle_screen),
-               do_nothing, exit_app, 2);
+               do_nothing, exit_app, 3);
 #else
     G.cxl_callback = exit_app;
     main_menu();
