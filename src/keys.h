@@ -3,10 +3,9 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include "os.h"
-#include "cx.h"
 
 #include "exception.h"
+#include "os_cx.h"
 #include "types.h"
 
 // Throws upon error

@@ -15,10 +15,10 @@
 *  limitations under the License.
 ********************************************************************************/
 
-#include "apdu.h"
+#include "apdu_baking.h"
 #include "apdu_pubkey.h"
 #include "apdu_sign.h"
-#include "apdu_baking.h"
+#include "apdu.h"
 #include "globals.h"
 #include "memory.h"
 

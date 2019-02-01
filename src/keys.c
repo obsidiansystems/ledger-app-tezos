@@ -22,9 +22,6 @@
 #include "globals.h"
 #include "protocol.h"
 
-// Order matters
-#include "os.h"
-
 #include <stdbool.h>
 #include <string.h>
 
