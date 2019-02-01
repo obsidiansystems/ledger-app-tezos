@@ -26,7 +26,7 @@ let
     export APP='${if bakingApp then "tezos_baking" else "tezos_wallet"}'
     export COMMIT='${commit}'
     make clean
-    make
+    make all
     EOF
 
     mkdir -p "$out"
@@ -44,5 +44,14 @@ in rec {
     cp '${wallet}/bin/app.hex' wallet.hex
     cp '${baking}/bin/app.hex' baking.hex
     tar czf "$out" wallet.hex baking.hex
+  '';
+
+  # Script that places you in the environment to run `make`, etc.
+  env-shell = pkgs.writeScriptBin "env-shell" ''
+    #!${pkgs.stdenv.shell}
+    export BOLOS_SDK='${bolosSdk}'
+    export BOLOS_ENV='${bolosEnv}'
+    export COMMIT='${commit}'
+    exec '${fhs}/bin/enter-fhs'
   '';
 }
