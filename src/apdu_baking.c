@@ -10,6 +10,8 @@
 
 #include <string.h>
 
+#define G global.u.baking
+
 static bool reset_ok(void);
 
 unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
@@ -21,9 +23,9 @@ unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
     level_t const lvl = READ_UNALIGNED_BIG_ENDIAN(level_t, dataBuffer);
     if (!is_valid_level(lvl)) THROW(EXC_PARSE_ERROR);
 
-    global.u.baking.reset_level = lvl;
+    G.reset_level = lvl;
 
-    register_ui_callback(0, number_to_string_indirect32, &global.u.baking.reset_level);
+    register_ui_callback(0, number_to_string_indirect32, &G.reset_level);
 
     static const char *const reset_prompts[] = {
         PROMPT("Reset HWM"),
@@ -34,9 +36,9 @@ unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
 
 bool reset_ok(void) {
     UPDATE_NVRAM(ram, {
-        ram->hwm.main.highest_level = global.u.baking.reset_level;
+        ram->hwm.main.highest_level = G.reset_level;
         ram->hwm.main.had_endorsement = false;
-        ram->hwm.test.highest_level = global.u.baking.reset_level;
+        ram->hwm.test.highest_level = G.reset_level;
         ram->hwm.test.had_endorsement = false;
     });
 
