@@ -72,9 +72,9 @@ typedef struct {
 
     uint32_t timeout_cycle_count;
 
-    char idle_text[16];
-    char baking_auth_text[PKH_STRING_SIZE];
     struct {
+        char hwm[MAX_INT_DIGITS + 1]; // with null termination
+        char pkh[PKH_STRING_SIZE];
         char chain[CHAIN_ID_BASE58_STRING_SIZE];
     } baking_idle_screens;
 

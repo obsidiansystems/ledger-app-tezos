@@ -64,7 +64,7 @@ static const bagl_element_t ui_idle_screen[] = {
 
     {{BAGL_LABELINE, 0x01, 0, 26, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     G.idle_text,
+     G.baking_idle_screens.hwm,
      0,
      0,
      0,
@@ -84,7 +84,7 @@ static const bagl_element_t ui_idle_screen[] = {
 
     {{BAGL_LABELINE, 0x02, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     G.baking_auth_text,
+     G.baking_idle_screens.pkh,
      0,
      0,
      0,
@@ -120,14 +120,14 @@ static bool do_nothing(void) {
 #endif
 
 static void update_baking_idle_screens(void) {
-    number_to_string(G.idle_text, N_data.hwm.main.highest_level);
+    number_to_string(G.baking_idle_screens.hwm, N_data.hwm.main.highest_level);
 
     if (N_data.bip32_path.length == 0) {
-        STRCPY(G.baking_auth_text, "No Key Authorized");
+        STRCPY(G.baking_idle_screens.pkh, "No Key Authorized");
     } else {
         cx_ecfp_public_key_t const *const pubkey = generate_public_key(N_data.curve, &N_data.bip32_path);
         pubkey_to_pkh_string(
-            G.baking_auth_text, sizeof(G.baking_auth_text),
+            G.baking_idle_screens.pkh, sizeof(G.baking_idle_screens.pkh),
             N_data.curve, pubkey);
     }
 

@@ -13,6 +13,8 @@ typedef uint32_t level_t;
 
 #define CHAIN_ID_BASE58_STRING_SIZE (15 + 1) // with null termination
 
+#define MAX_INT_DIGITS 20
+
 typedef struct {
     uint32_t v;
 } chain_id_t;
