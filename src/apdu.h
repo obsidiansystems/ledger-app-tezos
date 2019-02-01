@@ -32,6 +32,7 @@
 #define INS_QUERY_AUTH_KEY 0x07
 #define INS_QUERY_HWM 0x08
 #define INS_GIT 0x09
+#define INS_SETUP 0x0A
 
 __attribute__((noreturn))
 void main_loop(apdu_handler handlers[INS_MAX]);

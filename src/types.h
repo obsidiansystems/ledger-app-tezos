@@ -11,6 +11,15 @@ typedef uint32_t (*apdu_handler)(uint8_t instruction);
 
 typedef uint32_t level_t;
 
+#define CHAIN_ID_BASE58_STRING_SIZE (15 + 1) // with null termination
+
+typedef struct {
+    uint32_t v;
+} chain_id_t;
+
+// Mainnet Chain ID: NetXdQprcVkpaWU
+static chain_id_t const mainnet_chain_id = { .v = 0x7A06A770 };
+
 // UI
 typedef bool (*ui_callback_t)(void); // return true to go back to idle screen
 
@@ -47,9 +56,17 @@ static inline bool bip32_paths_eq(bip32_path_t const *const a, bip32_path_t cons
 }
 
 typedef struct {
-    cx_curve_t curve;
     level_t highest_level;
     bool had_endorsement;
+} high_watermark_t;
+
+typedef struct {
+    chain_id_t main_chain_id;
+    struct {
+        high_watermark_t main;
+        high_watermark_t test;
+    } hwm;
+    cx_curve_t curve;
     bip32_path_t bip32_path;
 } nvram_data;
 

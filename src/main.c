@@ -17,6 +17,7 @@
 
 #include "apdu_baking.h"
 #include "apdu_pubkey.h"
+#include "apdu_setup.h"
 #include "apdu_sign.h"
 #include "apdu.h"
 #include "globals.h"
@@ -31,16 +32,16 @@ void app_main(void) {
     global.handlers[APDU_INS(INS_VERSION)] = handle_apdu_version;
     global.handlers[APDU_INS(INS_GET_PUBLIC_KEY)] = handle_apdu_get_public_key;
     global.handlers[APDU_INS(INS_PROMPT_PUBLIC_KEY)] = handle_apdu_get_public_key;
+    global.handlers[APDU_INS(INS_SIGN)] = handle_apdu_sign;
+    global.handlers[APDU_INS(INS_GIT)] = handle_apdu_git;
 #ifdef BAKING_APP
     global.handlers[APDU_INS(INS_AUTHORIZE_BAKING)] = handle_apdu_get_public_key;
     global.handlers[APDU_INS(INS_RESET)] = handle_apdu_reset;
     global.handlers[APDU_INS(INS_QUERY_AUTH_KEY)] = handle_apdu_query_auth_key;
     global.handlers[APDU_INS(INS_QUERY_HWM)] = handle_apdu_hwm;
-#endif
-    global.handlers[APDU_INS(INS_SIGN)] = handle_apdu_sign;
-#ifndef BAKING_APP
+    global.handlers[APDU_INS(INS_SETUP)] = handle_apdu_setup;
+#else
     global.handlers[APDU_INS(INS_SIGN_UNSAFE)] = handle_apdu_sign;
 #endif
-    global.handlers[APDU_INS(INS_GIT)] = handle_apdu_git;
     main_loop(global.handlers);
 }

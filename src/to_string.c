@@ -8,6 +8,8 @@
 
 #define NO_CONTRACT_STRING "None"
 
+#define TEZOS_HASH_CHECKSUM_SIZE 4
+
 static void pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve, const uint8_t hash[HASH_SIZE]);
 
 // These functions output terminating null bytes, and return the ending offset.
@@ -20,20 +22,24 @@ void parsed_contract_to_string(char *buff, uint32_t buff_size, const struct pars
         return;
     }
 
-    cx_curve_t curve;
-    if (contract->originated != 0) {
-        curve = CX_CURVE_NONE;
-    } else {
-        curve = curve_code_to_curve(contract->curve_code);
-    }
+    cx_curve_t const curve = contract->originated != 0
+        ? CX_CURVE_NONE
+        : curve_code_to_curve(contract->curve_code);
     pkh_to_string(buff, buff_size, curve, contract->hash);
 }
 
 void pubkey_to_pkh_string(char *buff, uint32_t buff_size, cx_curve_t curve,
-                         const cx_ecfp_public_key_t *public_key) {
+                          const cx_ecfp_public_key_t *public_key) {
     uint8_t hash[HASH_SIZE];
     public_key_hash(hash, curve, public_key);
     pkh_to_string(buff, buff_size, curve, hash);
+}
+
+void compute_hash_checksum(uint8_t out[TEZOS_HASH_CHECKSUM_SIZE], void const *const data, size_t size) {
+    uint8_t checksum[32];
+    cx_hash_sha256(data, size, checksum, sizeof(checksum));
+    cx_hash_sha256(checksum, sizeof(checksum), checksum, sizeof(checksum));
+    memcpy(out, checksum, TEZOS_HASH_CHECKSUM_SIZE);
 }
 
 void pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve,
@@ -42,9 +48,9 @@ void pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve,
 
     // Data to encode
     struct __attribute__((packed)) {
-        char prefix[3];
+        uint8_t prefix[3];
         uint8_t hash[HASH_SIZE];
-        char checksum[4];
+        uint8_t checksum[TEZOS_HASH_CHECKSUM_SIZE];
     } data;
 
     // prefix
@@ -75,12 +81,7 @@ void pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve,
 
     // hash
     memcpy(data.hash, hash, sizeof(data.hash));
-
-    // checksum -- twice because them's the rules
-    uint8_t checksum[32];
-    cx_hash_sha256((void*)&data, sizeof(data) - sizeof(data.checksum), checksum, sizeof(checksum));
-    cx_hash_sha256(checksum, sizeof(checksum), checksum, sizeof(checksum));
-    memcpy(data.checksum, checksum, sizeof(data.checksum));
+    compute_hash_checksum(data.checksum, &data, sizeof(data) - sizeof(data.checksum));
 
     size_t out_size = buff_size;
     if (!b58enc(buff, &out_size, &data, sizeof(data))) THROW(EXC_WRONG_LENGTH);
@@ -91,24 +92,36 @@ void protocol_hash_to_string(char *buff, const size_t buff_size, const uint8_t h
 
     // Data to encode
     struct __attribute__((packed)) {
-        char prefix[2];
+        uint8_t prefix[2];
         uint8_t hash[PROTOCOL_HASH_SIZE];
-        char checksum[4];
+        uint8_t checksum[TEZOS_HASH_CHECKSUM_SIZE];
     } data = {
         .prefix = {2, 170}
     };
 
     memcpy(data.hash, hash, sizeof(data.hash));
+    compute_hash_checksum(data.checksum, &data, sizeof(data) - sizeof(data.checksum));
 
-    // checksum -- twice because them's the rules
-    // Hash the input (prefix + hash)
-    // Hash that hash.
-    // Take the first 4 bytes of that
-    // Voila: a checksum.
-    uint8_t checksum[32];
-    cx_hash_sha256((void*)&data, sizeof(data) - sizeof(data.checksum), checksum, sizeof(checksum));
-    cx_hash_sha256(checksum, sizeof(checksum), checksum, sizeof(checksum));
-    memcpy(data.checksum, checksum, sizeof(data.checksum));
+    size_t out_size = buff_size;
+    if (!b58enc(buff, &out_size, &data, sizeof(data))) THROW(EXC_WRONG_LENGTH);
+}
+
+void chain_id_to_string(char *const buff, size_t const buff_size, chain_id_t const chain_id) {
+    if (buff_size < CHAIN_ID_BASE58_STRING_SIZE) THROW(EXC_WRONG_LENGTH);
+
+    // Data to encode
+    struct __attribute__((packed)) {
+        uint8_t prefix[3];
+        int32_t chain_id;
+        uint8_t checksum[TEZOS_HASH_CHECKSUM_SIZE];
+    } data = {
+        .prefix = {87, 82, 0},
+
+        // Must hash big-endian data so treating little endian as big endian just flips
+        .chain_id = READ_UNALIGNED_BIG_ENDIAN(uint32_t, &chain_id.v)
+    };
+
+    compute_hash_checksum(data.checksum, &data, sizeof(data) - sizeof(data.checksum));
 
     size_t out_size = buff_size;
     if (!b58enc(buff, &out_size, &data, sizeof(data))) THROW(EXC_WRONG_LENGTH);

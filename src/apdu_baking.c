@@ -18,11 +18,8 @@ unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
     if (dataLength != sizeof(int)) {
         THROW(EXC_WRONG_LENGTH_FOR_INS);
     }
-    level_t lvl = READ_UNALIGNED_BIG_ENDIAN(level_t, dataBuffer);
-
-    if (!is_valid_level(lvl)) {
-        THROW(EXC_PARSE_ERROR);
-    }
+    level_t const lvl = READ_UNALIGNED_BIG_ENDIAN(level_t, dataBuffer);
+    if (!is_valid_level(lvl)) THROW(EXC_PARSE_ERROR);
 
     global.u.baking.reset_level = lvl;
 
@@ -36,7 +33,12 @@ unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
 }
 
 bool reset_ok(void) {
-    write_highest_level(global.u.baking.reset_level, false); // We have not yet had an endorsement at this level
+    UPDATE_NVRAM(ram, {
+        ram->hwm.main.highest_level = global.u.baking.reset_level;
+        ram->hwm.main.had_endorsement = false;
+        ram->hwm.test.highest_level = global.u.baking.reset_level;
+        ram->hwm.test.had_endorsement = false;
+    });
 
     uint32_t tx = 0;
     G_io_apdu_buffer[tx++] = 0x90;
@@ -64,7 +66,7 @@ uint32_t send_word_big_endian(uint32_t tx, uint32_t word) {
 unsigned int handle_apdu_hwm(__attribute__((unused)) uint8_t instruction) {
     uint32_t tx = 0;
 
-    level_t level = N_data.highest_level;
+    level_t level = N_data.hwm.main.highest_level;
     tx = send_word_big_endian(tx, level);
 
     G_io_apdu_buffer[tx++] = 0x90;

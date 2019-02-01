@@ -114,7 +114,7 @@ void change_idle_display(uint32_t new) {
 
 void ui_initial_screen(void) {
 #ifdef BAKING_APP
-    change_idle_display(N_data.highest_level);
+    change_idle_display(N_data.hwm.main.highest_level);
 #endif
     clear_ui_callbacks();
     ui_idle();
