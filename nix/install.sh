@@ -6,10 +6,10 @@ root="$(git rev-parse --show-toplevel)"
 : "${VERSION:=${2:-"$(git -C "$root" describe --tags | cut -f1 -d- | cut -f2 -dv)"}}"
 
 install-wallet() {
-  "$root/install.sh" 'Tezos Wallet' "$("$root/nix/build.sh" -A wallet)/bin/app.hex" "$VERSION"
+  "$root/install.sh" 'Tezos Wallet' "$("$root/nix/build.sh" -A wallet)" "$VERSION"
 }
 install-baking() {
-  "$root/install.sh" 'Tezos Baking' "$("$root/nix/build.sh" -A baking)/bin/app.hex" "$VERSION"
+  "$root/install.sh" 'Tezos Baking' "$("$root/nix/build.sh" -A baking)" "$VERSION"
 }
 
 export root
