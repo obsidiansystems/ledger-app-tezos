@@ -109,3 +109,11 @@ extern unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 extern WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
 
 #define N_data (*(WIDE nvram_data*)PIC(&N_data_real))
+
+
+static inline void throw_stack_size() {
+    uint8_t st;
+    // uint32_t tmp1 = (uint32_t)&st - (uint32_t)&app_stack_canary;
+    uint32_t tmp2 = (uint32_t)global.stack_root - (uint32_t)&st;
+    THROW(0x9000 + tmp2);
+}
