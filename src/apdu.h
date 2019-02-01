@@ -30,9 +30,10 @@
 #define INS_SIGN_UNSAFE 0x05 // Data that is already hashed.
 #define INS_RESET 0x06
 #define INS_QUERY_AUTH_KEY 0x07
-#define INS_QUERY_HWM 0x08
+#define INS_QUERY_MAIN_HWM 0x08
 #define INS_GIT 0x09
 #define INS_SETUP 0x0A
+#define INS_QUERY_ALL_HWM 0x0B
 
 __attribute__((noreturn))
 void main_loop(apdu_handler handlers[INS_MAX]);

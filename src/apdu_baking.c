@@ -65,16 +65,24 @@ uint32_t send_word_big_endian(uint32_t tx, uint32_t word) {
     return tx + i;
 }
 
-unsigned int handle_apdu_hwm(__attribute__((unused)) uint8_t instruction) {
+unsigned int handle_apdu_all_hwm(__attribute__((unused)) uint8_t instruction) {
     uint32_t tx = 0;
-
-    level_t level = N_data.hwm.main.highest_level;
-    tx = send_word_big_endian(tx, level);
-
+    tx = send_word_big_endian(tx, N_data.hwm.main.highest_level);
+    tx = send_word_big_endian(tx, N_data.hwm.test.highest_level);
+    tx = send_word_big_endian(tx, N_data.main_chain_id.v);
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;
     return tx;
 }
+
+unsigned int handle_apdu_main_hwm(__attribute__((unused)) uint8_t instruction) {
+    uint32_t tx = 0;
+    tx = send_word_big_endian(tx, N_data.hwm.main.highest_level);
+    G_io_apdu_buffer[tx++] = 0x90;
+    G_io_apdu_buffer[tx++] = 0x00;
+    return tx;
+}
+
 
 unsigned int handle_apdu_query_auth_key(__attribute__((unused)) uint8_t instruction) {
     uint8_t const length = N_data.bip32_path.length;

@@ -38,8 +38,9 @@ void app_main(void) {
     global.handlers[APDU_INS(INS_AUTHORIZE_BAKING)] = handle_apdu_get_public_key;
     global.handlers[APDU_INS(INS_RESET)] = handle_apdu_reset;
     global.handlers[APDU_INS(INS_QUERY_AUTH_KEY)] = handle_apdu_query_auth_key;
-    global.handlers[APDU_INS(INS_QUERY_HWM)] = handle_apdu_hwm;
+    global.handlers[APDU_INS(INS_QUERY_MAIN_HWM)] = handle_apdu_main_hwm;
     global.handlers[APDU_INS(INS_SETUP)] = handle_apdu_setup;
+    global.handlers[APDU_INS(INS_QUERY_ALL_HWM)] = handle_apdu_all_hwm;
 #else
     global.handlers[APDU_INS(INS_SIGN_UNSAFE)] = handle_apdu_sign;
 #endif
