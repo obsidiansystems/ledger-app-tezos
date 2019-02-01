@@ -8,9 +8,7 @@
 #include "to_string.h"
 #include "ui_prompt.h"
 
-// Order matters
-#include "os.h"
-#include "cx.h"
+#include "os_cx.h"
 
 #include <string.h>
 

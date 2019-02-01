@@ -5,9 +5,7 @@
 
 #include "keys.h"
 #include "operations.h"
-
-#include "os.h"
-#include "cx.h"
+#include "os_cx.h"
 #include "ui.h"
 
 void pubkey_to_pkh_string(char *buff, uint32_t buff_size, cx_curve_t curve,

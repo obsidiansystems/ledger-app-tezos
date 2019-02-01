@@ -2,12 +2,10 @@
 
 #include "apdu.h"
 #include "baking_auth.h"
+#include "cx.h"
 #include "globals.h"
 #include "keys.h"
 #include "ui.h"
-
-// Order matters
-#include "cx.h"
 
 #include <string.h>
 

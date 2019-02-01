@@ -3,13 +3,10 @@
 #include "apdu.h"
 #include "baking_auth.h"
 #include "globals.h"
+#include "os_cx.h"
 #include "protocol.h"
 #include "to_string.h"
 #include "ui_prompt.h"
-
-// Order matters
-#include "cx.h"
-#include "os.h"
 
 #include <string.h>
 
