@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
-set -eu
+set -Eeuo pipefail
 
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-cd "$DIR"
-
-if ! nix-shell ledger-blue-shell.nix --pure --run 'python -m ledgerblue.runScript --apdu'; then
-    python -m ledgerblue.runScript --apdu
-fi
+root="$(git rev-parse --show-toplevel)"
+nix-shell "$root/nix/ledgerblue.nix" -A shell --pure --run 'python -m ledgerblue.runScript --apdu'
