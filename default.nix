@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {}, commit, ... }:
+{ pkgs ? import nix/nixpkgs.nix {}, commit, ... }:
 let
 
   fetchThunk = p:
