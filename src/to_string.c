@@ -42,6 +42,15 @@ void pubkey_to_pkh_string(
     pkh_to_string(out, out_size, curve, hash);
 }
 
+void bip32_path_with_curve_to_pkh_string(char *const out, size_t const out_size, bip32_path_with_curve_t const *const key) {
+    check_null(out);
+    check_null(key);
+
+    cx_ecfp_public_key_t const *const pubkey = generate_public_key(key->curve, &key->bip32_path);
+    pubkey_to_pkh_string(out, out_size, key->curve, pubkey);
+}
+
+
 void compute_hash_checksum(uint8_t out[TEZOS_HASH_CHECKSUM_SIZE], void const *const data, size_t size) {
     uint8_t checksum[32];
     cx_hash_sha256(data, size, checksum, sizeof(checksum));

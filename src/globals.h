@@ -49,9 +49,7 @@ typedef struct {
     } sign;
 
     struct {
-        bip32_path_t bip32_path;
-        cx_curve_t curve;
-        cx_ecfp_public_key_t public_key;
+        bip32_path_with_curve_t key;
         chain_id_t main_chain_id;
         struct {
             level_t main;
