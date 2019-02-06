@@ -142,8 +142,6 @@ const char *const insecure_values[] = {
 
 #define MAX_NUMBER_CHARS (MAX_INT_DIGITS + 2) // include decimal point and terminating null
 
-#define SET_STATIC_UI_VALUE(index, str) register_ui_callback(index, copy_string, STATIC_UI_VALUE(str))
-
 // Return false if the transaction isn't easily parseable, otherwise prompt with given callbacks
 // and do not return, but rather throw ASYNC.
 static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
@@ -206,7 +204,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 register_ui_callback(PERIOD_INDEX, number_to_string_indirect32, &ops->operation.proposal.voting_period);
                 register_ui_callback(PROTOCOL_HASH_INDEX, protocol_hash_to_string, ops->operation.proposal.protocol_hash);
 
-                SET_STATIC_UI_VALUE(TYPE_INDEX, "Proposal");
+                REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Proposal");
                 ui_prompt(proposal_prompts, NULL, ok, cxl);
             }
 
@@ -232,13 +230,13 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
 
                 switch (ops->operation.ballot.vote) {
                     case BALLOT_VOTE_YEA:
-                        SET_STATIC_UI_VALUE(TYPE_INDEX, "Yea");
+                        REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Yea");
                         break;
                     case BALLOT_VOTE_NAY:
-                        SET_STATIC_UI_VALUE(TYPE_INDEX, "Nay");
+                        REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Nay");
                         break;
                     case BALLOT_VOTE_PASS:
-                        SET_STATIC_UI_VALUE(TYPE_INDEX, "Pass");
+                        REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Pass");
                         break;
                 }
 
@@ -295,7 +293,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
 
                 if (!(ops->operation.flags & ORIGINATION_FLAG_SPENDABLE)) return false;
 
-                SET_STATIC_UI_VALUE(TYPE_INDEX, "Origination");
+                REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Origination");
                 register_ui_callback(AMOUNT_INDEX, microtez_to_string_indirect, &ops->operation.amount);
 
                 const char *const *prompts;
@@ -307,14 +305,14 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                                          &ops->operation.delegate);
                 } else if (delegatable && !has_delegate) {
                     prompts = origination_prompts_delegatable;
-                    SET_STATIC_UI_VALUE(DELEGATE_INDEX, "Any");
+                    REGISTER_STATIC_UI_VALUE(DELEGATE_INDEX, "Any");
                 } else if (!delegatable && has_delegate) {
                     prompts = origination_prompts_fixed;
                     register_ui_callback(DELEGATE_INDEX, parsed_contract_to_string,
                                          &ops->operation.delegate);
                 } else if (!delegatable && !has_delegate) {
                     prompts = origination_prompts_undelegatable;
-                    SET_STATIC_UI_VALUE(DELEGATE_INDEX, "Disabled");
+                    REGISTER_STATIC_UI_VALUE(DELEGATE_INDEX, "Disabled");
                 }
 
                 ui_prompt(prompts, NULL, ok, cxl);
@@ -352,7 +350,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                     NULL,
                 };
 
-                SET_STATIC_UI_VALUE(TYPE_INDEX, "Delegation");
+                REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Delegation");
 
                 bool withdrawal = ops->operation.destination.originated == 0 &&
                     ops->operation.destination.curve_code == TEZOS_NO_CURVE;
@@ -387,7 +385,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                                      &ops->total_storage_limit);
                 register_ui_callback(AMOUNT_INDEX, microtez_to_string_indirect, &ops->operation.amount);
 
-                SET_STATIC_UI_VALUE(TYPE_INDEX, "Transaction");
+                REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Transaction");
 
                 ui_prompt(transaction_prompts, NULL, ok, cxl);
             }
@@ -410,7 +408,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                     NULL,
                 };
 
-                SET_STATIC_UI_VALUE(TYPE_INDEX, "To Blockchain");
+                REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "To Blockchain");
                 register_ui_callback(STORAGE_INDEX, number_to_string_indirect64,
                                      &ops->total_storage_limit);
                 register_ui_callback(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);

@@ -36,8 +36,6 @@ static bool ok(void) {
     return true;
 }
 
-#define SET_STATIC_UI_VALUE(index, str) register_ui_callback(index, copy_string, STATIC_UI_VALUE(str))
-
 __attribute__((noreturn)) static void prompt_setup(
     ui_callback_t const ok_cb,
     ui_callback_t const cxl_cb)
@@ -57,7 +55,7 @@ __attribute__((noreturn)) static void prompt_setup(
         NULL,
     };
 
-    SET_STATIC_UI_VALUE(TYPE_INDEX, "Baking?");
+    REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Baking?");
     register_ui_callback(ADDRESS_INDEX, bip32_path_with_curve_to_pkh_string, &G.key);
     register_ui_callback(CHAIN_INDEX, chain_id_to_string_with_aliases, &G.main_chain_id);
     register_ui_callback(MAIN_HWM_INDEX, number_to_string_indirect32, &G.hwm.main);
