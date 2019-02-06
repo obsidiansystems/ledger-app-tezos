@@ -17,42 +17,44 @@
 
 #include <string.h>
 
+#define G global.u.sign
+
 #define SIGN_HASH_SIZE 32
 #define B2B_BLOCKBYTES 128
 
 static void conditional_init_hash_state(void) {
-    if (!global.u.sign.is_hash_state_inited) {
+    if (!G.is_hash_state_inited) {
         b2b_init(&global.blake2b.hash_state, SIGN_HASH_SIZE);
-        global.u.sign.is_hash_state_inited = true;
+        G.is_hash_state_inited = true;
     }
 }
 
 static void hash_buffer(void) {
-    const uint8_t *current = global.u.sign.message_data;
-    while (global.u.sign.message_data_length > B2B_BLOCKBYTES) {
+    const uint8_t *current = G.message_data;
+    while (G.message_data_length > B2B_BLOCKBYTES) {
         conditional_init_hash_state();
         b2b_update(&global.blake2b.hash_state, current, B2B_BLOCKBYTES);
-        global.u.sign.message_data_length -= B2B_BLOCKBYTES;
+        G.message_data_length -= B2B_BLOCKBYTES;
         current += B2B_BLOCKBYTES;
     }
     // TODO use circular buffer at some point
-    memmove(global.u.sign.message_data, current, global.u.sign.message_data_length);
+    memmove(G.message_data, current, G.message_data_length);
 }
 
 static void finish_hashing(uint8_t *hash, size_t hash_size) {
     hash_buffer();
     conditional_init_hash_state();
-    b2b_update(&global.blake2b.hash_state, global.u.sign.message_data, global.u.sign.message_data_length);
+    b2b_update(&global.blake2b.hash_state, G.message_data, G.message_data_length);
     b2b_final(&global.blake2b.hash_state, hash, hash_size);
-    global.u.sign.message_data_length = 0;
-    global.u.sign.is_hash_state_inited = false;
+    G.message_data_length = 0;
+    G.is_hash_state_inited = false;
 }
 
 static int perform_signature(bool hash_first);
 
 #ifdef BAKING_APP
 static bool bake_auth_ok(void) {
-    authorize_baking(global.u.sign.curve, &global.u.sign.bip32_path);
+    authorize_baking(G.curve, &G.bip32_path);
     int tx = perform_signature(true);
     delayed_send(tx);
     return true;
@@ -72,11 +74,11 @@ static bool sign_unsafe_ok(void) {
 #endif
 
 static void clear_data(void) {
-    global.u.sign.bip32_path.length = 0;
-    global.u.sign.message_data_length = 0;
-    global.u.sign.is_hash_state_inited = false;
-    global.u.sign.magic_number = 0;
-    global.u.sign.hash_only = false;
+    G.bip32_path.length = 0;
+    G.message_data_length = 0;
+    G.is_hash_state_inited = false;
+    G.magic_number = 0;
+    G.hash_only = false;
 }
 
 static bool sign_reject(void) {
@@ -88,12 +90,12 @@ static bool sign_reject(void) {
 #ifdef BAKING_APP
 uint32_t baking_sign_complete(void) {
     // Have raw data, can get insight into it
-    switch (global.u.sign.magic_number) {
+    switch (G.magic_number) {
         case MAGIC_BYTE_BLOCK:
         case MAGIC_BYTE_BAKING_OP:
             guard_baking_authorized(
-                global.u.sign.curve, global.u.sign.message_data, global.u.sign.message_data_length,
-                &global.u.sign.bip32_path);
+                G.curve, G.message_data, G.message_data_length,
+                &G.bip32_path);
             return perform_signature(true);
 
         case MAGIC_BYTE_UNSAFE_OP:
@@ -106,8 +108,8 @@ uint32_t baking_sign_complete(void) {
 
                 struct parsed_operation_group *ops =
                     parse_operations(
-                        global.u.sign.message_data, global.u.sign.message_data_length,
-                        global.u.sign.curve, &global.u.sign.bip32_path, allowed);
+                        G.message_data, G.message_data_length,
+                        G.curve, &G.bip32_path, allowed);
 
                 // With < nickel fee
                 if (ops->total_fee > 50000) THROW(EXC_PARSE_ERROR);
@@ -433,18 +435,18 @@ uint32_t wallet_sign_complete(uint8_t instruction) {
         };
         ui_prompt(prehashed_prompts, insecure_values, sign_unsafe_ok, sign_reject);
     } else {
-        switch (global.u.sign.magic_number) {
+        switch (G.magic_number) {
             case MAGIC_BYTE_BLOCK:
             case MAGIC_BYTE_BAKING_OP:
             default:
                 THROW(EXC_PARSE_ERROR);
             case MAGIC_BYTE_UNSAFE_OP:
-                if (global.u.sign.is_hash_state_inited) {
+                if (G.is_hash_state_inited) {
                     goto unsafe;
                 }
                 if (!prompt_transaction(
-                        global.u.sign.message_data, global.u.sign.message_data_length, global.u.sign.curve,
-                        &global.u.sign.bip32_path, sign_ok, sign_reject)) {
+                        G.message_data, G.message_data_length, G.curve,
+                        &G.bip32_path, sign_ok, sign_reject)) {
                     goto unsafe;
                 }
             case MAGIC_BYTE_UNSAFE_OP2:
@@ -471,19 +473,19 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
     switch (p1 & ~P1_LAST_MARKER) {
     case P1_FIRST:
         clear_data();
-        memset(global.u.sign.message_data, 0, sizeof(global.u.sign.message_data));
-        global.u.sign.message_data_length = 0;
-        read_bip32_path(&global.u.sign.bip32_path, dataBuffer, dataLength);
-        global.u.sign.curve = curve_code_to_curve(G_io_apdu_buffer[OFFSET_CURVE]);
+        memset(G.message_data, 0, sizeof(G.message_data));
+        G.message_data_length = 0;
+        read_bip32_path(&G.bip32_path, dataBuffer, dataLength);
+        G.curve = curve_code_to_curve(G_io_apdu_buffer[OFFSET_CURVE]);
         return_ok();
 #ifndef BAKING_APP
     case P1_HASH_ONLY_NEXT:
         // This is a debugging Easter egg
-        global.u.sign.hash_only = true;
+        G.hash_only = true;
         // FALL THROUGH
 #endif
     case P1_NEXT:
-        if (global.u.sign.bip32_path.length == 0) {
+        if (G.bip32_path.length == 0) {
             THROW(EXC_WRONG_LENGTH_FOR_INS);
         }
         break;
@@ -491,8 +493,8 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
         THROW(EXC_WRONG_PARAM);
     }
 
-    if (instruction != INS_SIGN_UNSAFE && global.u.sign.magic_number == 0) {
-        global.u.sign.magic_number = get_magic_byte(dataBuffer, dataLength);
+    if (instruction != INS_SIGN_UNSAFE && G.magic_number == 0) {
+        G.magic_number = get_magic_byte(dataBuffer, dataLength);
     }
 
 #ifndef BAKING_APP
@@ -501,12 +503,12 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
     }
 #endif
 
-    if (global.u.sign.message_data_length + dataLength > sizeof(global.u.sign.message_data)) {
+    if (G.message_data_length + dataLength > sizeof(G.message_data)) {
         THROW(EXC_PARSE_ERROR);
     }
 
-    os_memmove(global.u.sign.message_data + global.u.sign.message_data_length, dataBuffer, dataLength);
-    global.u.sign.message_data_length += dataLength;
+    os_memmove(G.message_data + G.message_data_length, dataBuffer, dataLength);
+    G.message_data_length += dataLength;
 
     if (!last) {
         return_ok();
@@ -521,11 +523,11 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
 
 static int perform_signature(bool hash_first) {
     uint8_t hash[SIGN_HASH_SIZE];
-    uint8_t *data = global.u.sign.message_data;
-    uint32_t datalen = global.u.sign.message_data_length;
+    uint8_t *data = G.message_data;
+    uint32_t datalen = G.message_data_length;
 
 #ifdef BAKING_APP
-    update_high_water_mark(global.u.sign.message_data, global.u.sign.message_data_length);
+    update_high_water_mark(G.message_data, G.message_data_length);
 #endif
 
     if (hash_first) {
@@ -535,7 +537,7 @@ static int perform_signature(bool hash_first) {
         datalen = SIGN_HASH_SIZE;
 
 #ifndef BAKING_APP
-        if (global.u.sign.hash_only) {
+        if (G.hash_only) {
             memcpy(G_io_apdu_buffer, data, datalen);
             uint32_t tx = datalen;
 
@@ -546,10 +548,10 @@ static int perform_signature(bool hash_first) {
 #endif
     }
 
-    struct key_pair *const pair = generate_key_pair(global.u.sign.curve, &global.u.sign.bip32_path);
+    struct key_pair *const pair = generate_key_pair(G.curve, &G.bip32_path);
 
     uint32_t tx;
-    switch (global.u.sign.curve) {
+    switch (G.curve) {
     case CX_CURVE_Ed25519: {
         tx = cx_eddsa_sign(&pair->private_key,
                            0,
