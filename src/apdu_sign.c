@@ -52,20 +52,13 @@ static void finish_hashing(uint8_t *hash, size_t hash_size) {
 
 static int perform_signature(bool hash_first);
 
-#ifdef BAKING_APP
-static bool bake_auth_ok(void) {
-    authorize_baking(G.curve, &G.bip32_path);
-    int tx = perform_signature(true);
-    delayed_send(tx);
-    return true;
-}
-#else
 static bool sign_ok(void) {
     int tx = perform_signature(true);
     delayed_send(tx);
     return true;
 }
 
+#ifndef BAKING_APP
 static bool sign_unsafe_ok(void) {
     int tx = perform_signature(false);
     delayed_send(tx);
@@ -88,6 +81,29 @@ static bool sign_reject(void) {
 }
 
 #ifdef BAKING_APP
+
+__attribute__((noreturn)) static void prompt_register_delegate(
+    ui_callback_t const ok_cb,
+    ui_callback_t const cxl_cb
+) {
+    static const size_t TYPE_INDEX = 0;
+    static const size_t ADDRESS_INDEX = 1;
+    static const size_t FEE_INDEX = 2;
+
+    static const char *const prompts[] = {
+        PROMPT("Register"),
+        PROMPT("Address"),
+        PROMPT("Fee"),
+        NULL,
+    };
+
+    REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "as delegate?");
+    register_ui_callback(ADDRESS_INDEX, bip32_path_with_curve_to_pkh_string, &G.key);
+    register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &G.register_delegate.total_fee);
+
+    ui_prompt(prompts, NULL, ok_cb, cxl_cb);
+}
+
 uint32_t baking_sign_complete(void) {
     // Have raw data, can get insight into it
     switch (G.magic_number) {
@@ -111,18 +127,17 @@ uint32_t baking_sign_complete(void) {
                         G.message_data, G.message_data_length,
                         G.key.curve, &G.key.bip32_path, allowed);
 
-                // With < nickel fee
-                if (ops->total_fee > 50000) THROW(EXC_PARSE_ERROR);
+                // Must be self-delegation signed by the *authorized* baking key
+                if (bip32_path_with_curve_eq(&G.key, &N_data.baking_key) &&
 
-                // Must be self-delegation signed by the same key
-                if (COMPARE(&ops->operation.source, &ops->signing)) {
-                    THROW(EXC_PARSE_ERROR);
+                    // ops->signing is generated from G.bip32_path and G.curve
+                    COMPARE(&ops->operation.source, &ops->signing) == 0 &&
+                    COMPARE(&ops->operation.destination, &ops->signing) == 0
+                ) {
+                    G.register_delegate.total_fee = ops->total_fee;
+                    prompt_register_delegate(sign_ok, sign_reject);
                 }
-                if (COMPARE(&ops->operation.destination, &ops->signing)) {
-                    THROW(EXC_PARSE_ERROR);
-                }
-
-                prompt_contract_for_baking(&ops->signing, bake_auth_ok, sign_reject);
+                THROW(EXC_PARSE_ERROR);
             }
         case MAGIC_BYTE_UNSAFE_OP2:
         case MAGIC_BYTE_UNSAFE_OP3:
