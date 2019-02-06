@@ -58,6 +58,11 @@ static inline bool bip32_paths_eq(bip32_path_t const *const a, bip32_path_t cons
 }
 
 typedef struct {
+    bip32_path_t bip32_path;
+    cx_curve_t curve;
+} bip32_path_with_curve_t;
+
+typedef struct {
     level_t highest_level;
     bool had_endorsement;
 } high_watermark_t;
@@ -68,8 +73,7 @@ typedef struct {
         high_watermark_t main;
         high_watermark_t test;
     } hwm;
-    cx_curve_t curve;
-    bip32_path_t bip32_path;
+    bip32_path_with_curve_t baking_key;
 } nvram_data;
 
 

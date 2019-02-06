@@ -23,8 +23,8 @@ struct setup_wire {
 
 static bool ok(void) {
     UPDATE_NVRAM(ram, {
-        ram->curve = G.curve;
-        copy_bip32_path(&ram->bip32_path, &G.bip32_path);
+        ram->baking_key.curve = G.curve;
+        copy_bip32_path(&ram->baking_key.bip32_path, &G.bip32_path);
         ram->main_chain_id = G.main_chain_id;
         ram->hwm.main.highest_level = G.hwm.main;
         ram->hwm.main.had_endorsement = false;

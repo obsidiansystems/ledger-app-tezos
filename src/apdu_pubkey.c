@@ -39,8 +39,8 @@ unsigned int handle_apdu_get_public_key(uint8_t instruction) {
 
 #ifdef BAKING_APP
     if (cdata_size == 0 && instruction == INS_AUTHORIZE_BAKING) {
-        G.curve = N_data.curve;
-        copy_bip32_path(&G.bip32_path, &N_data.bip32_path);
+        G.curve = N_data.baking_key.curve;
+        copy_bip32_path(&G.bip32_path, &N_data.baking_key.bip32_path);
     } else {
 #endif
         read_bip32_path(&G.bip32_path, dataBuffer, cdata_size);
