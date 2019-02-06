@@ -49,8 +49,7 @@ typedef struct {
     } pubkey;
 
     struct {
-      bip32_path_t bip32_path;
-      cx_curve_t curve;
+      bip32_path_with_curve_t key;
 
       uint8_t message_data[TEZOS_BUFSIZE];
       uint32_t message_data_length;

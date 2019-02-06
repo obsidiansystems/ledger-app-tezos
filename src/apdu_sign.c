@@ -74,7 +74,7 @@ static bool sign_unsafe_ok(void) {
 #endif
 
 static void clear_data(void) {
-    G.bip32_path.length = 0;
+    G.key.bip32_path.length = 0;
     G.message_data_length = 0;
     G.is_hash_state_inited = false;
     G.magic_number = 0;
@@ -94,8 +94,8 @@ uint32_t baking_sign_complete(void) {
         case MAGIC_BYTE_BLOCK:
         case MAGIC_BYTE_BAKING_OP:
             guard_baking_authorized(
-                G.curve, G.message_data, G.message_data_length,
-                &G.bip32_path);
+                G.key.curve, G.message_data, G.message_data_length,
+                &G.key.bip32_path);
             return perform_signature(true);
 
         case MAGIC_BYTE_UNSAFE_OP:
@@ -109,7 +109,7 @@ uint32_t baking_sign_complete(void) {
                 struct parsed_operation_group *ops =
                     parse_operations(
                         G.message_data, G.message_data_length,
-                        G.curve, &G.bip32_path, allowed);
+                        G.key.curve, &G.key.bip32_path, allowed);
 
                 // With < nickel fee
                 if (ops->total_fee > 50000) THROW(EXC_PARSE_ERROR);
@@ -445,8 +445,8 @@ uint32_t wallet_sign_complete(uint8_t instruction) {
                     goto unsafe;
                 }
                 if (!prompt_transaction(
-                        G.message_data, G.message_data_length, G.curve,
-                        &G.bip32_path, sign_ok, sign_reject)) {
+                        G.message_data, G.message_data_length, G.key.curve,
+                        &G.key.bip32_path, sign_ok, sign_reject)) {
                     goto unsafe;
                 }
             case MAGIC_BYTE_UNSAFE_OP2:
@@ -475,8 +475,8 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
         clear_data();
         memset(G.message_data, 0, sizeof(G.message_data));
         G.message_data_length = 0;
-        read_bip32_path(&G.bip32_path, dataBuffer, dataLength);
-        G.curve = curve_code_to_curve(G_io_apdu_buffer[OFFSET_CURVE]);
+        read_bip32_path(&G.key.bip32_path, dataBuffer, dataLength);
+        G.key.curve = curve_code_to_curve(G_io_apdu_buffer[OFFSET_CURVE]);
         return_ok();
 #ifndef BAKING_APP
     case P1_HASH_ONLY_NEXT:
@@ -485,7 +485,7 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
         // FALL THROUGH
 #endif
     case P1_NEXT:
-        if (G.bip32_path.length == 0) {
+        if (G.key.bip32_path.length == 0) {
             THROW(EXC_WRONG_LENGTH_FOR_INS);
         }
         break;
@@ -548,10 +548,10 @@ static int perform_signature(bool hash_first) {
 #endif
     }
 
-    struct key_pair *const pair = generate_key_pair(G.curve, &G.bip32_path);
+    struct key_pair *const pair = generate_key_pair(G.key.curve, &G.key.bip32_path);
 
     uint32_t tx;
-    switch (G.curve) {
+    switch (G.key.curve) {
     case CX_CURVE_Ed25519: {
         tx = cx_eddsa_sign(&pair->private_key,
                            0,
