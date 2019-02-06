@@ -22,17 +22,6 @@ struct priv_generate_key_pair {
     struct key_pair res;
 };
 
-struct apdu_setup_globals {
-    bip32_path_t bip32_path;
-    cx_curve_t curve;
-    cx_ecfp_public_key_t public_key;
-    chain_id_t main_chain_id;
-    struct {
-        level_t main;
-        level_t test;
-    } hwm;
-};
-
 typedef struct {
   void *stack_root;
   apdu_handler handlers[INS_MAX];
@@ -59,7 +48,16 @@ typedef struct {
       bool hash_only;
     } sign;
 
-    struct apdu_setup_globals setup;
+    struct {
+        bip32_path_t bip32_path;
+        cx_curve_t curve;
+        cx_ecfp_public_key_t public_key;
+        chain_id_t main_chain_id;
+        struct {
+            level_t main;
+            level_t test;
+        } hwm;
+    } setup;
   } u;
 
   struct {
