@@ -99,7 +99,7 @@ typedef struct {
 #define HASH_SIZE 20
 
 struct parsed_contract {
-    uint8_t originated;
+    uint8_t originated; // a lightweight bool
     uint8_t curve_code; // TEZOS_NO_CURVE in originated case
                         // An implicit contract with TEZOS_NO_CURVE means not present
     uint8_t hash[HASH_SIZE];
