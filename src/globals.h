@@ -45,6 +45,10 @@ typedef struct {
       bool is_hash_state_inited;
       uint8_t magic_number;
       bool hash_only;
+
+      struct {
+          uint64_t total_fee;
+      } register_delegate;
     } sign;
 
     struct {
