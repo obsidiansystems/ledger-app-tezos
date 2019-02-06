@@ -15,6 +15,11 @@ void pubkey_to_pkh_string(
     cx_curve_t const curve,
     cx_ecfp_public_key_t const *const public_key
 );
+void bip32_path_with_curve_to_pkh_string(
+    char *const out,
+    size_t const out_size,
+    bip32_path_with_curve_t const *const key
+);
 void protocol_hash_to_string(char *buff, const size_t buff_size, const uint8_t hash[PROTOCOL_HASH_SIZE]);
 void parsed_contract_to_string(char *buff, uint32_t buff_size, const struct parsed_contract *contract);
 void chain_id_to_string(char *buff, size_t const buff_size, chain_id_t const chain_id);
