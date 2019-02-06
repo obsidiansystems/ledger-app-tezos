@@ -32,9 +32,8 @@ typedef struct {
     } baking;
 
     struct {
+      bip32_path_with_curve_t key;
       cx_ecfp_public_key_t public_key;
-      bip32_path_t bip32_path;
-      cx_curve_t curve;
     } pubkey;
 
     struct {
