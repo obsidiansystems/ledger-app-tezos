@@ -18,3 +18,4 @@ void clear_ui_callbacks(void);
 
 // This function registers how a value is to be produced
 void register_ui_callback(uint32_t which, string_generation_callback cb, const void *data);
+#define REGISTER_STATIC_UI_VALUE(index, str) register_ui_callback(index, copy_string, STATIC_UI_VALUE(str))
