@@ -41,13 +41,13 @@ high_watermark_t *select_hwm_by_chain(chain_id_t const chain_id, nvram_data *con
 void update_baking_idle_screens(void) {
     number_to_string(global.ui.baking_idle_screens.hwm, N_data.hwm.main.highest_level);
 
-    if (N_data.bip32_path.length == 0) {
+    if (N_data.baking_key.bip32_path.length == 0) {
         STRCPY(global.ui.baking_idle_screens.pkh, "No Key Authorized");
     } else {
-        cx_ecfp_public_key_t const *const pubkey = generate_public_key(N_data.curve, &N_data.bip32_path);
+        cx_ecfp_public_key_t const *const pubkey = generate_public_key(N_data.baking_key.curve, &N_data.baking_key.bip32_path);
         pubkey_to_pkh_string(
             global.ui.baking_idle_screens.pkh, sizeof(global.ui.baking_idle_screens.pkh),
-            N_data.curve, pubkey);
+            N_data.baking_key.curve, pubkey);
     }
 
     chain_id_to_string_with_aliases(global.ui.baking_idle_screens.chain, sizeof(global.ui.baking_idle_screens.chain), &N_data.main_chain_id);

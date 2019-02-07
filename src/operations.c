@@ -105,19 +105,27 @@ static inline uint64_t parse_z(const void *data, size_t *ix, size_t length, uint
     val; \
 })
 
-static inline void compute_pkh(cx_curve_t curve, bip32_path_t const *const bip32_path,
-                        struct parsed_operation_group *const out) {
+static inline void compute_pkh(
+    cx_ecfp_public_key_t *const compressed_pubkey_out,
+    struct parsed_contract *const contract_out,
+    cx_curve_t const curve,
+    bip32_path_t const *const bip32_path
+) {
     check_null(bip32_path);
-    check_null(out);
+    check_null(compressed_pubkey_out);
+    check_null(contract_out);
     cx_ecfp_public_key_t const *const pubkey = generate_public_key(curve, bip32_path);
-    cx_ecfp_public_key_t const *const key = public_key_hash(out->signing.hash, curve, pubkey);
-    memcpy(&out->public_key, key, sizeof(out->public_key));
-    out->signing.curve_code = curve_to_curve_code(curve);
-    out->signing.originated = 0;
+    cx_ecfp_public_key_t const *const compressed_pubkey = public_key_hash(contract_out->hash, curve, pubkey);
+    contract_out->curve_code = curve_to_curve_code(curve);
+    contract_out->originated = 0;
+
+    memcpy(compressed_pubkey_out, compressed_pubkey, sizeof(*compressed_pubkey_out));
 }
 
-static inline void parse_implicit(struct parsed_contract *out, uint8_t curve_code,
-                           const uint8_t hash[HASH_SIZE]) {
+static inline void parse_implicit(
+    struct parsed_contract *out, uint8_t curve_code,
+    const uint8_t hash[HASH_SIZE]
+) {
     out->originated = 0;
     out->curve_code = curve_code;
     memcpy(out->hash, hash, sizeof(out->hash));
@@ -145,7 +153,7 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
 
     out->operation.tag = OPERATION_TAG_NONE;
 
-    compute_pkh(curve, bip32_path, out); // sets up "signing" and "public_key" members
+    compute_pkh(&out->public_key, &out->signing, curve, bip32_path);
 
     size_t ix = 0;
 

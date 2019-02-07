@@ -1,5 +1,6 @@
 #pragma once
 
+#include "exception.h"
 #include "os.h"
 #include "os_io_seproxyhal.h"
 
@@ -44,18 +45,43 @@ typedef struct {
 } bip32_path_t;
 
 static inline void copy_bip32_path(bip32_path_t *const out, bip32_path_t const *const in) {
+    check_null(out);
+    check_null(in);
     memcpy(out->components, in->components, in->length * sizeof(*in->components));
     out->length = in->length;
 }
 
 static inline bool bip32_paths_eq(bip32_path_t const *const a, bip32_path_t const *const b) {
     return a == b || (
-            a != NULL &&
-            b != NULL &&
-            a->length == b->length &&
-            memcmp(a->components, b->components, a->length * sizeof(*a->components)) == 0
-        );
+        a != NULL &&
+        b != NULL &&
+        a->length == b->length &&
+        memcmp(a->components, b->components, a->length * sizeof(*a->components)) == 0
+    );
 }
+
+
+typedef struct {
+    bip32_path_t bip32_path;
+    cx_curve_t curve;
+} bip32_path_with_curve_t;
+
+static inline void copy_bip32_path_with_curve(bip32_path_with_curve_t *const out, bip32_path_with_curve_t const *const in) {
+    check_null(out);
+    check_null(in);
+    copy_bip32_path(&out->bip32_path, &in->bip32_path);
+    out->curve = in->curve;
+}
+
+static inline bool bip32_path_with_curve_eq(bip32_path_with_curve_t const *const a, bip32_path_with_curve_t const *const b) {
+    return a == b || (
+        a != NULL &&
+        b != NULL &&
+        bip32_paths_eq(&a->bip32_path, &b->bip32_path) &&
+        a->curve == b->curve
+    );
+}
+
 
 typedef struct {
     level_t highest_level;
@@ -68,8 +94,7 @@ typedef struct {
         high_watermark_t main;
         high_watermark_t test;
     } hwm;
-    cx_curve_t curve;
-    bip32_path_t bip32_path;
+    bip32_path_with_curve_t baking_key;
 } nvram_data;
 
 
@@ -99,7 +124,7 @@ typedef struct {
 #define HASH_SIZE 20
 
 struct parsed_contract {
-    uint8_t originated;
+    uint8_t originated; // a lightweight bool
     uint8_t curve_code; // TEZOS_NO_CURVE in originated case
                         // An implicit contract with TEZOS_NO_CURVE means not present
     uint8_t hash[HASH_SIZE];

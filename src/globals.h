@@ -22,17 +22,6 @@ struct priv_generate_key_pair {
     struct key_pair res;
 };
 
-struct apdu_setup_globals {
-    bip32_path_t bip32_path;
-    cx_curve_t curve;
-    cx_ecfp_public_key_t public_key;
-    chain_id_t main_chain_id;
-    struct {
-        level_t main;
-        level_t test;
-    } hwm;
-};
-
 typedef struct {
   void *stack_root;
   apdu_handler handlers[INS_MAX];
@@ -43,14 +32,12 @@ typedef struct {
     } baking;
 
     struct {
+      bip32_path_with_curve_t key;
       cx_ecfp_public_key_t public_key;
-      bip32_path_t bip32_path;
-      cx_curve_t curve;
     } pubkey;
 
     struct {
-      bip32_path_t bip32_path;
-      cx_curve_t curve;
+      bip32_path_with_curve_t key;
 
       uint8_t message_data[TEZOS_BUFSIZE];
       uint32_t message_data_length;
@@ -58,9 +45,20 @@ typedef struct {
       bool is_hash_state_inited;
       uint8_t magic_number;
       bool hash_only;
+
+      struct {
+          uint64_t total_fee;
+      } register_delegate;
     } sign;
 
-    struct apdu_setup_globals setup;
+    struct {
+        bip32_path_with_curve_t key;
+        chain_id_t main_chain_id;
+        struct {
+            level_t main;
+            level_t test;
+        } hwm;
+    } setup;
   } u;
 
   struct {
