@@ -137,7 +137,7 @@ uint32_t baking_sign_complete(void) {
                     G.register_delegate.total_fee = ops->total_fee;
                     prompt_register_delegate(sign_ok, sign_reject);
                 }
-                THROW(EXC_PARSE_ERROR);
+                THROW(EXC_SECURITY);
             }
         case MAGIC_BYTE_UNSAFE_OP2:
         case MAGIC_BYTE_UNSAFE_OP3:
