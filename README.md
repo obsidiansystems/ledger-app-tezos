@@ -704,7 +704,7 @@ To originate an account, the command is:
 $ tezos-client originate account <NEW> for <MGR> transferring <QTY> from <SRC> --delegatable
 ```
 
-  * `NEW` is the alias you will now give to the originated account. Only originted accounts can
+  * `NEW` is the alias you will now give to the originated account. Only originated accounts can
      be delegated, and even then only if originated with this `--delegatable` flag.
   * `MGR` is the name of the key you will use to manage the account. If you want to manage it
     with a Ledger device, it should be an existing imported key from the Ledger hardware wallet.
