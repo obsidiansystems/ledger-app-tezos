@@ -37,21 +37,28 @@
 #define INS_DEAUTHORIZE 0x0C
 
 __attribute__((noreturn))
-void main_loop(apdu_handler handlers[INS_MAX]);
+void main_loop(apdu_handler const *const handlers, size_t const handlers_size);
 
 static inline void return_ok(void) {
     THROW(EXC_NO_ERROR);
 }
 
+static inline size_t finalize_successful_send(size_t tx) {
+    G_io_apdu_buffer[tx++] = 0x90;
+    G_io_apdu_buffer[tx++] = 0x00;
+    return tx;
+}
+
 // Send back response; do not restart the event loop
-static inline void delayed_send(uint32_t tx) {
+static inline void delayed_send(size_t tx) {
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
 }
 
 static inline bool delay_reject(void) {
-    G_io_apdu_buffer[0] = EXC_REJECT >> 8;
-    G_io_apdu_buffer[1] = EXC_REJECT & 0xFF;
-    delayed_send(2);
+    size_t tx = 0;
+    G_io_apdu_buffer[tx++] = EXC_REJECT >> 8;
+    G_io_apdu_buffer[tx++] = EXC_REJECT & 0xFF;
+    delayed_send(tx);
     return true;
 }
 
@@ -63,6 +70,6 @@ static inline void require_hid(void) {
 
 size_t provide_pubkey(uint8_t *const io_buffer, cx_ecfp_public_key_t const *const pubkey);
 
-uint32_t handle_apdu_error(uint8_t instruction);
-uint32_t handle_apdu_version(uint8_t instruction);
-uint32_t handle_apdu_git(uint8_t instruction);
+size_t handle_apdu_error(uint8_t instruction);
+size_t handle_apdu_version(uint8_t instruction);
+size_t handle_apdu_git(uint8_t instruction);

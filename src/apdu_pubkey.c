@@ -24,7 +24,7 @@ static bool baking_ok(void) {
 }
 #endif
 
-unsigned int handle_apdu_get_public_key(uint8_t instruction) {
+size_t handle_apdu_get_public_key(uint8_t instruction) {
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
 
     if (READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_P1]) != 0) THROW(EXC_WRONG_PARAM);
