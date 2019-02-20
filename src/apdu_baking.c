@@ -14,7 +14,7 @@
 
 static bool reset_ok(void);
 
-unsigned int handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
+size_t handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
     uint32_t dataLength = G_io_apdu_buffer[OFFSET_LC];
     if (dataLength != sizeof(int)) {
@@ -42,16 +42,12 @@ bool reset_ok(void) {
         ram->hwm.test.had_endorsement = false;
     });
 
-    uint32_t tx = 0;
-    G_io_apdu_buffer[tx++] = 0x90;
-    G_io_apdu_buffer[tx++] = 0x00;
-
     // Send back the response, do not restart the event loop
-    delayed_send(tx);
+    delayed_send(finalize_successful_send(0));
     return true;
 }
 
-uint32_t send_word_big_endian(uint32_t tx, uint32_t word) {
+size_t send_word_big_endian(size_t tx, uint32_t word) {
     char word_bytes[sizeof(word)];
 
     memcpy(word_bytes, &word, sizeof(word));
@@ -65,36 +61,40 @@ uint32_t send_word_big_endian(uint32_t tx, uint32_t word) {
     return tx + i;
 }
 
-unsigned int handle_apdu_all_hwm(__attribute__((unused)) uint8_t instruction) {
-    uint32_t tx = 0;
+size_t handle_apdu_all_hwm(__attribute__((unused)) uint8_t instruction) {
+    size_t tx = 0;
     tx = send_word_big_endian(tx, N_data.hwm.main.highest_level);
     tx = send_word_big_endian(tx, N_data.hwm.test.highest_level);
     tx = send_word_big_endian(tx, N_data.main_chain_id.v);
-    G_io_apdu_buffer[tx++] = 0x90;
-    G_io_apdu_buffer[tx++] = 0x00;
-    return tx;
+    return finalize_successful_send(tx);
 }
 
-unsigned int handle_apdu_main_hwm(__attribute__((unused)) uint8_t instruction) {
-    uint32_t tx = 0;
+size_t handle_apdu_main_hwm(__attribute__((unused)) uint8_t instruction) {
+    size_t tx = 0;
     tx = send_word_big_endian(tx, N_data.hwm.main.highest_level);
-    G_io_apdu_buffer[tx++] = 0x90;
-    G_io_apdu_buffer[tx++] = 0x00;
-    return tx;
+    return finalize_successful_send(tx);
 }
 
 
-unsigned int handle_apdu_query_auth_key(__attribute__((unused)) uint8_t instruction) {
+size_t handle_apdu_query_auth_key(__attribute__((unused)) uint8_t instruction) {
     uint8_t const length = N_data.baking_key.bip32_path.length;
 
-    uint32_t tx = 0;
+    size_t tx = 0;
     G_io_apdu_buffer[tx++] = length;
 
     for (uint8_t i = 0; i < length; ++i) {
         tx = send_word_big_endian(tx, N_data.baking_key.bip32_path.components[i]);
     }
 
-    G_io_apdu_buffer[tx++] = 0x90;
-    G_io_apdu_buffer[tx++] = 0x00;
-    return tx;
+    return finalize_successful_send(tx);
+}
+
+size_t handle_apdu_deauthorize(__attribute__((unused)) uint8_t instruction) {
+    if (READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_P1]) != 0) THROW(EXC_WRONG_PARAM);
+    if (READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]) != 0) THROW(EXC_PARSE_ERROR);
+    UPDATE_NVRAM(ram, {
+        memset(&ram->baking_key, 0, sizeof(ram->baking_key));
+    });
+
+    return finalize_successful_send(0);
 }

@@ -64,7 +64,7 @@ __attribute__((noreturn)) static void prompt_setup(
     ui_prompt(prompts, NULL, ok_cb, cxl_cb);
 }
 
-__attribute__((noreturn)) unsigned int handle_apdu_setup(__attribute__((unused)) uint8_t instruction) {
+__attribute__((noreturn)) size_t handle_apdu_setup(__attribute__((unused)) uint8_t instruction) {
     if (READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_P1]) != 0) THROW(EXC_WRONG_PARAM);
 
     uint32_t const buff_size = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]);

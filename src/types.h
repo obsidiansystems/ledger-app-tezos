@@ -8,7 +8,7 @@
 #include <string.h>
 
 // Return number of bytes to transmit (tx)
-typedef uint32_t (*apdu_handler)(uint8_t instruction);
+typedef size_t (*apdu_handler)(uint8_t instruction);
 
 typedef uint32_t level_t;
 

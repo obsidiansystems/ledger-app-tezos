@@ -41,8 +41,9 @@ void app_main(void) {
     global.handlers[APDU_INS(INS_QUERY_MAIN_HWM)] = handle_apdu_main_hwm;
     global.handlers[APDU_INS(INS_SETUP)] = handle_apdu_setup;
     global.handlers[APDU_INS(INS_QUERY_ALL_HWM)] = handle_apdu_all_hwm;
+    global.handlers[APDU_INS(INS_DEAUTHORIZE)] = handle_apdu_deauthorize;
 #else
     global.handlers[APDU_INS(INS_SIGN_UNSAFE)] = handle_apdu_sign;
 #endif
-    main_loop(global.handlers);
+    main_loop(global.handlers, sizeof(global.handlers));
 }

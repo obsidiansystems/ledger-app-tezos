@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
-unsigned int handle_apdu_setup(uint8_t instruction);
+size_t handle_apdu_setup(uint8_t instruction);

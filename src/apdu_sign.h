@@ -2,4 +2,4 @@
 
 #include "apdu.h"
 
-unsigned int handle_apdu_sign(uint8_t instruction);
+size_t handle_apdu_sign(uint8_t instruction);

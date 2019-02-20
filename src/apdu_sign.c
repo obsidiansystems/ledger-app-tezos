@@ -53,15 +53,13 @@ static void finish_hashing(uint8_t *hash, size_t hash_size) {
 static int perform_signature(bool hash_first);
 
 static bool sign_ok(void) {
-    int tx = perform_signature(true);
-    delayed_send(tx);
+    delayed_send(perform_signature(true));
     return true;
 }
 
 #ifndef BAKING_APP
 static bool sign_unsafe_ok(void) {
-    int tx = perform_signature(false);
-    delayed_send(tx);
+    delayed_send(perform_signature(false));
     return true;
 }
 #endif
@@ -477,7 +475,7 @@ unsafe:
 #define P1_HASH_ONLY_NEXT 0x03 // You only need it once
 #define P1_LAST_MARKER 0x80
 
-unsigned int handle_apdu_sign(uint8_t instruction) {
+size_t handle_apdu_sign(uint8_t instruction) {
     uint8_t p1 = G_io_apdu_buffer[OFFSET_P1];
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
     uint32_t dataLength = G_io_apdu_buffer[OFFSET_LC];
@@ -490,7 +488,7 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
         G.message_data_length = 0;
         read_bip32_path(&G.key.bip32_path, dataBuffer, dataLength);
         G.key.curve = curve_code_to_curve(G_io_apdu_buffer[OFFSET_CURVE]);
-        return_ok();
+        return finalize_successful_send(0);
 #ifndef BAKING_APP
     case P1_HASH_ONLY_NEXT:
         // This is a debugging Easter egg
@@ -524,7 +522,7 @@ unsigned int handle_apdu_sign(uint8_t instruction) {
     G.message_data_length += dataLength;
 
     if (!last) {
-        return_ok();
+        return finalize_successful_send(0);
     }
 
 #ifdef BAKING_APP
@@ -552,18 +550,15 @@ static int perform_signature(bool hash_first) {
 #ifndef BAKING_APP
         if (G.hash_only) {
             memcpy(G_io_apdu_buffer, data, datalen);
-            uint32_t tx = datalen;
-
-            G_io_apdu_buffer[tx++] = 0x90;
-            G_io_apdu_buffer[tx++] = 0x00;
-            return tx;
+            size_t tx = datalen;
+            return finalize_successful_send(tx);
         }
 #endif
     }
 
     struct key_pair *const pair = generate_key_pair(G.key.curve, &G.key.bip32_path);
 
-    uint32_t tx;
+    size_t tx = 0;
     switch (G.key.curve) {
     case CX_CURVE_Ed25519: {
         tx = cx_eddsa_sign(&pair->private_key,
@@ -601,10 +596,7 @@ static int perform_signature(bool hash_first) {
 
     memset(&pair->private_key, 0, sizeof(pair->private_key));
 
-    G_io_apdu_buffer[tx++] = 0x90;
-    G_io_apdu_buffer[tx++] = 0x00;
-
     clear_data();
 
-    return tx;
+    return finalize_successful_send(tx);
 }
