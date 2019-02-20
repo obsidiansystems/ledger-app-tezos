@@ -39,10 +39,6 @@
 __attribute__((noreturn))
 void main_loop(apdu_handler const *const handlers, size_t const handlers_size);
 
-static inline void return_ok(void) {
-    THROW(EXC_NO_ERROR);
-}
-
 static inline size_t finalize_successful_send(size_t tx) {
     G_io_apdu_buffer[tx++] = 0x90;
     G_io_apdu_buffer[tx++] = 0x00;

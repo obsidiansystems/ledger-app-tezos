@@ -488,7 +488,7 @@ size_t handle_apdu_sign(uint8_t instruction) {
         G.message_data_length = 0;
         read_bip32_path(&G.key.bip32_path, dataBuffer, dataLength);
         G.key.curve = curve_code_to_curve(G_io_apdu_buffer[OFFSET_CURVE]);
-        return_ok();
+        return finalize_successful_send(0);
 #ifndef BAKING_APP
     case P1_HASH_ONLY_NEXT:
         // This is a debugging Easter egg
@@ -522,7 +522,7 @@ size_t handle_apdu_sign(uint8_t instruction) {
     G.message_data_length += dataLength;
 
     if (!last) {
-        return_ok();
+        return finalize_successful_send(0);
     }
 
 #ifdef BAKING_APP
