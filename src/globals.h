@@ -24,7 +24,7 @@ struct priv_generate_key_pair {
 
 typedef struct {
   void *stack_root;
-  apdu_handler handlers[INS_MAX];
+  apdu_handler handlers[INS_MAX + 1];
 
   union {
     struct {

@@ -98,3 +98,16 @@ unsigned int handle_apdu_query_auth_key(__attribute__((unused)) uint8_t instruct
     G_io_apdu_buffer[tx++] = 0x00;
     return tx;
 }
+
+unsigned int handle_apdu_deauthorize(__attribute__((unused)) uint8_t instruction) {
+    if (READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_P1]) != 0) THROW(EXC_WRONG_PARAM);
+    if (READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]) != 0) THROW(EXC_PARSE_ERROR);
+    UPDATE_NVRAM(ram, {
+        memset(&ram->baking_key, 0, sizeof(ram->baking_key));
+    });
+
+    unsigned int tx = 0;
+    G_io_apdu_buffer[tx++] = 0x90;
+    G_io_apdu_buffer[tx++] = 0x00;
+    return tx;
+}
