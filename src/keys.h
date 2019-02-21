@@ -39,7 +39,7 @@ static inline uint8_t curve_to_curve_code(cx_curve_t curve) {
         case CX_CURVE_SECP256R1:
             return TEZOS_SECP256R1;
         default:
-            THROW(EXC_MEMORY_ERROR);
+            return TEZOS_NO_CURVE;
     }
 }
 

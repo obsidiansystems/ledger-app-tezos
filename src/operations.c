@@ -117,6 +117,7 @@ static inline void compute_pkh(
     cx_ecfp_public_key_t const *const pubkey = generate_public_key(curve, bip32_path);
     cx_ecfp_public_key_t const *const compressed_pubkey = public_key_hash(contract_out->hash, curve, pubkey);
     contract_out->curve_code = curve_to_curve_code(curve);
+    if (contract_out->curve_code == TEZOS_NO_CURVE) THROW(EXC_MEMORY_ERROR);
     contract_out->originated = 0;
 
     memcpy(compressed_pubkey_out, compressed_pubkey, sizeof(*compressed_pubkey_out));

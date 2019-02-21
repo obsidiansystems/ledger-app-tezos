@@ -89,6 +89,22 @@ size_t handle_apdu_query_auth_key(__attribute__((unused)) uint8_t instruction) {
     return finalize_successful_send(tx);
 }
 
+size_t handle_apdu_query_auth_key_with_curve(__attribute__((unused)) uint8_t instruction) {
+    uint8_t const curve_code = curve_to_curve_code(N_data.baking_key.curve);
+    if (curve_code == TEZOS_NO_CURVE) THROW(EXC_REFERENCED_DATA_NOT_FOUND);
+
+    uint8_t const length = N_data.baking_key.bip32_path.length;
+
+    size_t tx = 0;
+    G_io_apdu_buffer[tx++] = curve_code;
+    G_io_apdu_buffer[tx++] = length;
+    for (uint8_t i = 0; i < length; ++i) {
+        tx = send_word_big_endian(tx, N_data.baking_key.bip32_path.components[i]);
+    }
+
+    return finalize_successful_send(tx);
+}
+
 size_t handle_apdu_deauthorize(__attribute__((unused)) uint8_t instruction) {
     if (READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_P1]) != 0) THROW(EXC_WRONG_PARAM);
     if (READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]) != 0) THROW(EXC_PARSE_ERROR);
