@@ -3,29 +3,22 @@ set -Eeuo pipefail
 
 root="$(git rev-parse --show-toplevel)"
 
-: "${VERSION:=${2:-"$(git -C "$root" describe --tags | cut -f1 -d- | cut -f2 -dv)"}}"
-
-install-wallet() {
-  "$root/install.sh" 'Tezos Wallet' "$("$root/nix/build.sh" -A wallet)" "$VERSION"
-}
-install-baking() {
-  "$root/install.sh" 'Tezos Baking' "$("$root/nix/build.sh" -A baking)" "$VERSION"
+install() {
+  local release_file
+  release_file=$("$root/nix/build.sh" -A "release.$1")
+  bash "$root/release-installer.sh" "$release_file"
 }
 
 export root
-export VERSION
-export -f install-wallet
-export -f install-baking
+export -f install
 
 nix-shell "$root/nix/ledgerblue.nix" -A shell --run "$(cat <<EOF
 set -Eeuo pipefail
-if [ "${1:-}" = "wallet" ]; then
-  install-wallet
-elif [ "${1:-}" = "baking" ]; then
-  install-baking
+if [ $# -eq 0 ]; then
+  install wallet
+  install baking
 else
-  install-wallet
-  install-baking
+  install "${1:-}"
 fi
 EOF
 )"

@@ -19,7 +19,6 @@ else
     version="$3"
 fi
 
-
 set -x
 python -m ledgerblue.loadApp \
     --appFlags 0x00 \
