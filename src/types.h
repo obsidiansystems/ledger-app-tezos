@@ -184,7 +184,7 @@ struct parsed_operation_group {
 };
 
 // Maximum number of APDU instructions
-#define INS_MAX 0x0C
+#define INS_MAX 0x0D
 
 #define APDU_INS(x) ({ \
     _Static_assert(x <= INS_MAX, "APDU instruction is out of bounds"); \

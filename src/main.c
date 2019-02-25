@@ -42,6 +42,7 @@ void app_main(void) {
     global.handlers[APDU_INS(INS_SETUP)] = handle_apdu_setup;
     global.handlers[APDU_INS(INS_QUERY_ALL_HWM)] = handle_apdu_all_hwm;
     global.handlers[APDU_INS(INS_DEAUTHORIZE)] = handle_apdu_deauthorize;
+    global.handlers[APDU_INS(INS_QUERY_AUTH_KEY_WITH_CURVE)] = handle_apdu_query_auth_key_with_curve;
 #else
     global.handlers[APDU_INS(INS_SIGN_UNSAFE)] = handle_apdu_sign;
 #endif
