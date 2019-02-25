@@ -372,34 +372,12 @@ as you continue. You may want to read the rest of these instructions before you
 begin installing, as you will need to confirm and verify a few things during the
 process.
 
-Still within the virtualenv, run the `./install.sh` command. This script is in
-the root directory of this very repo, which means that in order to have it, you
-must clone this repo and `cd` into the resulting directory:
+Still within the virtualenv, run the `./install.sh` command included in the `release.tar.gz`
+that you downloaded.
 
-```
-$ git clone https://github.com/obsidiansystems/ledger-app-tezos.git
-$ cd ledger-app-tezos/
-```
-
-This `./install.sh` script takes two parameters, the first of which is
-the *name* of the application you are installing, and the second is the
-path to the `app.hex` file. (Up to date `app.hex` files can be found in
-the releases for this repo, and can be unpacked in the same directory that
-contains `./install.sh`):
-
-* If you are installing the baking app, we recommend using the name "Tezos
-  Baking".
-
-  ```
-  $ ./install.sh "Tezos Baking" baking.hex
-  ```
-
-* If you are installing the transaction app, we recommend using the name "Tezos
-  Wallet".
-
-  ```
-  $ ./install.sh "Tezos Wallet" wallet.hex
-  ```
+This `./install.sh` script takes the path to an app directory. Two such directories
+were included in the downloaded `release.tar.gz`.
+Install both apps like this: `./install.sh wallet baking`.
 
 The first thing that should come up in your terminal is a message that looks
 like this:
@@ -441,10 +419,7 @@ If you'd like to remove your app, you can do this. In the virtualenv
 described in the last sections, run this command:
 
 ```
-$ python \
-    -m ledgerblue.deleteApp \
-    --targetId 0x31100004 \
-    --appName "Tezos"
+$ python -m ledgerblue.deleteApp --targetId 0x31100004 --appName 'Tezos Wallet'
 ```
 
 Replace the `appName` parameter "Tezos" with whatever app name you used when you
@@ -455,7 +430,7 @@ Then follow the prompts on the Ledger Nano S screen.
 ### Confirming the Installation Worked
 
 You should now have two apps, `Tezos Baking` and `Tezos Wallet`. The `Tezos
-Baking` app should display also a `0` on the screen, which is the highest block
+Baking` app should display a `0` on the screen, which is the highest block
 level baked so far (`0` in case of no blocks). The `Tezos Wallet` app will just
 display `Tezos`.
 
