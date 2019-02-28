@@ -19,16 +19,16 @@ blocks.
 
 This repository contains two Ledger Nano S applications:
 
-  1. The "Tezos Baking" application is for baking Tezos: signing new blocks,
-     endorsements, and denunciations. For more information about baking, see
+  1. The "Tezos Baking" application is for baking: signing new blocks and
+     endorsements. For more information about baking, see
      [*Benefits and Risks of Home Baking*](https://medium.com/@tezos_91823/benefits-and-risks-of-home-baking-a631c9ca745).
-  2. The "Tezos Wallet" application is for making XTZ transactions, and
+  2. The "Tezos Wallet" application is for making XTZ transactions, originating contracts, delegation, and voting. Basically
      everything you might want to use the Ledger Nano S for on Tezos besides baking.
 
 It is possible to do all of these things without a hardware wallet, but using a
 hardware wallet provides you better security against key theft.
 
-Currently, there is no GUI support, so everything in this document is
+This documentation was originally written when there was no GUI support, so everything is
 tailored towards the command line.  We recommend you read this entire
 document to understand the commands available, and which commands are
 most appropriate to your situation. This will require judgment on how
@@ -38,10 +38,7 @@ help you understand that.
 This document is not a comprehensive guide to setting up Tezos
 software. While it covers some aspects of setting up and installing
 Tezos nodes and clients, especially as it interacts with the Ledger Nano S,
-you should familiarize yourself with the Tezos community's own documentation,
-including
-[how to build a node](https://github.com/tezoscommunity/FAQ/blob/master/Compile_Betanet.md)
-and the [Tezos technical FAQ](https://github.com/tezoscommunity/FAQ/wiki/Tezos-Technical-FAQ).
+you should familiarize yourself with the [Tezos Documentation](https://tezos.gitlab.io/master/) and community resources such as Tezos Community's guide on [building a node](https://github.com/tezoscommunity/FAQ/blob/master/Compile_Mainnet.md). If you have questions, please ask them on the [Tezos Stack Exchange](https://tezos.stackexchange.com/).
 
 This document is also not a guide on how to use Linux. It assumes you
 know how to install and configure a Linux system to your general needs,
@@ -722,7 +719,7 @@ Originated accounts have names beginning with `KT1` rather than `tz1`, `tz2` or 
 
 ### Proposals and Voting
 
-To submit (or upvote) a proposal, open the Wallet app on your ledger and run
+To submit (or upvote) a proposal during the Proposal Period, open the Wallet app on your ledger and run
 
 ```
 $ tezos-client submit proposals for <ACCOUNT> <PROTOCOL-HASH>
@@ -732,7 +729,7 @@ The Wallet app will then ask you to confirm the various details of the proposal 
 
 **Note:** While `tezos-client` will let you submit multiple proposals at once with this command, submitting more than one will cause the Wallet app to show "Sign Unverified?" instead of showing each field of each proposal for your confirmation. Signing an operation that you can't confirm is not safe and it is highly recommended that you simply submit each proposal one at a time so you can properly confirm the fields on the ledger device.
 
-Voting for a proposal also requires that you have the Wallet app open. You can then run
+Voting for a proposal during the Exploration or Promotion Vote Period also requires that you have the Wallet app open. You can then run
 
 ```
 $ tezos-client submit ballot for <ACCOUNT> <PROTOCOL-HASH> <yea|nay|pass>
@@ -740,7 +737,7 @@ $ tezos-client submit ballot for <ACCOUNT> <PROTOCOL-HASH> <yea|nay|pass>
 
 The Wallet app will ask you to confirm the details of your vote.
 
-Keep in mind that only registered delegate accounts can submit proposals and vote. Each account can submit up to 20 proposals per proposal period and vote only once per voting period. For a full description of how voting works, refer to the [Tezos documentation](https://gitlab.com/tezos/tezos/blob/master/docs/whitedoc/voting.rst).
+Keep in mind that only registered delegate accounts can submit proposals and vote. Each account can submit up to 20 proposals per proposal period and vote only once per voting period. For a more detailed post on participating during each phase of the amendment process, see this [Medium post](https://medium.com/@obsidian.systems/voting-on-tezos-with-your-ledger-nano-s-8d75f8c1f076). For a full description of how voting works, refer to the [Tezos documentation](https://gitlab.com/tezos/tezos/blob/master/docs/whitedoc/voting.rst).
 
 ## Using the Tezos Baking Application
 
