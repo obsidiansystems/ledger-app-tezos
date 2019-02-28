@@ -765,10 +765,8 @@ Wallet application on the same Ledger Nano S should suffice.
 ### Start the baking daemon
 
 ```
-$ tezos-baker-alpha run with local node ~/.tezos-node ledger_<...>_ed_0_0
+$ tezos-baker-003-PsddFKi3 run with local node ~/.tezos-node ledger_<...>_ed_0_0
 ```
-
-Alternatively, it might be called `tezos-alpha-baker`.
 
 This won't actually be able bake successfully yet until you run the rest of
 these setup steps. This will run indefinitely, so you might want to do it in
@@ -777,13 +775,14 @@ a dedicated terminal or in a `tmux` or `screen` session.
 You will also want to start the endorser and accuser daemons:
 
 ```
-$ tezos-endorser-alpha run ledger_<...>_ed_0_0
-$ tezos-accuser-alpha run
+$ tezos-endorser-003-PsddFKi3 run ledger_<...>_ed_0_0
+$ tezos-accuser-003-PsddFKi3 run
 ```
 
-Alternatively, they might might be called `tezos-alpha-endorser` and `tezos-alpha-accuser`.
 Again, each of these will run indefinitely, and each should be in its own terminal
 `tmux`, or `screen` window.
+
+*Note*: The binaries shown above all correspond to current Tezos mainnet protocol. When the Tezos protocol upgrades, the binaries shown below will update to, for instance, `tezos-baker-004-********`.
 
 ### Authorize public key
 
