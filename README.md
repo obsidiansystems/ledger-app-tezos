@@ -962,6 +962,10 @@ We need as much context as possible to help troubleshoot.
 If you run `script <file-name>` it opens a new shell where everything output and typed
 is also output to that file, giving you a transcript of your terminal session.
 
+### Importing a Fundraiser Account to a Ledger Device
+
+You currently cannot directly import a fundraiser account to the Ledger device. Instead, you'll first need to import your fundraiser account to a non-hardware wallet address from which you can send the funds to an address on the ledger. You can do so with wallet providers such as [Galleon](https://galleon-wallet.tech/) or [TezBox](https://tezbox.com/).
+
 ### Two Ledger Devices at the Same Time
 
 Two Ledger devices with the same seed should not ever be plugged in at the same time. This confuses
