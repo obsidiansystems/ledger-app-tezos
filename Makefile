@@ -45,7 +45,7 @@ else
   endif
 endif
 
-COMMIT ?= $(shell git describe --abbrev=8 --always 2>/dev/null)
+COMMIT ?= $(shell git describe --tags --abbrev=8 --always --long --dirty 2>/dev/null)
 ifeq ($(COMMIT),)
   $(error COMMIT not specified and could not be determined with git)
 endif

@@ -14,3 +14,8 @@ To do a full Nix build run `nix/build.sh`. You can pass `nix-build` arguments to
 
 ### Installing
 `nix/install.sh` will install both the wallet and baking apps. Use `nix/install.sh baking` to install just the baking app or `nix/install.sh wallet` to install just the wallet.
+
+
+### Releasing
+
+`nix/build -A release.all`
