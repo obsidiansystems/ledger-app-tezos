@@ -7,6 +7,12 @@
 #include <stdbool.h>
 #include <string.h>
 
+// Type-safe versions of true/false
+#undef true
+#define true ((bool)1)
+#undef false
+#define false ((bool)0)
+
 // Return number of bytes to transmit (tx)
 typedef size_t (*apdu_handler)(uint8_t instruction);
 

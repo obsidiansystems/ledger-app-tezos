@@ -143,13 +143,17 @@ static inline void parse_contract(struct parsed_contract *out, const struct cont
     }
 }
 
-struct parsed_operation_group *parse_operations(const void *data, size_t length, cx_curve_t curve,
-                                                bip32_path_t const *const bip32_path,
-                                                allowed_operation_set ops) {
+void parse_operations(
+    struct parsed_operation_group *const out,
+    void const *const data,
+    size_t length,
+    cx_curve_t curve,
+    bip32_path_t const *const bip32_path,
+    allowed_operation_set ops
+) {
+    check_null(out);
     check_null(data);
     check_null(bip32_path);
-
-    struct parsed_operation_group *const out = &global.priv.parse_operations.out;
     memset(out, 0, sizeof(*out));
 
     out->operation.tag = OPERATION_TAG_NONE;
@@ -216,7 +220,7 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
         // If the source is an implicit contract,...
         if (out->operation.source.originated == 0) {
             // ... it had better match our key, otherwise why are we signing it?
-            if (COMPARE(&out->operation.source, &out->signing)) return false;
+            if (COMPARE(&out->operation.source, &out->signing) != 0) PARSE_ERROR();
         }
         // OK, it passes muster.
 
@@ -317,6 +321,4 @@ struct parsed_operation_group *parse_operations(const void *data, size_t length,
     if (out->operation.tag == OPERATION_TAG_NONE && !out->has_reveal) {
         PARSE_ERROR(); // Must have at least one op
     }
-
-    return out; // Success!
 }
