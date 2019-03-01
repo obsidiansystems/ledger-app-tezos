@@ -97,7 +97,7 @@ __attribute__((noreturn)) static void prompt_register_delegate(
 
     REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "as delegate?");
     register_ui_callback(ADDRESS_INDEX, bip32_path_with_curve_to_pkh_string, &G.key);
-    register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &G.register_delegate.total_fee);
+    register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &G.ops.total_fee);
 
     ui_prompt(prompts, NULL, ok_cb, cxl_cb);
 }
@@ -120,19 +120,18 @@ uint32_t baking_sign_complete(void) {
                 allow_operation(&allowed, OPERATION_TAG_DELEGATION);
                 allow_operation(&allowed, OPERATION_TAG_REVEAL);
 
-                struct parsed_operation_group *ops =
-                    parse_operations(
-                        G.message_data, G.message_data_length,
-                        G.key.curve, &G.key.bip32_path, allowed);
+                parse_operations(
+                    &G.ops,
+                    G.message_data, G.message_data_length,
+                    G.key.curve, &G.key.bip32_path, allowed);
 
                 // Must be self-delegation signed by the *authorized* baking key
                 if (bip32_path_with_curve_eq(&G.key, &N_data.baking_key) &&
 
                     // ops->signing is generated from G.bip32_path and G.curve
-                    COMPARE(&ops->operation.source, &ops->signing) == 0 &&
-                    COMPARE(&ops->operation.destination, &ops->signing) == 0
+                    COMPARE(&G.ops.operation.source, &G.ops.signing) == 0 &&
+                    COMPARE(&G.ops.operation.destination, &G.ops.signing) == 0
                 ) {
-                    G.register_delegate.total_fee = ops->total_fee;
                     prompt_register_delegate(sign_ok, sign_reject);
                 }
                 THROW(EXC_SECURITY);
@@ -162,7 +161,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                                ui_callback_t ok, ui_callback_t cxl) {
     check_null(data);
     check_null(bip32_path);
-    struct parsed_operation_group *ops;
+    struct parsed_operation_group *const ops = &G.ops;
 
 #ifndef TEZOS_DEBUG
     BEGIN_TRY { // TODO: Eventually, "unsafe" operations will be another APDU,
@@ -181,7 +180,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
             allow_operation(&allowed, OPERATION_TAG_TRANSACTION);
             // TODO: Add still other operations
 
-            ops = parse_operations(data, length, curve, bip32_path, allowed);
+            parse_operations(ops, data, length, curve, bip32_path, allowed);
 #ifndef TEZOS_DEBUG
         }
         CATCH_OTHER(e) {

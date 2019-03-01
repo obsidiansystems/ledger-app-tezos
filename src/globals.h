@@ -46,9 +46,7 @@ typedef struct {
       uint8_t magic_number;
       bool hash_only;
 
-      struct {
-          uint64_t total_fee;
-      } register_delegate;
+      struct parsed_operation_group ops;
     } sign;
 
     struct {
@@ -103,10 +101,6 @@ typedef struct {
     struct {
       cx_ecfp_public_key_t compressed;
     } public_key_hash;
-
-    struct {
-      struct parsed_operation_group out;
-    } parse_operations;
   } priv;
 } globals_t;
 
