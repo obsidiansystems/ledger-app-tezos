@@ -91,11 +91,7 @@ can fall into the wrong hands.
 You will write it down on paper, along with your PIN, and store it. If you will
 have a large amount of money, consider putting your paper in a safe or safe
 deposit box, but at the very least keep it away from places where children,
-dogs, housekeepers, obnoxious neighbors, could inadvertently destroy it.
-Additionally, we recommend storing your PIN in a password manager.
-
-Finally, if you will not be baking yourself, consider disconnecting your Ledger device
-and closing your password manager when not in use.
+dogs, housekeepers, or obnoxious neighbors could inadvertently destroy it.
 
 ### Protecting Your Key -- Further Advanced Reading
 
@@ -105,11 +101,11 @@ or plausible deniability features should look at
 
 Note that Ledger devices with different seeds will appear to `tezos-client` to be
 different hardware wallets. Note also that it can change what key is authorized in
-the Baking App. When using these features in a Ledger hardware wallet used for baking,
-please exit and re-start the Baking App right before baking is supposed to
+Tezos Baking. When using these features in a Ledger hardware wallet used for baking,
+please exit and re-start Tezos Baking right before baking is supposed to
 happen, and manually verify that it displays the key you expect to bake for.
 
-The Wallet App does not require such extra steps, and so these extra
+Tezos Wallet does not require such extra steps, and so these extra
 protections are more appropriate for keys used for transaction than
 they are for keys used for baking. If you do use these features, one
 technique is that your tez be stored in the passphrase-protected and
@@ -181,17 +177,25 @@ Once you have added this, run `sudo nixos-rebuild switch` to activate the
 configuration, and unplug your Ledger device and plug it in again for the changes to
 take effect.
 
-## Obtaining the Ledger Nano S apps
+## Installing the Applications with Ledger Live
+
+The easiest way to obtain and install the Tezos Ledger Nano S apps is to download them
+from [Ledger Live](https://www.ledger.com/pages/ledger-live). Tezos Wallet is readily available 
+in Ledger Live's Manager. To download Tezos Baking, you'll need to enable 'Developer Mode' in Settings.
+
+If you've used Ledger Live for app installation, you can skip ahead to [Registering the Ledger Nano S with the node](#registering-the-ledger-nano-s-with-the-node).
+
+## Obtaining the Ledger Nano S apps without Ledger Live
 
 If you are using the [Nix package manager](https://nixos.org/nix/), you can skip
 this section and the next one; go directly to
-[Tezos baking platform](https://gitlab.com/obsidian.systems/tezos-baking-platform)
+[Tezos Baking Platform](https://gitlab.com/obsidian.systems/tezos-baking-platform)
 for simpler Nix-based installation, where documentation should be in `ledger/README.md`.
 Then return to this document and continue reading at *Using the Ledger Nano S apps*.
 
-The easiest way to obtain the Tezos Ledger Nano S apps is to download the `.hex` files
+The second easiest way to obtain both applications (after Ledger Live) is to download `.hex` files
 from the [releases](https://github.com/obsidiansystems/ledger-app-tezos/releases)
-page. After doing so, skip ahead to *Installing the apps onto your Ledger device*.
+page of this repo. After doing so, skip ahead to *Installing the apps onto your Ledger device*.
 You will need to expand the releases tarball somewhere and copy the
 baking.hex and wallet.hex files into the ledger-app-tezos directory.
 If you want to compile the applications yourself, keep reading this section.
@@ -278,13 +282,9 @@ $ APP=tezos_baking make
 $ mv bin/app.hex baking.hex
 ```
 
-## Installing the apps onto your Ledger device
+### Installing the apps onto your Ledger device without Ledger Live
 
-Ledger's primary interface for loading an app onto a Ledger device is a Chrome
-app called [Ledger Manager](https://www.ledgerwallet.com/apps/manager). However,
-it only supports a limited set of officially-supported apps like Bitcoin and
-Ethereum, and Tezos is not yet among these. So you will need to use a
-command-line tool called the
+Manually installing the apps requires a command-line tool called the
 [BOLOS Python Loader](https://ledger.readthedocs.io/projects/blue-loader-python/en/0.1.16/index.html).
 
 ### Installing BOLOS Python Loader
