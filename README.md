@@ -667,8 +667,7 @@ in the section on the baking app below.
 
 To delegate tez controlled by a Ledger device to someone else,
 you must first originate an account. Please read more
-about this in the Tezos document, [How to bake on the
-alphanet](http://doc.tzalpha.net/introduction/alphanet.html#how-to-bake-on-the-alphanet), to
+about this in the Tezos documentation, [How to use Tezos](https://tezos.gitlab.io/master/introduction/howtouse.html), to
 understand why this is necessary and the semantics of delegation.
 
 To originate an account, the command is:
