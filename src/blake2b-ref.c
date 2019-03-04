@@ -20,8 +20,6 @@
 #include "blake2.h"
 #include "blake2-impl.h"
 
-b2b_state hash_state;
-
 static const uint64_t b2b_IV[8] =
 {
   0x6a09e667f3bcc908ULL, 0xbb67ae8584caa73bULL,

@@ -8,38 +8,65 @@
 
 #define NO_CONTRACT_STRING "None"
 
-int parsed_contract_to_string(char *buff, uint32_t buff_size, const struct parsed_contract *contract) {
+#define TEZOS_HASH_CHECKSUM_SIZE 4
+
+static void pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve, const uint8_t hash[HASH_SIZE]);
+
+// These functions output terminating null bytes, and return the ending offset.
+static size_t microtez_to_string(char *dest, uint64_t number);
+
+void parsed_contract_to_string(char *buff, uint32_t buff_size, const struct parsed_contract *contract) {
     if (contract->originated == 0 && contract->curve_code == TEZOS_NO_CURVE) {
-        if (buff_size < sizeof(NO_CONTRACT_STRING)) return 0;
+        if (buff_size < sizeof(NO_CONTRACT_STRING)) THROW(EXC_WRONG_LENGTH);
         strcpy(buff, NO_CONTRACT_STRING);
-        return buff_size;
+        return;
     }
 
-    cx_curve_t curve;
-    if (contract->originated != 0) {
-        curve = CX_CURVE_NONE;
-    } else {
-        curve = curve_code_to_curve(contract->curve_code);
-    }
-    return pkh_to_string(buff, buff_size, curve, contract->hash);
+    cx_curve_t const curve = contract->originated != 0
+        ? CX_CURVE_NONE
+        : curve_code_to_curve(contract->curve_code);
+    pkh_to_string(buff, buff_size, curve, contract->hash);
 }
 
-int pubkey_to_pkh_string(char *buff, uint32_t buff_size, cx_curve_t curve,
-                         const cx_ecfp_public_key_t *public_key) {
+void pubkey_to_pkh_string(
+    char *const out,
+    size_t const out_size,
+    cx_curve_t const curve,
+    cx_ecfp_public_key_t const *const public_key
+) {
+    check_null(out);
+    check_null(public_key);
+
     uint8_t hash[HASH_SIZE];
     public_key_hash(hash, curve, public_key);
-    return pkh_to_string(buff, buff_size, curve, hash);
+    pkh_to_string(out, out_size, curve, hash);
 }
 
-// TODO: this should return size_t
-int pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve, const uint8_t hash[HASH_SIZE]) {
+void bip32_path_with_curve_to_pkh_string(char *const out, size_t const out_size, bip32_path_with_curve_t const *const key) {
+    check_null(out);
+    check_null(key);
+
+    cx_ecfp_public_key_t const *const pubkey = generate_public_key(key->curve, &key->bip32_path);
+    pubkey_to_pkh_string(out, out_size, key->curve, pubkey);
+}
+
+
+void compute_hash_checksum(uint8_t out[TEZOS_HASH_CHECKSUM_SIZE], void const *const data, size_t size) {
+    uint8_t checksum[32];
+    cx_hash_sha256(data, size, checksum, sizeof(checksum));
+    cx_hash_sha256(checksum, sizeof(checksum), checksum, sizeof(checksum));
+    memcpy(out, checksum, TEZOS_HASH_CHECKSUM_SIZE);
+}
+
+void pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve,
+                   const uint8_t hash[HASH_SIZE]) {
     if (buff_size < PKH_STRING_SIZE) THROW(EXC_WRONG_LENGTH);
 
     // Data to encode
     struct __attribute__((packed)) {
-        char prefix[3];
+        uint8_t prefix[3];
         uint8_t hash[HASH_SIZE];
-        char checksum[4];
+        uint8_t checksum[TEZOS_HASH_CHECKSUM_SIZE];
     } data;
 
     // prefix
@@ -70,45 +97,66 @@ int pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve, co
 
     // hash
     memcpy(data.hash, hash, sizeof(data.hash));
-
-    // checksum -- twice because them's the rules
-    uint8_t checksum[32];
-    cx_hash_sha256((void*)&data, sizeof(data) - sizeof(data.checksum), checksum, sizeof(checksum));
-    cx_hash_sha256(checksum, sizeof(checksum), checksum, sizeof(checksum));
-    memcpy(data.checksum, checksum, sizeof(data.checksum));
+    compute_hash_checksum(data.checksum, &data, sizeof(data) - sizeof(data.checksum));
 
     size_t out_size = buff_size;
     if (!b58enc(buff, &out_size, &data, sizeof(data))) THROW(EXC_WRONG_LENGTH);
-    return out_size;
 }
 
-size_t protocol_hash_to_string(char *buff, const size_t buff_size, const uint8_t hash[PROTOCOL_HASH_SIZE]) {
+void protocol_hash_to_string(char *buff, const size_t buff_size, const uint8_t hash[PROTOCOL_HASH_SIZE]) {
     if (buff_size < PROTOCOL_HASH_BASE58_STRING_SIZE) THROW(EXC_WRONG_LENGTH);
 
     // Data to encode
     struct __attribute__((packed)) {
-        char prefix[2];
+        uint8_t prefix[2];
         uint8_t hash[PROTOCOL_HASH_SIZE];
-        char checksum[4];
+        uint8_t checksum[TEZOS_HASH_CHECKSUM_SIZE];
     } data = {
         .prefix = {2, 170}
     };
 
     memcpy(data.hash, hash, sizeof(data.hash));
-
-    // checksum -- twice because them's the rules
-    // Hash the input (prefix + hash)
-    // Hash that hash.
-    // Take the first 4 bytes of that
-    // Voila: a checksum.
-    uint8_t checksum[32];
-    cx_hash_sha256((void*)&data, sizeof(data) - sizeof(data.checksum), checksum, sizeof(checksum));
-    cx_hash_sha256(checksum, sizeof(checksum), checksum, sizeof(checksum));
-    memcpy(data.checksum, checksum, sizeof(data.checksum));
+    compute_hash_checksum(data.checksum, &data, sizeof(data) - sizeof(data.checksum));
 
     size_t out_size = buff_size;
     if (!b58enc(buff, &out_size, &data, sizeof(data))) THROW(EXC_WRONG_LENGTH);
-    return out_size;
+}
+
+void chain_id_to_string(char *const buff, size_t const buff_size, chain_id_t const chain_id) {
+    if (buff_size < CHAIN_ID_BASE58_STRING_SIZE) THROW(EXC_WRONG_LENGTH);
+
+    // Data to encode
+    struct __attribute__((packed)) {
+        uint8_t prefix[3];
+        int32_t chain_id;
+        uint8_t checksum[TEZOS_HASH_CHECKSUM_SIZE];
+    } data = {
+        .prefix = {87, 82, 0},
+
+        // Must hash big-endian data so treating little endian as big endian just flips
+        .chain_id = READ_UNALIGNED_BIG_ENDIAN(uint32_t, &chain_id.v)
+    };
+
+    compute_hash_checksum(data.checksum, &data, sizeof(data) - sizeof(data.checksum));
+
+    size_t out_size = buff_size;
+    if (!b58enc(buff, &out_size, &data, sizeof(data))) THROW(EXC_WRONG_LENGTH);
+}
+
+#define STRCPY_OR_THROW(buff, size, x, exc) ({ \
+    if (size < sizeof(x)) THROW(exc); \
+    strcpy(buff, x); \
+})
+
+void chain_id_to_string_with_aliases(char *const out, size_t const out_size, chain_id_t const *const chain_id) {
+    check_null(chain_id);
+    if (chain_id->v == 0) {
+        STRCPY_OR_THROW(out, out_size, "any", EXC_WRONG_LENGTH);
+    } else if (chain_id->v == mainnet_chain_id.v) {
+        STRCPY_OR_THROW(out, out_size, "mainnet", EXC_WRONG_LENGTH);
+    } else {
+        chain_id_to_string(out, out_size, *chain_id);
+    }
 }
 
 // These functions do not output terminating null bytes.
@@ -126,6 +174,21 @@ static inline size_t convert_number(char dest[MAX_INT_DIGITS], uint64_t number, 
         }
     }
     return 0;
+}
+
+void number_to_string_indirect64(char *dest, size_t buff_size, const uint64_t *number) {
+    if (buff_size < MAX_INT_DIGITS + 1) THROW(EXC_WRONG_LENGTH); // terminating null
+    number_to_string(dest, *number);
+}
+
+void number_to_string_indirect32(char *dest, size_t buff_size, const uint32_t *number) {
+    if (buff_size < MAX_INT_DIGITS + 1) THROW(EXC_WRONG_LENGTH); // terminating null
+    number_to_string(dest, *number);
+}
+
+void microtez_to_string_indirect(char *dest, size_t buff_size, const uint64_t *number) {
+    if (buff_size < MAX_INT_DIGITS + 1) THROW(EXC_WRONG_LENGTH); // + terminating null + decimal point
+    microtez_to_string(dest, *number);
 }
 
 size_t number_to_string(char *dest, uint64_t number) {
@@ -170,4 +233,11 @@ size_t microtez_to_string(char *dest, uint64_t number) {
     off += length;
     dest[off] = '\0';
     return off;
+}
+
+void copy_string(char *const dest, size_t const buff_size, char const *const src) {
+    char const *const src_in = (char const *)PIC(src);
+    // I don't care that we will loop through the string twice, latency is not an issue
+    if (strlen(src_in) >= buff_size) THROW(EXC_WRONG_LENGTH);
+    strcpy(dest, src_in);
 }
