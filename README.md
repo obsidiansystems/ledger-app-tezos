@@ -715,11 +715,13 @@ Keep in mind that only registered delegate accounts can submit proposals and vot
 
 ## Using the Tezos Baking Application
 
-The Tezos Baking Application supports 3 operations:
+The Tezos Baking Application supports the following operations:
 
-  1. Authorize/get public key
-  2. Reset high watermark
-  3. Sign
+  1. Get public key
+  2. Setup ledger for baking
+  3. Reset high watermark
+  4. Get high watermark
+  5. Sign (blocks and endorsements)
 
 It will only sign block headers and endorsements, as the purpose of the baking
 app is that it cannot be co-opted to perform other types of operations (like
@@ -753,26 +755,21 @@ $ tezos-accuser-003-PsddFKi3 run
 Again, each of these will run indefinitely, and each should be in its own terminal
 `tmux`, or `screen` window.
 
-*Note*: The binaries shown above all correspond to current Tezos mainnet protocol. When the Tezos protocol upgrades, the binaries shown below will update to, for instance, `tezos-baker-004-********`.
+*Note*: The binaries shown above all correspond to current Tezos mainnet protocol. When the Tezos protocol upgrades, the binaries shown above will update to, for instance, `tezos-baker-004-********`.
 
-### Authorize public key
+### Setup ledger device to bake and endorse
 
 You need to run a specific command to authorize a key for baking. Once a key is
 authorized for baking, the user will not have to approve this command again. If
 a key is not authorized for baking, signing endorsements and block headers with
 that key will be rejected. This authorization data is persisted across runs of
-the application.  Only one key can be authorized for baking per Ledger hardware wallet at a
+the application, but not across app installations. Only one key can be authorized for baking per Ledger hardware wallet at a
 time.
 
-In order to authorize a public key for baking, you can do either of the
-following:
-
-  * Use the APDU for authorizing a public key.
-
-    The command for this is as follows:
+In order to authorize a public key for baking, use the APDU for setting up the ledger device to bake:
 
     ```
-    $ tezos-client authorize ledger to bake for <SIGNATURE>
+    $ tezos-client setup ledger to bake for <ALIAS>
     ```
 
     This only authorizes the key for baking on the Ledger Nano S, but does
@@ -780,9 +777,9 @@ following:
     be necessary if you re-install the app, or if you have a different
     paired Ledger device that you are using to bake for the first time.
 
-  * Have the baking app sign a self-delegation. This is explained in the next section.
-
 ### Registering as a Delegate
+
+*Note: The ledger device will not sign this operation unless you have already setup the device to bake using the command in the previous section.*
 
 In order to bake from the Ledger Nano S account you need to register the key as a
 delegate. This is formally done by delegating the account to itself. As a
@@ -792,41 +789,20 @@ delegate to itself.
 Open the Tezos Baking Application on the device, and then run this:
 
 ```
-$ tezos-client register key ledger_<...>_ed_0_0 as delegate
+$ tezos-client register key <ALIAS> as delegate
 ```
 
 This command is intended to inform the blockchain itself of your intention to
-bake with this key. It can be signed with either the Wallet App or the Baking
-App, but if you sign it with the Baking App, it also implies to the Ledger Nano S
-that you want to authorize that key for baking on the device as well.
-
-Authorizing a key for baking on a specific Ledger Nano S and authorizing it for
-baking in general on the blockchain are two distinct authorizations. This
-command will do both of them if signed with the appropriate baking app,
-whereas the `authorize ledger` command in the previous section will
-only do it for the in question, which is appropriate if it is already
-authorized to bake on the blockchain.
-
-The `register key` command is equivalent to:
-
-```
-$ tezos-client set delegate for ledger_<...>_ed_0_0 to ledger_<...>_ed_0_0
-```
-
-The Baking App only signs self-delegations; the Wallet App is needed to sign
-delegations of originated accounts controlled by a hardware wallet. The Baking App
-also only signs delegations with fees less than 0.05 ꜩ; to sign those with
-more, you must use the Wallet App to authorize baking for the blockchain,
-and the command in the previous section to authorize baking for the Ledger Nano S,
-which is always available as an alternative to signing this with the Baking App.
+bake with this key. It can be signed with either Tezos Wallet or Tezos Baking, however 
+Tezos Baking can only sign self-delegations.
 
 ### Sign
 
 The sign operation is for signing block headers and endorsements.
 
-Block headers must have monotonically strictly increasing levels; that is, each
+Block headers must have monotonically increasing levels; that is, each
 block must have a higher level than all previous blocks signed with the Ledger device.
-This is intended to prevent double baking at the device level, as a security
+This is intended to prevent double baking and double endorsing at the device level, as a security
 measure against potential vulnerabilities where the computer might be tricked
 into double baking. This feature will hopefully be a redundant precaution, but
 it's implemented at the device level because the point of the Ledger hardware wallet is to not
@@ -843,71 +819,63 @@ self-delegation).
 
 With the exception of self-delegations, as long as the key is configured and the
 high watermark constraint is followed, there is no user prompting required for
-signing. The baking app will only ever sign without prompting or reject an
-attempt at signing; this operation is designed to be used unsupervised.
+signing. Tezos Baking will only ever sign without prompting or reject an
+attempt at signing; this operation is designed to be used unsupervised. As mentioned,
+ the only exception to this is self-delegation.
 
-As mentioned, the only exception to this is self-delegation. This will prompt
-and display the public key hash of the account. This will authorize the key for
-baking on the hardware wallet. This is independent of what the signed self-delegation
-will then do on the blockchain. If you are baking on a new device, or have
-reinstalled the app, you might have to sign a self-delegation to authorize the
-key on the Ledger Nano S, even if you are already registered for baking on the
-block-chain. This will also have to be done if you have previously signed this
-with the wallet app.
+### Reset High Watermark
 
-### Reset
+When updating the version of Tezos Baking you are using or if you are switching baking to
+ a new ledger device, we recommend setting the HWM to the current head block level of the blockchain.
+This can be accomplished with the reset command. The following command requires an explicit
+confirmation from the user:
 
-There is some possibility that the HWM will need to be reset. This could be due
-to the computer somehow being tricked into sending a block with a high level to
-the Ledger Nano S (either due to an attack or a bug on the computer side), or because
-the owner of the device wants to move from the real Tezos network to a test
-network, or to a different test network. This can be accomplished with the reset
-command.
+```
+$ tezos-client set ledger high watermark for "ledger://<tz...>/" to <HWM>
+```
 
-This is intended as a testing/debug tool and as a possible recovery from
-attempted attacks or bugs, not as a day to day command. It requires an explicit
-confirmation from the user, and there is no specific utility to send this
-command. To send it manually, you can use the following command line:
+`<HWM>` indicates the new high watermark to reset to. Both the main and test chain HWMs will be 
+simultaneously changed to this value.
 
-`tezos-client set ledger high watermark for "ledger://<tz...>/" to <HWM>`
+If you would like to know the current high watermark of the ledger device, you can run:
 
-`<HWM>` indicates the new high watermark to reset to. If you are joining a new
-test network, `0` is a fitting number, as then all blocks will be allowed again.
-You can also set it to the most recently baked level on that test net.
+```
+$ tezos-client get ledger high watermark for "ledger://<tz...>/"
+```
 
-If you are not physically present at your computer, but are curious what the
-Ledger device's high watermark is, you can run:
-
-`tezos-client get ledger high watermark for "ledger://<tz...>/"`
+While the ledger device's UI displays the HWM of the main chain it is signing on, it will not 
+display the HWM of a test chain it may be signing on during the 3rd period of the Tezos Amendment Process.
+Running this command will return both HWMs as well as the chain ID of the main chain.
 
 ## Upgrading
 
 When you want to upgrade to a new version, whether you built it yourself from source
 or whether it's a new release of the `app.hex` files, use the same commands as you did
 to originally install it. As the keys are generated from the device's seeds and the
-derivation paths, you will have the same keys with every version of this Ledger Nano S app,
+derivation paths, you will have the same keys with every version of this Ledger hardware wallet app,
 so there is no need to re-import the keys with `tezos-client`.
 
 ### Special Upgrading Considerations for Bakers
 
-If you've already been baking on an old version of the Baking App, the new version will
+If you've already been baking on an old version of Tezos Baking, the new version will
 not remember which key you are baking with nor the High Watermark. You will have to re-run
-this command to remind the hardware wallet what key you intend to authorize for baking:
+this command to remind the hardware wallet what key you intend to authorize for baking. As shown, it can
+also set the HWM:
 
 ```
-$ tezos-client authorize ledger to bake for <SIGNATURE>
+$ tezos-client setup ledger to bake for <ALIAS> --main-hwm <HWM>
 ```
 
-You can also set the High Watermark to the level of the most recently baked block with:
+Alternatively, you can also set the High Watermark to the level of the most recently baked block with a separate command:
 
 ```
-tezos-client set ledger high watermark for "ledger://<tz...>/" to <HWM>
+$ tezos-client set ledger high watermark for "ledger://<tz...>/" to <HWM>
 ```
 
-This will require the correct URL for the Ledger Nano S acquired from:
+The later will require the correct URL for the Ledger device acquired from:
 
 ```
-tezos-client list connected ledgers
+$ tezos-client list connected ledgers
 ```
 
 ## Troubleshooting
