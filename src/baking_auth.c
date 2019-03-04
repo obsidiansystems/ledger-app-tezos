@@ -22,7 +22,7 @@ static void write_high_watermark(parsed_baking_data_t const *const in) {
     UPDATE_NVRAM(ram, {
         // If the chain matches the main chain *or* the main chain is not set, then use 'main' HWM.
         high_watermark_t *const dest = select_hwm_by_chain(in->chain_id, ram);
-        dest->highest_level = in->level;
+        dest->highest_level = MAX(in->level, dest->highest_level);
         dest->had_endorsement = in->is_endorsement;
     });
 }
@@ -45,7 +45,8 @@ static bool is_level_authorized(parsed_baking_data_t const *const baking_info) {
 
         // Levels are tied. In order for this to be OK, this must be an endorsement, and we must not
         // have previously seen an endorsement.
-        || (baking_info->is_endorsement && !hwm->had_endorsement);
+        || (baking_info->level == hwm->highest_level
+            && baking_info->is_endorsement && !hwm->had_endorsement);
 }
 
 bool is_path_authorized(cx_curve_t curve, bip32_path_t const *const bip32_path) {
