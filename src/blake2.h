@@ -151,5 +151,4 @@ extern "C" {
 }
 #endif
 
-extern b2b_state hash_state;
 #endif

@@ -6,6 +6,7 @@
 
 #include "os.h"
 #include "cx.h"
+#include "types.h"
 
 #define MAGIC_BYTE_INVALID 0x00
 #define MAGIC_BYTE_BLOCK 0x01
@@ -14,8 +15,6 @@
 #define MAGIC_BYTE_UNSAFE_OP2 0x04
 #define MAGIC_BYTE_UNSAFE_OP3 0x05
 
-typedef uint32_t level_t;
-
 static inline uint8_t get_magic_byte(const uint8_t *data, size_t length) {
     if (data == NULL || length == 0) return MAGIC_BYTE_INVALID;
     else return *data;
@@ -23,7 +22,7 @@ static inline uint8_t get_magic_byte(const uint8_t *data, size_t length) {
 
 #define READ_UNALIGNED_BIG_ENDIAN(type, in) \
     ({ \
-        const uint8_t *bytes = (uint8_t*)in; \
+        uint8_t const *bytes = (uint8_t const *)in; \
         uint8_t out_bytes[sizeof(type)]; \
         type res; \
 \
@@ -34,3 +33,7 @@ static inline uint8_t get_magic_byte(const uint8_t *data, size_t length) {
 \
         res; \
     })
+
+// Same as READ_UNALIGNED_BIG_ENDIAN but helps keep track of how many bytes
+// have been read by adding sizeof(type) to the given counter.
+#define CONSUME_UNALIGNED_BIG_ENDIAN(counter, type, addr) ({ counter += sizeof(type); READ_UNALIGNED_BIG_ENDIAN(type, addr); })

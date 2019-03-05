@@ -1,38 +1,14 @@
 #include "ui_prompt.h"
 
 #include "exception.h"
+#include "globals.h"
+#include "memory.h"
+#include "to_string.h"
 
 #include <string.h>
 
-static char prompts[MAX_SCREEN_COUNT][PROMPT_WIDTH + 1]; // Additional bytes init'ed to null,
-static char values[MAX_SCREEN_COUNT][VALUE_WIDTH + 1];   // and null they shall remain.
-        // TODO: Get rid of +1
-
-#define SCREEN_FOR(SCREEN_ID) \
-    {{BAGL_LABELINE, SCREEN_ID + 1, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000, \
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0}, \
-     prompts[SCREEN_ID], \
-     0, \
-     0, \
-     0, \
-     NULL, \
-     NULL, \
-     NULL}, \
-    {{BAGL_LABELINE, SCREEN_ID + 1, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000, \
-      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26}, \
-     values[SCREEN_ID], \
-     0, \
-     0, \
-     0, \
-     NULL, \
-     NULL, \
-     NULL}
-
-#define INITIAL_ELEMENTS_COUNT 3
-#define ELEMENTS_PER_SCREEN 2
-
 static const bagl_element_t ui_multi_screen[] = {
-    {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
+    {{BAGL_RECTANGLE, BAGL_STATIC_ELEMENT, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
       0, 0},
      NULL,
      0,
@@ -42,7 +18,7 @@ static const bagl_element_t ui_multi_screen[] = {
      NULL,
      NULL},
 
-    {{BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+    {{BAGL_ICON, BAGL_STATIC_ELEMENT, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
       BAGL_GLYPH_ICON_CROSS},
      NULL,
      0,
@@ -52,7 +28,7 @@ static const bagl_element_t ui_multi_screen[] = {
      NULL,
      NULL},
 
-    {{BAGL_ICON, 0x00, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+    {{BAGL_ICON, BAGL_STATIC_ELEMENT, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
       BAGL_GLYPH_ICON_CHECK},
      NULL,
      0,
@@ -62,39 +38,67 @@ static const bagl_element_t ui_multi_screen[] = {
      NULL,
      NULL},
 
-    SCREEN_FOR(0),
-    SCREEN_FOR(1),
-    SCREEN_FOR(2),
-    SCREEN_FOR(3),
-    SCREEN_FOR(4),
-    SCREEN_FOR(5),
-    SCREEN_FOR(6),
+    {{BAGL_LABELINE, BAGL_STATIC_ELEMENT, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     global.ui.prompt.active_prompt,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, BAGL_SCROLLING_ELEMENT, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     global.ui.prompt.active_value,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
 };
 
-char *get_value_buffer(uint32_t which) {
+void switch_screen(uint32_t which) {
     if (which >= MAX_SCREEN_COUNT) THROW(EXC_MEMORY_ERROR);
-    return values[which];
+    const char *label = (const char*)PIC(global.ui.prompt.prompts[which]);
+
+    strncpy(global.ui.prompt.active_prompt, label, sizeof(global.ui.prompt.active_prompt));
+    if (global.ui.prompt.callbacks[which] == NULL) THROW(EXC_MEMORY_ERROR);
+    global.ui.prompt.callbacks[which](
+        global.ui.prompt.active_value, sizeof(global.ui.prompt.active_value),
+        global.ui.prompt.callback_data[which]);
+}
+
+void register_ui_callback(uint32_t which, string_generation_callback cb, const void *data) {
+    if (which >= MAX_SCREEN_COUNT) THROW(EXC_MEMORY_ERROR);
+    global.ui.prompt.callbacks[which] = cb;
+    global.ui.prompt.callback_data[which] = data;
+}
+
+void clear_ui_callbacks(void) {
+    for (int i = 0; i < MAX_SCREEN_COUNT; ++i) {
+        global.ui.prompt.callbacks[i] = NULL;
+    }
 }
 
 __attribute__((noreturn))
-void ui_prompt(const char *const *labels, const char *const *data, callback_t ok_c, callback_t cxl_c) {
+void ui_prompt(const char *const *labels, const char *const *data, ui_callback_t ok_c, ui_callback_t cxl_c) {
     check_null(labels);
+    global.ui.prompt.prompts = labels;
 
     size_t i;
     for (i = 0; labels[i] != NULL; i++) {
         const char *label = (const char *)PIC(labels[i]);
         if (i >= MAX_SCREEN_COUNT || strlen(label) > PROMPT_WIDTH) THROW(EXC_MEMORY_ERROR);
 
-        strncpy(prompts[i], label, sizeof(prompts[i]));
         if (data != NULL) {
-            const char *value = (const char *)PIC(data[i]);
-            if (strlen(value) > VALUE_WIDTH) THROW(EXC_MEMORY_ERROR);
-            strncpy(values[i], value, sizeof(values[i]));
+            register_ui_callback(i, copy_string, data[i]);
         }
     }
     size_t screen_count = i;
 
-    ui_display(ui_multi_screen, INITIAL_ELEMENTS_COUNT + screen_count * ELEMENTS_PER_SCREEN,
+    ui_display(ui_multi_screen, NUM_ELEMENTS(ui_multi_screen),
                ok_c, cxl_c, screen_count);
     THROW(ASYNC_EXCEPTION);
 }

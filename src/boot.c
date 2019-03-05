@@ -17,8 +17,11 @@
 
 #include "ui.h"
 
+// Order matters
 #include "os.h"
 #include "cx.h"
+
+#include "globals.h"
 
 __attribute__((noreturn))
 void app_main(void);
@@ -29,6 +32,10 @@ __attribute__((section(".boot"))) int main(void) {
 
     // ensure exception will work as planned
     os_boot();
+
+    uint8_t tag;
+    init_globals();
+    global.stack_root = &tag;
 
     for (;;) {
         BEGIN_TRY {
