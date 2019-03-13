@@ -475,9 +475,10 @@ unsafe:
 #define P1_LAST_MARKER 0x80
 
 size_t handle_apdu_sign(uint8_t instruction) {
-    uint8_t p1 = G_io_apdu_buffer[OFFSET_P1];
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
-    uint32_t dataLength = G_io_apdu_buffer[OFFSET_LC];
+    uint8_t const p1 = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_P1]);
+    uint8_t const dataLength = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]);
+    if (dataLength > MAX_APDU_SIZE) THROW(EXC_WRONG_LENGTH_FOR_INS);
 
     bool last = (p1 & P1_LAST_MARKER) != 0;
     switch (p1 & ~P1_LAST_MARKER) {
@@ -486,7 +487,7 @@ size_t handle_apdu_sign(uint8_t instruction) {
         memset(G.message_data, 0, sizeof(G.message_data));
         G.message_data_length = 0;
         read_bip32_path(&G.key.bip32_path, dataBuffer, dataLength);
-        G.key.curve = curve_code_to_curve(G_io_apdu_buffer[OFFSET_CURVE]);
+        G.key.curve = curve_code_to_curve(READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
         return finalize_successful_send(0);
 #ifndef BAKING_APP
     case P1_HASH_ONLY_NEXT:

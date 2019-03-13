@@ -5,15 +5,12 @@
 
 #include <stdbool.h>
 
-
 void init_globals(void);
 
-// Where does this number come from?
-#ifdef BAKING_APP
-#   define TEZOS_BUFSIZE 512
-#else
-#   define TEZOS_BUFSIZE 256
-#endif
+#define MAX_APDU_SIZE 230  // Maximum number of bytes in a single APDU
+
+// Our buffer must accommodate any remainder from hashing and the next message at once.
+#define TEZOS_BUFSIZE (BLAKE2B_BLOCKBYTES + MAX_APDU_SIZE)
 
 #define PRIVATE_KEY_DATA_SIZE 32
 
