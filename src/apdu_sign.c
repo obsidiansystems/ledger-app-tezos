@@ -578,8 +578,8 @@ static int perform_signature(bool hash_first) {
     {
         unsigned int info;
         tx = cx_ecdsa_sign(&pair->private_key,
-                           CX_LAST | CX_RND_TRNG,
-                           CX_NONE,
+                           CX_LAST | CX_RND_RFC6979,
+                           CX_SHA256,  // historical reasons...semantically CX_NONE
                            data,
                            datalen,
                            &G_io_apdu_buffer[0],
