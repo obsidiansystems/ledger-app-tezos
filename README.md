@@ -706,7 +706,7 @@ The Wallet app will then ask you to confirm the various details of the proposal 
 Voting for a proposal during the Exploration or Promotion Vote Period also requires that you have the Wallet app open. You can then run
 
 ```
-$ tezos-client submit ballot for <ACCOUNT> <PROTOCOL-HASH> <yea|nay|pass>
+$ tezos-client submit ballot for <ACCOUNT> <PROTOCOL-HASH> <yay|nay|pass>
 ```
 
 The Wallet app will ask you to confirm the details of your vote.
