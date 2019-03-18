@@ -109,3 +109,61 @@ cx_ecfp_public_key_t const *public_key_hash(
     b2b_final(&global.blake2b.hash_state, output, HASH_SIZE);
     return compressed;
 }
+
+size_t sign(
+    uint8_t *const out, size_t const out_size,
+    bip32_path_with_curve_t const *const key,
+    uint8_t const *const in, size_t const in_size
+) {
+    check_null(out);
+    check_null(key);
+    check_null(in);
+
+    struct key_pair *const pair = generate_key_pair(key->curve, &key->bip32_path);
+
+    size_t tx = 0;
+    switch (key->curve) {
+    case CX_CURVE_Ed25519: {
+        static size_t const SIG_SIZE = 64;
+        if (out_size < SIG_SIZE) THROW(EXC_WRONG_LENGTH);
+        tx += cx_eddsa_sign(
+            &pair->private_key,
+            0,
+            CX_SHA512,
+            (uint8_t const *)PIC(in),
+            in_size,
+            NULL,
+            0,
+            out,
+            SIG_SIZE,
+            NULL);
+    }
+        break;
+    case CX_CURVE_SECP256K1:
+    case CX_CURVE_SECP256R1:
+    {
+        static size_t const SIG_SIZE = 100;
+        if (out_size < SIG_SIZE) THROW(EXC_WRONG_LENGTH);
+        unsigned int info;
+        tx += cx_ecdsa_sign(
+            &pair->private_key,
+            CX_LAST | CX_RND_RFC6979,
+            CX_SHA256,  // historical reasons...semantically CX_NONE
+            (uint8_t const *)PIC(in),
+            in_size,
+            out,
+            SIG_SIZE,
+            &info);
+        if (info & CX_ECCINFO_PARITY_ODD) {
+            out[0] |= 0x01;
+        }
+    }
+        break;
+    default:
+        THROW(EXC_WRONG_PARAM); // This should not be able to happen.
+    }
+
+    memset(&pair->private_key, 0, sizeof(pair->private_key));
+
+    return tx;
+}

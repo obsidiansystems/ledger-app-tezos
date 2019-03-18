@@ -556,45 +556,7 @@ static int perform_signature(bool hash_first) {
 #endif
     }
 
-    struct key_pair *const pair = generate_key_pair(G.key.curve, &G.key.bip32_path);
-
-    size_t tx = 0;
-    switch (G.key.curve) {
-    case CX_CURVE_Ed25519: {
-        tx = cx_eddsa_sign(&pair->private_key,
-                           0,
-                           CX_SHA512,
-                           data,
-                           datalen,
-                           NULL,
-                           0,
-                           &G_io_apdu_buffer[0],
-                           64,
-                           NULL);
-    }
-        break;
-    case CX_CURVE_SECP256K1:
-    case CX_CURVE_SECP256R1:
-    {
-        unsigned int info;
-        tx = cx_ecdsa_sign(&pair->private_key,
-                           CX_LAST | CX_RND_RFC6979,
-                           CX_SHA256,  // historical reasons...semantically CX_NONE
-                           data,
-                           datalen,
-                           &G_io_apdu_buffer[0],
-                           100,
-                           &info);
-        if (info & CX_ECCINFO_PARITY_ODD) {
-            G_io_apdu_buffer[0] |= 0x01;
-        }
-    }
-        break;
-    default:
-        THROW(EXC_WRONG_PARAM); // This should not be able to happen.
-    }
-
-    memset(&pair->private_key, 0, sizeof(pair->private_key));
+    size_t const tx = sign(G_io_apdu_buffer, MAX_SIGNATURE_SIZE, &G.key, data, datalen);
 
     clear_data();
 

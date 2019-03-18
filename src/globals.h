@@ -14,10 +14,19 @@ void init_globals(void);
 
 #define PRIVATE_KEY_DATA_SIZE 32
 
+#define MAX_SIGNATURE_SIZE 100
+
 struct priv_generate_key_pair {
     uint8_t privateKeyData[PRIVATE_KEY_DATA_SIZE];
     struct key_pair res;
 };
+
+typedef struct {
+    bip32_path_with_curve_t key;
+    uint8_t signed_hmac_key[MAX_SIGNATURE_SIZE];
+    uint8_t hashed_signed_hmac_key[CX_SHA512_SIZE];
+    uint8_t hmac[CX_SHA256_SIZE];
+} apdu_hmac_state_t;
 
 typedef struct {
   void *stack_root;
@@ -54,6 +63,9 @@ typedef struct {
             level_t test;
         } hwm;
     } setup;
+
+    apdu_hmac_state_t hmac;
+
   } u;
 
   struct {

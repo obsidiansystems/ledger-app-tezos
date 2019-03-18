@@ -23,6 +23,11 @@ cx_ecfp_public_key_t const *public_key_hash(
     uint8_t output[HASH_SIZE], cx_curve_t curve,
     cx_ecfp_public_key_t const *const restrict public_key);
 
+size_t sign(
+    uint8_t *const out, size_t const out_size,
+    bip32_path_with_curve_t const *const key,
+    uint8_t const *const in, size_t const in_size);
+
 enum curve_code {
     TEZOS_ED,
     TEZOS_SECP256K1,
