@@ -232,7 +232,7 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
         break;
     case SEPROXYHAL_TAG_TICKER_EVENT:
         if (ux.callback_interval_ms != 0) {
-            ux.callback_interval_ms -= MIN(ux.callback_interval_ms, 100);
+            ux.callback_interval_ms -= MIN(ux.callback_interval_ms, 100u);
             if (ux.callback_interval_ms == 0) {
                 // prepare next screen
                 G.ux_step = (G.ux_step + 1) % G.ux_step_count;

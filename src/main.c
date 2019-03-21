@@ -16,6 +16,7 @@
 ********************************************************************************/
 
 #include "apdu_baking.h"
+#include "apdu_hmac.h"
 #include "apdu_pubkey.h"
 #include "apdu_setup.h"
 #include "apdu_sign.h"
@@ -43,6 +44,7 @@ void app_main(void) {
     global.handlers[APDU_INS(INS_QUERY_ALL_HWM)] = handle_apdu_all_hwm;
     global.handlers[APDU_INS(INS_DEAUTHORIZE)] = handle_apdu_deauthorize;
     global.handlers[APDU_INS(INS_QUERY_AUTH_KEY_WITH_CURVE)] = handle_apdu_query_auth_key_with_curve;
+    global.handlers[APDU_INS(INS_HMAC)] = handle_apdu_hmac;
 #else
     global.handlers[APDU_INS(INS_SIGN_UNSAFE)] = handle_apdu_sign;
 #endif
