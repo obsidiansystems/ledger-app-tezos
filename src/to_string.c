@@ -38,15 +38,19 @@ void pubkey_to_pkh_string(
     check_null(public_key);
 
     uint8_t hash[HASH_SIZE];
-    public_key_hash(hash, curve, public_key);
+    public_key_hash(hash, sizeof(hash), NULL, curve, public_key);
     pkh_to_string(out, out_size, curve, hash);
 }
 
-void bip32_path_with_curve_to_pkh_string(char *const out, size_t const out_size, bip32_path_with_curve_t const *const key) {
+void bip32_path_with_curve_to_pkh_string(
+    char *const out, size_t const out_size,
+    bip32_path_with_curve_t const *const key
+) {
     check_null(out);
     check_null(key);
 
-    cx_ecfp_public_key_t const *const pubkey = generate_public_key(key->curve, &key->bip32_path);
+    cx_ecfp_public_key_t const *const pubkey = generate_public_key_return_global(
+        key->curve, &key->bip32_path);
     pubkey_to_pkh_string(out, out_size, key->curve, pubkey);
 }
 

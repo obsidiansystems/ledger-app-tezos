@@ -45,7 +45,10 @@ size_t read_bip32_path(bip32_path_t *const out, uint8_t const *const in, size_t 
     return ix;
 }
 
-struct key_pair *generate_key_pair(cx_curve_t const curve, bip32_path_t const *const bip32_path) {
+struct key_pair *generate_key_pair_return_global(
+    cx_curve_t const curve,
+    bip32_path_t const *const bip32_path
+) {
     check_null(bip32_path);
     struct priv_generate_key_pair *const priv = &global.priv.generate_key_pair;
 
@@ -74,17 +77,24 @@ struct key_pair *generate_key_pair(cx_curve_t const curve, bip32_path_t const *c
     return &priv->res;
 }
 
-cx_ecfp_public_key_t const *generate_public_key(cx_curve_t const curve, bip32_path_t const *const bip32_path) {
+cx_ecfp_public_key_t const *generate_public_key_return_global(
+    cx_curve_t const curve,
+    bip32_path_t const *const bip32_path
+) {
     check_null(bip32_path);
-    struct key_pair *const pair = generate_key_pair(curve, bip32_path);
+    struct key_pair *const pair = generate_key_pair_return_global(curve, bip32_path);
     memset(&pair->private_key, 0, sizeof(pair->private_key));
     return &pair->public_key;
 }
 
-cx_ecfp_public_key_t const *public_key_hash(
-    uint8_t output[HASH_SIZE], cx_curve_t curve,
+cx_ecfp_public_key_t const *public_key_hash_return_global(
+    uint8_t *const out, size_t const out_size,
+    cx_curve_t const curve,
     cx_ecfp_public_key_t const *const restrict public_key)
 {
+    check_null(out);
+    if (out_size < HASH_SIZE) THROW(EXC_WRONG_LENGTH);
+
     cx_ecfp_public_key_t *const compressed = &global.priv.public_key_hash.compressed;
     switch (curve) {
         case CX_CURVE_Ed25519:
@@ -106,7 +116,7 @@ cx_ecfp_public_key_t const *public_key_hash(
     }
     b2b_init(&global.blake2b.hash_state, HASH_SIZE);
     b2b_update(&global.blake2b.hash_state, compressed->W, compressed->W_len);
-    b2b_final(&global.blake2b.hash_state, output, HASH_SIZE);
+    b2b_final(&global.blake2b.hash_state, out, HASH_SIZE);
     return compressed;
 }
 
@@ -119,7 +129,7 @@ size_t sign(
     check_null(key);
     check_null(in);
 
-    struct key_pair *const pair = generate_key_pair(key->curve, &key->bip32_path);
+    struct key_pair *const pair = generate_key_pair_return_global(key->curve, &key->bip32_path);
 
     size_t tx = 0;
     switch (key->curve) {

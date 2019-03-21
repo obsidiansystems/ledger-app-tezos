@@ -47,8 +47,7 @@ size_t handle_apdu_get_public_key(uint8_t instruction) {
         if (G.key.bip32_path.length == 0) THROW(EXC_WRONG_LENGTH_FOR_INS);
     }
 #endif
-    cx_ecfp_public_key_t const *const pubkey = generate_public_key(G.key.curve, &G.key.bip32_path);
-    memcpy(&G.public_key, pubkey, sizeof(G.public_key));
+    generate_public_key(&G.public_key, G.key.curve, &G.key.bip32_path);
 
     if (instruction == INS_GET_PUBLIC_KEY) {
         return provide_pubkey(G_io_apdu_buffer, &G.public_key);
