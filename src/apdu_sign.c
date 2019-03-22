@@ -22,32 +22,53 @@
 #define SIGN_HASH_SIZE 32
 #define B2B_BLOCKBYTES 128
 
-static void conditional_init_hash_state(void) {
-    if (!G.is_hash_state_inited) {
-        b2b_init(&global.blake2b.hash_state, SIGN_HASH_SIZE);
-        G.is_hash_state_inited = true;
+static inline void conditional_init_hash_state(blake2b_hash_state_t *const state) {
+    check_null(state);
+    if (!state->initialized) {
+        b2b_init(&state->state, SIGN_HASH_SIZE);
+        state->initialized = true;
     }
 }
 
-static void hash_buffer(void) {
-    const uint8_t *current = G.message_data;
-    while (G.message_data_length > B2B_BLOCKBYTES) {
-        conditional_init_hash_state();
-        b2b_update(&global.blake2b.hash_state, current, B2B_BLOCKBYTES);
-        G.message_data_length -= B2B_BLOCKBYTES;
+static void blake2b_incremental_hash(
+    uint8_t *const out, size_t const out_size,
+    size_t *const out_length,
+    blake2b_hash_state_t *const state
+) {
+    check_null(out);
+    check_null(out_length);
+    check_null(state);
+
+    uint8_t *current = out;
+    while (*out_length > B2B_BLOCKBYTES) {
+        if (current - out > out_size) THROW(EXC_MEMORY_ERROR);
+        conditional_init_hash_state(state);
+        b2b_update(&state->state, current, B2B_BLOCKBYTES);
+        *out_length -= B2B_BLOCKBYTES;
         current += B2B_BLOCKBYTES;
     }
     // TODO use circular buffer at some point
-    memmove(G.message_data, current, G.message_data_length);
+    memmove(out, current, *out_length);
 }
 
-static void finish_hashing(uint8_t *hash, size_t hash_size) {
-    hash_buffer();
-    conditional_init_hash_state();
-    b2b_update(&global.blake2b.hash_state, G.message_data, G.message_data_length);
-    b2b_final(&global.blake2b.hash_state, hash, hash_size);
+static void blake2b_finish_hash(
+    uint8_t *const out, size_t const out_size,
+    uint8_t *const buff, size_t const buff_size,
+    size_t *const buff_length,
+    blake2b_hash_state_t *const state
+) {
+    check_null(out);
+    check_null(buff);
+    check_null(buff_length);
+    check_null(state);
+
+    conditional_init_hash_state(state);
+    blake2b_incremental_hash(buff, buff_size, buff_length, state);
+    b2b_update(&state->state, buff, *buff_length);
+    b2b_final(&state->state, out, out_size);
+
     G.message_data_length = 0;
-    G.is_hash_state_inited = false;
+    G.hash_state.initialized = false;
 }
 
 static int perform_signature(bool hash_first);
@@ -65,11 +86,7 @@ static bool sign_unsafe_ok(void) {
 #endif
 
 static void clear_data(void) {
-    G.key.bip32_path.length = 0;
-    G.message_data_length = 0;
-    G.is_hash_state_inited = false;
-    G.magic_number = 0;
-    G.hash_only = false;
+    memset(&G, 0, sizeof(G));
 }
 
 static bool sign_reject(void) {
@@ -451,7 +468,7 @@ uint32_t wallet_sign_complete(uint8_t instruction) {
             default:
                 THROW(EXC_PARSE_ERROR);
             case MAGIC_BYTE_UNSAFE_OP:
-                if (G.is_hash_state_inited) {
+                if (G.hash_state.initialized) {
                     goto unsafe;
                 }
                 if (!prompt_transaction(
@@ -510,7 +527,10 @@ size_t handle_apdu_sign(uint8_t instruction) {
 
 #ifndef BAKING_APP
     if (instruction == INS_SIGN) {
-        hash_buffer();
+        blake2b_incremental_hash(
+            G.message_data, sizeof(G.message_data),
+            &G.message_data_length,
+            &G.hash_state);
     }
 #endif
 
@@ -518,7 +538,7 @@ size_t handle_apdu_sign(uint8_t instruction) {
         THROW(EXC_PARSE_ERROR);
     }
 
-    os_memmove(G.message_data + G.message_data_length, dataBuffer, dataLength);
+    memmove(G.message_data + G.message_data_length, dataBuffer, dataLength);
     G.message_data_length += dataLength;
 
     if (!last) {
@@ -542,8 +562,15 @@ static int perform_signature(bool hash_first) {
 #endif
 
     if (hash_first) {
-        hash_buffer();
-        finish_hashing(hash, sizeof(hash));
+        blake2b_incremental_hash(
+            G.message_data, sizeof(G.message_data),
+            &G.message_data_length,
+            &G.hash_state);
+        blake2b_finish_hash(
+            hash, sizeof(hash),
+            G.message_data, sizeof(G.message_data),
+            &G.message_data_length,
+            &G.hash_state);
         data = hash;
         datalen = SIGN_HASH_SIZE;
 

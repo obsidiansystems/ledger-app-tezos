@@ -29,6 +29,24 @@ typedef struct {
 } apdu_hmac_state_t;
 
 typedef struct {
+    b2b_state state;
+    bool initialized;
+} blake2b_hash_state_t;
+
+typedef struct {
+    bip32_path_with_curve_t key;
+
+    uint8_t message_data[TEZOS_BUFSIZE];
+    uint32_t message_data_length;
+
+    blake2b_hash_state_t hash_state;
+    uint8_t magic_number;
+    bool hash_only;
+
+    struct parsed_operation_group ops;
+} apdu_sign_state_t;
+
+typedef struct {
   void *stack_root;
   apdu_handler handlers[INS_MAX + 1];
 
@@ -42,18 +60,7 @@ typedef struct {
       cx_ecfp_public_key_t public_key;
     } pubkey;
 
-    struct {
-      bip32_path_with_curve_t key;
-
-      uint8_t message_data[TEZOS_BUFSIZE];
-      uint32_t message_data_length;
-
-      bool is_hash_state_inited;
-      uint8_t magic_number;
-      bool hash_only;
-
-      struct parsed_operation_group ops;
-    } sign;
+    apdu_sign_state_t sign;
 
     struct {
         bip32_path_with_curve_t key;
@@ -99,10 +106,6 @@ typedef struct {
 
     char address_display_data[VALUE_WIDTH];
   } baking_auth;
-
-  struct {
-    b2b_state hash_state;
-  } blake2b; // TODO: Use blake2b from SDK
 
   struct {
     struct priv_generate_key_pair generate_key_pair;
