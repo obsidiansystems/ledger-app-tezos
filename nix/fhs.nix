@@ -16,6 +16,8 @@ in pkgs.buildFHSUserEnv {
     xorg.libXext xorg.libXfixes xorg.libXi xorg.libXrandr xorg.libXrender
     xorg.libXtst xorg.libxcb xorg.xcbutilkeysyms zlib zsh
     gnumake libtinfo5 glibc_multi.dev (python2.withPackages (ps: [ps.pillow]))
+
+    bear # for generating clangd configs for IDE integration
   ];
   runScript = "bash"; # "$SHELL";
 }

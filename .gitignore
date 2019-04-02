@@ -6,3 +6,6 @@ src/u2f_crypto_data.h
 src/glyphs.h
 src/glyphs.c
 
+#ide
+*.code-workspace
+compile_commands.json

@@ -15,7 +15,14 @@ To do a full Nix build run `nix/build.sh`. You can pass `nix-build` arguments to
 ### Installing
 `nix/install.sh` will install both the wallet and baking apps. Use `nix/install.sh baking` to install just the baking app or `nix/install.sh wallet` to install just the wallet.
 
+### Editor Integration
+
+#### Visual Studio Code
+
+  1. Install `llvm-vs-code-extensions.vscode-clangd` extension.
+  2. Run `nix/setup-vscode.sh` to create local configuration. Note that these files are non-relocatable so you need to rerun this if you move the directory.
+  3. Restart Visual Studio Code.
 
 ### Releasing
 
-`nix/build -A release.all`
+`nix/build.sh -A release.all`
