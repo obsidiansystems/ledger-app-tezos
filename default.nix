@@ -8,7 +8,8 @@ let
       then pkgs.fetchFromGitHub { inherit (builtins.fromJSON (builtins.readFile (p + /github.json))) owner repo rev sha256; }
     else p;
 
-  fhs = pkgs.callPackage nix/fhs.nix {};
+  fhsWith = runScript: pkgs.callPackage nix/fhs.nix { inherit runScript; };
+  fhs = fhsWith "bash";
   bolosEnv = pkgs.callPackage nix/bolos-env.nix {};
   bolosSdk = fetchThunk nix/dep/nanos-secure-sdk;
   src = pkgs.lib.sources.sourceFilesBySuffices (pkgs.lib.sources.cleanSource ./.) [".c" ".h" ".gif" "Makefile"];
@@ -94,7 +95,7 @@ in {
         vscode = pkgs.writeText "vscode.code-workspace" (builtins.toJSON {
           folders = [ { path = "."; } ];
           settings = {
-            "clangd.path" = pkgs.llvmPackages.clang-unwrapped + /bin/clangd;
+            "clangd.path" = fhsWith (pkgs.llvmPackages.clang-unwrapped + /bin/clangd) + /bin/enter-fhs;
           };
         });
       };
