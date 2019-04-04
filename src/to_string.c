@@ -64,6 +64,8 @@ void compute_hash_checksum(uint8_t out[TEZOS_HASH_CHECKSUM_SIZE], void const *co
 
 void pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve,
                    const uint8_t hash[HASH_SIZE]) {
+    check_null(buff);
+    check_null(hash);
     if (buff_size < PKH_STRING_SIZE) THROW(EXC_WRONG_LENGTH);
 
     // Data to encode
@@ -108,6 +110,8 @@ void pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve,
 }
 
 void protocol_hash_to_string(char *buff, const size_t buff_size, const uint8_t hash[PROTOCOL_HASH_SIZE]) {
+    check_null(buff);
+    check_null(hash);
     if (buff_size < PROTOCOL_HASH_BASE58_STRING_SIZE) THROW(EXC_WRONG_LENGTH);
 
     // Data to encode
@@ -127,6 +131,7 @@ void protocol_hash_to_string(char *buff, const size_t buff_size, const uint8_t h
 }
 
 void chain_id_to_string(char *const buff, size_t const buff_size, chain_id_t const chain_id) {
+    check_null(buff);
     if (buff_size < CHAIN_ID_BASE58_STRING_SIZE) THROW(EXC_WRONG_LENGTH);
 
     // Data to encode
@@ -153,6 +158,7 @@ void chain_id_to_string(char *const buff, size_t const buff_size, chain_id_t con
 })
 
 void chain_id_to_string_with_aliases(char *const out, size_t const out_size, chain_id_t const *const chain_id) {
+    check_null(out);
     check_null(chain_id);
     if (chain_id->v == 0) {
         STRCPY_OR_THROW(out, out_size, "any", EXC_WRONG_LENGTH);
@@ -169,6 +175,7 @@ void chain_id_to_string_with_aliases(char *const out, size_t const out_size, cha
 // This is intended to be used with a temporary buffer of length MAX_INT_DIGITS
 // Returns offset of where it stopped filling in
 static inline size_t convert_number(char dest[MAX_INT_DIGITS], uint64_t number, bool leading_zeroes) {
+    check_null(dest);
     char *const end = dest + MAX_INT_DIGITS;
     for (char *ptr = end - 1; ptr >= dest; ptr--) {
         *ptr = '0' + number % 10;
@@ -180,22 +187,29 @@ static inline size_t convert_number(char dest[MAX_INT_DIGITS], uint64_t number, 
     return 0;
 }
 
-void number_to_string_indirect64(char *dest, size_t buff_size, const uint64_t *number) {
+void number_to_string_indirect64(char *const dest, size_t const buff_size, uint64_t const *const number) {
+    check_null(dest);
+    check_null(number);
     if (buff_size < MAX_INT_DIGITS + 1) THROW(EXC_WRONG_LENGTH); // terminating null
     number_to_string(dest, *number);
 }
 
-void number_to_string_indirect32(char *dest, size_t buff_size, const uint32_t *number) {
+void number_to_string_indirect32(char *const dest, size_t const buff_size, uint32_t const *const number) {
+    check_null(dest);
+    check_null(number);
     if (buff_size < MAX_INT_DIGITS + 1) THROW(EXC_WRONG_LENGTH); // terminating null
     number_to_string(dest, *number);
 }
 
-void microtez_to_string_indirect(char *dest, size_t buff_size, const uint64_t *number) {
+void microtez_to_string_indirect(char *const dest, size_t const buff_size, uint64_t const *const number) {
+    check_null(dest);
+    check_null(number);
     if (buff_size < MAX_INT_DIGITS + 1) THROW(EXC_WRONG_LENGTH); // + terminating null + decimal point
     microtez_to_string(dest, *number);
 }
 
-size_t number_to_string(char *dest, uint64_t number) {
+size_t number_to_string(char *const dest, uint64_t number) {
+    check_null(dest);
     char tmp[MAX_INT_DIGITS];
     size_t off = convert_number(tmp, number, false);
 
@@ -210,7 +224,8 @@ size_t number_to_string(char *dest, uint64_t number) {
 #define TEZ_SCALE 1000000
 #define DECIMAL_DIGITS 6
 
-size_t microtez_to_string(char *dest, uint64_t number) {
+size_t microtez_to_string(char *const dest, uint64_t number) {
+    check_null(dest);
     uint64_t whole_tez = number / TEZ_SCALE;
     uint64_t fractional = number % TEZ_SCALE;
     size_t off = number_to_string(dest, whole_tez);
@@ -240,6 +255,8 @@ size_t microtez_to_string(char *dest, uint64_t number) {
 }
 
 void copy_string(char *const dest, size_t const buff_size, char const *const src) {
+    check_null(dest);
+    check_null(src);
     char const *const src_in = (char const *)PIC(src);
     // I don't care that we will loop through the string twice, latency is not an issue
     if (strlen(src_in) >= buff_size) THROW(EXC_WRONG_LENGTH);

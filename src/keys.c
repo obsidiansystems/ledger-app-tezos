@@ -93,6 +93,7 @@ cx_ecfp_public_key_t const *public_key_hash_return_global(
     cx_ecfp_public_key_t const *const restrict public_key)
 {
     check_null(out);
+    check_null(public_key);
     if (out_size < HASH_SIZE) THROW(EXC_WRONG_LENGTH);
 
     cx_ecfp_public_key_t *const compressed = &global.priv.public_key_hash.compressed;
