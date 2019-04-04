@@ -40,7 +40,7 @@ static void blake2b_incremental_hash(
 
     uint8_t *current = out;
     while (*out_length > B2B_BLOCKBYTES) {
-        if (current - out > out_size) THROW(EXC_MEMORY_ERROR);
+        if (current - out > (int)out_size) THROW(EXC_MEMORY_ERROR);
         conditional_init_hash_state(state);
         b2b_update(&state->state, current, B2B_BLOCKBYTES);
         *out_length -= B2B_BLOCKBYTES;
