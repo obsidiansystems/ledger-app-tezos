@@ -12,7 +12,6 @@
 #include "ui.h"
 #include "ui_prompt.h"
 
-// Order matters
 #include "cx.h"
 
 #include <string.h>
@@ -31,9 +30,9 @@ static inline void conditional_init_hash_state(blake2b_hash_state_t *const state
 }
 
 static void blake2b_incremental_hash(
-    uint8_t *const out, size_t const out_size,
-    size_t *const out_length,
-    blake2b_hash_state_t *const state
+    /*in/out*/ uint8_t *const out, size_t const out_size,
+    /*in/out*/ size_t *const out_length,
+    /*in/out*/ blake2b_hash_state_t *const state
 ) {
     check_null(out);
     check_null(out_length);
@@ -52,10 +51,10 @@ static void blake2b_incremental_hash(
 }
 
 static void blake2b_finish_hash(
-    uint8_t *const out, size_t const out_size,
-    uint8_t *const buff, size_t const buff_size,
-    size_t *const buff_length,
-    blake2b_hash_state_t *const state
+    /*out*/ uint8_t *const out, size_t const out_size,
+    /*in/out*/ uint8_t *const buff, size_t const buff_size,
+    /*in/out*/ size_t *const buff_length,
+    /*in/out*/ blake2b_hash_state_t *const state
 ) {
     check_null(out);
     check_null(buff);
@@ -180,12 +179,12 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
     check_null(bip32_path);
     struct parsed_operation_group *const ops = &G.ops;
 
-#ifndef TEZOS_DEBUG
+#   ifndef TEZOS_DEBUG
     BEGIN_TRY { // TODO: Eventually, "unsafe" operations will be another APDU,
                 //       and we will parse enough operations that it will rarely need to be used,
                 //       hopefully ultimately never.
         TRY {
-#endif
+#   endif
             // TODO: Simplify this to just switch on what we got.
             allowed_operation_set allowed;
             clear_operation_set(&allowed);
@@ -198,7 +197,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
             // TODO: Add still other operations
 
             parse_operations(ops, data, length, curve, bip32_path, allowed);
-#ifndef TEZOS_DEBUG
+#    ifndef TEZOS_DEBUG
         }
         CATCH_OTHER(e) {
             return false;
@@ -206,7 +205,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
         FINALLY { }
     }
     END_TRY;
-#endif
+#   endif
 
     // Now to display it to make sure it's what the user intended.
 
@@ -586,6 +585,5 @@ static int perform_signature(bool hash_first) {
     size_t const tx = sign(G_io_apdu_buffer, MAX_SIGNATURE_SIZE, &G.key, data, datalen);
 
     clear_data();
-
     return finalize_successful_send(tx);
 }

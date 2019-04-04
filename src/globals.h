@@ -3,8 +3,6 @@
 #include "blake2.h"
 #include "types.h"
 
-#include <stdbool.h>
-
 void init_globals(void);
 
 #define MAX_APDU_SIZE 230  // Maximum number of bytes in a single APDU
