@@ -56,10 +56,27 @@ void bip32_path_with_curve_to_pkh_string(
 
 
 void compute_hash_checksum(uint8_t out[TEZOS_HASH_CHECKSUM_SIZE], void const *const data, size_t size) {
-    uint8_t checksum[32];
+    uint8_t checksum[CX_SHA256_SIZE];
     cx_hash_sha256(data, size, checksum, sizeof(checksum));
     cx_hash_sha256(checksum, sizeof(checksum), checksum, sizeof(checksum));
     memcpy(out, checksum, TEZOS_HASH_CHECKSUM_SIZE);
+}
+
+void bin_to_base58(
+    char *const out, size_t const out_size,
+    uint8_t const *const in, size_t const in_size
+) {
+    check_null(out);
+    check_null(in);
+    size_t buff_size = out_size;
+    if (!b58enc(out, &buff_size, (uint8_t const *)PIC(in), in_size)) THROW(EXC_WRONG_LENGTH);
+}
+
+void buffer_to_base58(char *const out, size_t const out_size, buffer_t const *const in) {
+    check_null(out);
+    check_null(in);
+    buffer_t const *const src = (buffer_t const *)PIC(in);
+    bin_to_base58(out, out_size, src->bytes, src->length);
 }
 
 void pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve,
@@ -261,4 +278,26 @@ void copy_string(char *const dest, size_t const buff_size, char const *const src
     // I don't care that we will loop through the string twice, latency is not an issue
     if (strlen(src_in) >= buff_size) THROW(EXC_WRONG_LENGTH);
     strcpy(dest, src_in);
+}
+
+void bin_to_hex(char *const out, size_t const out_size, uint8_t const *const in, size_t const in_size) {
+    check_null(out);
+    check_null(in);
+
+    size_t const out_len = in_size * 2;
+    if (out_size < out_len + 1) THROW(EXC_MEMORY_ERROR);
+
+    char const *const src = (char const *)PIC(in);
+    for (size_t i = 0; i < in_size; i++) {
+        out[i*2]   = "0123456789ABCDEF"[src[i] >> 4];
+        out[i*2+1] = "0123456789ABCDEF"[src[i] & 0x0F];
+    }
+    out[out_len] = '\0';
+}
+
+void buffer_to_hex(char *const out, size_t const out_size, buffer_t const *const in) {
+    check_null(out);
+    check_null(in);
+    buffer_t const *const src = (buffer_t const *)PIC(in);
+    bin_to_hex(out, out_size, src->bytes, src->length);
 }

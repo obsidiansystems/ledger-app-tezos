@@ -23,6 +23,12 @@ typedef uint32_t level_t;
 #define MAX_INT_DIGITS 20
 
 typedef struct {
+    size_t length;
+    size_t size;
+    uint8_t *bytes;
+} buffer_t;
+
+typedef struct {
     uint32_t v;
 } chain_id_t;
 
@@ -103,6 +109,7 @@ typedef struct {
     bip32_path_with_curve_t baking_key;
 } nvram_data;
 
+#define SIGN_HASH_SIZE 32 // TODO: Rename or use a different constant.
 
 #define PKH_STRING_SIZE 40 // includes null byte // TODO: use sizeof for this.
 #define PROTOCOL_HASH_BASE58_STRING_SIZE sizeof("ProtoBetaBetaBetaBetaBetaBetaBetaBetaBet11111a5ug96")
@@ -128,6 +135,12 @@ typedef struct {
 
 // TODO: Rename to KEY_HASH_SIZE
 #define HASH_SIZE 20
+
+typedef struct {
+    chain_id_t chain_id;
+    bool is_endorsement;
+    level_t level;
+} parsed_baking_data_t;
 
 struct parsed_contract {
     uint8_t originated; // a lightweight bool

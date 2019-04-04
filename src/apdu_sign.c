@@ -18,7 +18,6 @@
 
 #define G global.u.sign
 
-#define SIGN_HASH_SIZE 32
 #define B2B_BLOCKBYTES 128
 
 static inline void conditional_init_hash_state(blake2b_hash_state_t *const state) {
@@ -65,27 +64,17 @@ static void blake2b_finish_hash(
     blake2b_incremental_hash(buff, buff_size, buff_length, state);
     b2b_update(&state->state, buff, *buff_length);
     b2b_final(&state->state, out, out_size);
-
-    G.message_data_length = 0;
-    G.hash_state.initialized = false;
 }
 
 static int perform_signature(bool hash_first);
 
+static inline void clear_data(void) {
+    memset(&G, 0, sizeof(G));
+}
+
 static bool sign_ok(void) {
     delayed_send(perform_signature(true));
     return true;
-}
-
-#ifndef BAKING_APP
-static bool sign_unsafe_ok(void) {
-    delayed_send(perform_signature(false));
-    return true;
-}
-#endif
-
-static void clear_data(void) {
-    memset(&G, 0, sizeof(G));
 }
 
 static bool sign_reject(void) {
@@ -94,7 +83,7 @@ static bool sign_reject(void) {
     return true; // Return to idle
 }
 
-#ifdef BAKING_APP
+#ifdef BAKING_APP // ----------------------------------------------------------
 
 __attribute__((noreturn)) static void prompt_register_delegate(
     ui_callback_t const ok_cb,
@@ -123,14 +112,16 @@ uint32_t baking_sign_complete(void) {
     switch (G.magic_number) {
         case MAGIC_BYTE_BLOCK:
         case MAGIC_BYTE_BAKING_OP:
-            guard_baking_authorized(
-                G.key.curve, G.message_data, G.message_data_length,
-                &G.key.bip32_path);
-            return perform_signature(true);
+            if (G.maybe_parsed_baking_data.is_valid) {
+                guard_baking_authorized(&G.maybe_parsed_baking_data.v, &G.key);
+                return perform_signature(true);
+            } else {
+                THROW(EXC_PARSE_ERROR);
+            }
+            break;
 
         case MAGIC_BYTE_UNSAFE_OP:
             {
-
                 allowed_operation_set allowed;
                 clear_operation_set(&allowed);
                 allow_operation(&allowed, OPERATION_TAG_DELEGATION);
@@ -159,14 +150,12 @@ uint32_t baking_sign_complete(void) {
     }
 }
 
-#else
+#else // ifdef BAKING_APP -----------------------------------------------------
 
-
-const char *const insecure_values[] = {
-    "Operation",
-    "Unverified?",
-    NULL,
-};
+static bool sign_unsafe_ok(void) {
+    delayed_send(perform_signature(false));
+    return true;
+}
 
 #define MAX_NUMBER_CHARS (MAX_INT_DIGITS + 2) // include decimal point and terminating null
 
@@ -447,19 +436,30 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
 }
 
 uint32_t wallet_sign_complete(uint8_t instruction) {
+    static size_t const TYPE_INDEX = 0;
+    static size_t const HASH_INDEX = 1;
+
     static const char *const parse_fail_prompts[] = {
         PROMPT("Unrecognized"),
-        PROMPT("Sign"),
+        PROMPT("Sign Hash"),
         NULL,
     };
+
+    REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Operation");
 
     if (instruction == INS_SIGN_UNSAFE) {
         static const char *const prehashed_prompts[] = {
             PROMPT("Pre-hashed"),
-            PROMPT("Sign"),
+            PROMPT("Sign Hash"),
             NULL,
         };
-        ui_prompt(prehashed_prompts, insecure_values, sign_unsafe_ok, sign_reject);
+
+        G.message_data_as_buffer.bytes = (uint8_t *)&G.message_data;
+        G.message_data_as_buffer.size = sizeof(G.message_data);
+        G.message_data_as_buffer.length = G.message_data_length;
+        // Base58 encoding of 32-byte hash is 43 bytes long.
+        register_ui_callback(HASH_INDEX, buffer_to_base58, &G.message_data_as_buffer);
+        ui_prompt(prehashed_prompts, NULL, sign_unsafe_ok, sign_reject);
     } else {
         switch (G.magic_number) {
             case MAGIC_BYTE_BLOCK:
@@ -480,10 +480,16 @@ uint32_t wallet_sign_complete(uint8_t instruction) {
                 goto unsafe;
         }
 unsafe:
-        ui_prompt(parse_fail_prompts, insecure_values, sign_ok, sign_reject);
+        G.message_data_as_buffer.bytes = (uint8_t *)&G.final_hash;
+        G.message_data_as_buffer.size = sizeof(G.final_hash);
+        G.message_data_as_buffer.length = sizeof(G.final_hash);
+        // Base58 encoding of 32-byte hash is 43 bytes long.
+        register_ui_callback(HASH_INDEX, buffer_to_base58, &G.message_data_as_buffer);
+        ui_prompt(parse_fail_prompts, NULL, sign_ok, sign_reject);
     }
 }
-#endif
+
+#endif // ifdef BAKING_APP ----------------------------------------------------
 
 #define P1_FIRST 0x00
 #define P1_NEXT 0x01
@@ -491,18 +497,16 @@ unsafe:
 #define P1_LAST_MARKER 0x80
 
 size_t handle_apdu_sign(uint8_t instruction) {
-    uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
+    uint8_t *const buff = &G_io_apdu_buffer[OFFSET_CDATA];
     uint8_t const p1 = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_P1]);
-    uint8_t const dataLength = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]);
-    if (dataLength > MAX_APDU_SIZE) THROW(EXC_WRONG_LENGTH_FOR_INS);
+    uint8_t const buff_size = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]);
+    if (buff_size > MAX_APDU_SIZE) THROW(EXC_WRONG_LENGTH_FOR_INS);
 
     bool last = (p1 & P1_LAST_MARKER) != 0;
     switch (p1 & ~P1_LAST_MARKER) {
     case P1_FIRST:
         clear_data();
-        memset(G.message_data, 0, sizeof(G.message_data));
-        G.message_data_length = 0;
-        read_bip32_path(&G.key.bip32_path, dataBuffer, dataLength);
+        read_bip32_path(&G.key.bip32_path, buff, buff_size);
         G.key.curve = curve_code_to_curve(READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
         return finalize_successful_send(0);
 #ifndef BAKING_APP
@@ -521,68 +525,73 @@ size_t handle_apdu_sign(uint8_t instruction) {
     }
 
     if (instruction != INS_SIGN_UNSAFE && G.magic_number == 0) {
-        G.magic_number = get_magic_byte(dataBuffer, dataLength);
+        G.magic_number = get_magic_byte(buff, buff_size);
     }
 
-#ifndef BAKING_APP
+#   ifdef BAKING_APP
+        // Keep trying to parse baking data unless we already did so successfully.
+        G.maybe_parsed_baking_data.is_valid =
+            G.maybe_parsed_baking_data.is_valid
+            || parse_baking_data(&G.maybe_parsed_baking_data.v, buff, buff_size);
+#   endif
+
     if (instruction == INS_SIGN) {
+        // Hash contents of *previous* message (which may be empty).
         blake2b_incremental_hash(
             G.message_data, sizeof(G.message_data),
             &G.message_data_length,
             &G.hash_state);
     }
-#endif
 
-    if (G.message_data_length + dataLength > sizeof(G.message_data)) {
+    if (G.message_data_length + buff_size > sizeof(G.message_data)) {
         THROW(EXC_PARSE_ERROR);
     }
 
-    memmove(G.message_data + G.message_data_length, dataBuffer, dataLength);
-    G.message_data_length += dataLength;
+    memmove(G.message_data + G.message_data_length, buff, buff_size);
+    G.message_data_length += buff_size;
 
-    if (!last) {
+    if (last) {
+        if (instruction == INS_SIGN) {
+            // Hash contents of *this* message and then get the final hash value.
+            blake2b_incremental_hash(
+                G.message_data, sizeof(G.message_data),
+                &G.message_data_length,
+                &G.hash_state);
+            blake2b_finish_hash(
+                G.final_hash, sizeof(G.final_hash),
+                G.message_data, sizeof(G.message_data),
+                &G.message_data_length,
+                &G.hash_state);
+        }
+
+        return
+#           ifdef BAKING_APP
+                baking_sign_complete();
+#           else
+                wallet_sign_complete(instruction);
+#           endif
+    } else {
         return finalize_successful_send(0);
     }
-
-#ifdef BAKING_APP
-    return baking_sign_complete();
-#else
-    return wallet_sign_complete(instruction);
-#endif
 }
 
-static int perform_signature(bool hash_first) {
-    uint8_t hash[SIGN_HASH_SIZE];
-    uint8_t *data = G.message_data;
-    uint32_t datalen = G.message_data_length;
-
-#ifdef BAKING_APP
-    update_high_water_mark(G.message_data, G.message_data_length);
-#endif
-
-    if (hash_first) {
-        blake2b_incremental_hash(
-            G.message_data, sizeof(G.message_data),
-            &G.message_data_length,
-            &G.hash_state);
-        blake2b_finish_hash(
-            hash, sizeof(hash),
-            G.message_data, sizeof(G.message_data),
-            &G.message_data_length,
-            &G.hash_state);
-        data = hash;
-        datalen = SIGN_HASH_SIZE;
-
-#ifndef BAKING_APP
-        if (G.hash_only) {
-            memcpy(G_io_apdu_buffer, data, datalen);
-            size_t tx = datalen;
-            return finalize_successful_send(tx);
+static int perform_signature(bool on_hash) {
+#   ifdef BAKING_APP
+        if (G.maybe_parsed_baking_data.is_valid) {
+            write_high_water_mark(&G.maybe_parsed_baking_data.v);
         }
-#endif
-    }
+#   else
+        if (on_hash && G.hash_only) {
+            memcpy(G_io_apdu_buffer, G.final_hash, sizeof(G.final_hash));
+            clear_data();
+            return finalize_successful_send(sizeof(G.final_hash));
+        }
+#   endif
 
-    size_t const tx = sign(G_io_apdu_buffer, MAX_SIGNATURE_SIZE, &G.key, data, datalen);
+    uint8_t const *const data = on_hash ? G.final_hash : G.message_data;
+    size_t const data_length = on_hash ? sizeof(G.final_hash) : G.message_data_length;
+
+    size_t const tx = sign(G_io_apdu_buffer, MAX_SIGNATURE_SIZE, &G.key, data, data_length);
 
     clear_data();
     return finalize_successful_send(tx);

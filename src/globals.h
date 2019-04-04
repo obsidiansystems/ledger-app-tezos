@@ -34,10 +34,18 @@ typedef struct {
 typedef struct {
     bip32_path_with_curve_t key;
 
+    struct {
+      bool is_valid;
+      parsed_baking_data_t v;
+    } maybe_parsed_baking_data;
+
     uint8_t message_data[TEZOS_BUFSIZE];
     uint32_t message_data_length;
+    buffer_t message_data_as_buffer;
 
     blake2b_hash_state_t hash_state;
+    uint8_t final_hash[SIGN_HASH_SIZE];
+
     uint8_t magic_number;
     bool hash_only;
 

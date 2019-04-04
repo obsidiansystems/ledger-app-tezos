@@ -31,6 +31,19 @@ void number_to_string_indirect64(char *const dest, size_t buff_size, uint64_t co
 void number_to_string_indirect32(char *const dest, size_t buff_size, uint32_t const *const number);
 void microtez_to_string_indirect(char *const dest, size_t buff_size, uint64_t const *const number);
 
-// This is designed to be called with potentially unrelocated pointers from rodata tables
-// for the src argument, so performs PIC on src.
+// `src` may be unrelocated pointer to rodata.
 void copy_string(char *const dest, size_t const buff_size, char const *const src);
+
+// Encodes binary blob to hex string.
+// `in` may be unrelocated pointer to rodata.
+void bin_to_hex(char *const out, size_t const out_size, uint8_t const *const in, size_t const in_size);
+// Wrapper around `bin_to_hex` that works on `buffer_t`.
+// `in` may be unrelocated pointer to rodata.
+void buffer_to_hex(char *const out, size_t const out_size, buffer_t const *const in);
+
+// Encodes binary blob to base58 string.
+// `in` may be unrelocated pointer to rodata.
+void bin_to_base58(char *const out, size_t const out_size, uint8_t const *const in, size_t const in_size);
+// Wrapper around `bin_to_base58` that works on `buffer_t`.
+// `in` may be unrelocated pointer to rodata.
+void buffer_to_base58(char *const out, size_t const out_size, buffer_t const *const in);
