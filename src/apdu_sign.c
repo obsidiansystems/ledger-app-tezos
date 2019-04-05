@@ -83,6 +83,29 @@ static bool sign_reject(void) {
     return true; // Return to idle
 }
 
+static bool parse_allowed_operations(
+    struct parsed_operation_group *const out,
+    uint8_t const *const in,
+    size_t const in_size,
+    bip32_path_with_curve_t const *const key
+) {
+    // TODO: Simplify this to just switch on what we got.
+    allowed_operation_set allowed;
+    clear_operation_set(&allowed);
+
+    allow_operation(&allowed, OPERATION_TAG_DELEGATION);
+    allow_operation(&allowed, OPERATION_TAG_REVEAL);
+#   ifndef BAKING_APP
+        allow_operation(&allowed, OPERATION_TAG_PROPOSAL);
+        allow_operation(&allowed, OPERATION_TAG_BALLOT);
+        allow_operation(&allowed, OPERATION_TAG_ORIGINATION);
+        allow_operation(&allowed, OPERATION_TAG_TRANSACTION);
+        // TODO: Add still other operations
+#   endif
+
+    return parse_operations(out, in, in_size, key->curve, &key->bip32_path, allowed);
+}
+
 #ifdef BAKING_APP // ----------------------------------------------------------
 
 __attribute__((noreturn)) static void prompt_register_delegate(
@@ -100,9 +123,11 @@ __attribute__((noreturn)) static void prompt_register_delegate(
         NULL,
     };
 
+    if (!G.maybe_ops.is_valid) THROW(EXC_MEMORY_ERROR);
+
     REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "as delegate?");
     register_ui_callback(ADDRESS_INDEX, bip32_path_with_curve_to_pkh_string, &G.key);
-    register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &G.ops.total_fee);
+    register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &G.maybe_ops.v.total_fee);
 
     ui_prompt(prompts, NULL, ok_cb, cxl_cb);
 }
@@ -122,22 +147,13 @@ uint32_t baking_sign_complete(void) {
 
         case MAGIC_BYTE_UNSAFE_OP:
             {
-                allowed_operation_set allowed;
-                clear_operation_set(&allowed);
-                allow_operation(&allowed, OPERATION_TAG_DELEGATION);
-                allow_operation(&allowed, OPERATION_TAG_REVEAL);
-
-                parse_operations(
-                    &G.ops,
-                    G.message_data, G.message_data_length,
-                    G.key.curve, &G.key.bip32_path, allowed);
-
                 // Must be self-delegation signed by the *authorized* baking key
-                if (bip32_path_with_curve_eq(&G.key, &N_data.baking_key) &&
+                if (G.maybe_ops.is_valid &&
+                    bip32_path_with_curve_eq(&G.key, &N_data.baking_key) &&
 
                     // ops->signing is generated from G.bip32_path and G.curve
-                    COMPARE(&G.ops.operation.source, &G.ops.signing) == 0 &&
-                    COMPARE(&G.ops.operation.destination, &G.ops.signing) == 0
+                    COMPARE(&G.maybe_ops.v.operation.source, &G.maybe_ops.v.signing) == 0 &&
+                    COMPARE(&G.maybe_ops.v.operation.destination, &G.maybe_ops.v.signing) == 0
                 ) {
                     prompt_register_delegate(sign_ok, sign_reject);
                 }
@@ -159,44 +175,13 @@ static bool sign_unsafe_ok(void) {
 
 #define MAX_NUMBER_CHARS (MAX_INT_DIGITS + 2) // include decimal point and terminating null
 
-// Return false if the transaction isn't easily parseable, otherwise prompt with given callbacks
-// and do not return, but rather throw ASYNC.
-static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve,
-                               bip32_path_t const *const bip32_path,
-                               ui_callback_t ok, ui_callback_t cxl) {
-    check_null(data);
-    check_null(bip32_path);
-    struct parsed_operation_group *const ops = &G.ops;
-
-#   ifndef TEZOS_DEBUG
-    BEGIN_TRY { // TODO: Eventually, "unsafe" operations will be another APDU,
-                //       and we will parse enough operations that it will rarely need to be used,
-                //       hopefully ultimately never.
-        TRY {
-#   endif
-            // TODO: Simplify this to just switch on what we got.
-            allowed_operation_set allowed;
-            clear_operation_set(&allowed);
-            allow_operation(&allowed, OPERATION_TAG_PROPOSAL);
-            allow_operation(&allowed, OPERATION_TAG_BALLOT);
-            allow_operation(&allowed, OPERATION_TAG_DELEGATION);
-            allow_operation(&allowed, OPERATION_TAG_REVEAL);
-            allow_operation(&allowed, OPERATION_TAG_ORIGINATION);
-            allow_operation(&allowed, OPERATION_TAG_TRANSACTION);
-            // TODO: Add still other operations
-
-            parse_operations(ops, data, length, curve, bip32_path, allowed);
-#    ifndef TEZOS_DEBUG
-        }
-        CATCH_OTHER(e) {
-            return false;
-        }
-        FINALLY { }
-    }
-    END_TRY;
-#   endif
-
-    // Now to display it to make sure it's what the user intended.
+bool prompt_transaction(
+    struct parsed_operation_group const *const ops,
+    bip32_path_with_curve_t const *const key,
+    ui_callback_t ok, ui_callback_t cxl
+) {
+    check_null(ops);
+    check_null(key);
 
     switch (ops->operation.tag) {
         default:
@@ -313,9 +298,9 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
                 REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Origination");
                 register_ui_callback(AMOUNT_INDEX, microtez_to_string_indirect, &ops->operation.amount);
 
-                const char *const *prompts;
-                bool delegatable = ops->operation.flags & ORIGINATION_FLAG_DELEGATABLE;
-                bool has_delegate = ops->operation.delegate.curve_code != TEZOS_NO_CURVE;
+                char const *const *prompts;
+                bool const delegatable = ops->operation.flags & ORIGINATION_FLAG_DELEGATABLE;
+                bool const has_delegate = ops->operation.delegate.curve_code != TEZOS_NO_CURVE;
                 if (delegatable && has_delegate) {
                     prompts = origination_prompts_delegatable;
                     register_ui_callback(DELEGATE_INDEX, parsed_contract_to_string,
@@ -435,7 +420,7 @@ static bool prompt_transaction(const void *data, size_t length, cx_curve_t curve
     }
 }
 
-uint32_t wallet_sign_complete(uint8_t instruction) {
+static size_t wallet_sign_complete(uint8_t instruction) {
     static size_t const TYPE_INDEX = 0;
     static size_t const HASH_INDEX = 1;
 
@@ -467,14 +452,10 @@ uint32_t wallet_sign_complete(uint8_t instruction) {
             default:
                 THROW(EXC_PARSE_ERROR);
             case MAGIC_BYTE_UNSAFE_OP:
-                if (G.hash_state.initialized) {
+                if (!G.maybe_ops.is_valid || !prompt_transaction(&G.maybe_ops.v, &G.key, sign_ok, sign_reject)) {
                     goto unsafe;
                 }
-                if (!prompt_transaction(
-                        G.message_data, G.message_data_length, G.key.curve,
-                        &G.key.bip32_path, sign_ok, sign_reject)) {
-                    goto unsafe;
-                }
+
             case MAGIC_BYTE_UNSAFE_OP2:
             case MAGIC_BYTE_UNSAFE_OP3:
                 goto unsafe;
@@ -534,6 +515,11 @@ size_t handle_apdu_sign(uint8_t instruction) {
             G.maybe_parsed_baking_data.is_valid
             || parse_baking_data(&G.maybe_parsed_baking_data.v, buff, buff_size);
 #   endif
+
+    // Keep trying to parse operations.
+    G.maybe_ops.is_valid =
+        G.maybe_ops.is_valid
+        || parse_allowed_operations(&G.maybe_ops.v, buff, buff_size, &G.key);
 
     if (instruction == INS_SIGN) {
         // Hash contents of *previous* message (which may be empty).

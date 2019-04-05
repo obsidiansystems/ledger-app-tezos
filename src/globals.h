@@ -34,10 +34,17 @@ typedef struct {
 typedef struct {
     bip32_path_with_curve_t key;
 
+#   ifdef BAKING_APP
     struct {
       bool is_valid;
       parsed_baking_data_t v;
     } maybe_parsed_baking_data;
+#   endif
+
+    struct {
+      bool is_valid;
+      struct parsed_operation_group v;
+    } maybe_ops;
 
     uint8_t message_data[TEZOS_BUFSIZE];
     uint32_t message_data_length;
@@ -48,8 +55,6 @@ typedef struct {
 
     uint8_t magic_number;
     bool hash_only;
-
-    struct parsed_operation_group ops;
 } apdu_sign_state_t;
 
 typedef struct {
