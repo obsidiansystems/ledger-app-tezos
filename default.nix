@@ -91,8 +91,44 @@ let
   #     nix-build -A clangAnalyzerOnWalletApp --no-out-link --show-trace
   #     nix-build -A clangAnalyzerOnBakingApp --no-out-link --show-trace
   # And check the `index.html` in the new nix-directories.
+  #
+  # See 
+  # https://clang-analyzer.llvm.org/alpha_checks.html#clone_alpha_checkers
+  # for the list of extra analyzers that are run.
+  #
   runClangStaticAnalyzer =
-      bakingApp:
+     let
+       interestingExtrasAnalyzers = [
+         # "alpha.clone.CloneChecker" # this one is waaay too verbose
+         "alpha.security.ArrayBound"
+         "alpha.security.ArrayBoundV2"
+         "alpha.security.MallocOverflow"
+         # "alpha.security.MmapWriteExec" # errors as “not found” by ccc-analyzer
+         "alpha.security.ReturnPtrRange"
+         "alpha.security.taint.TaintPropagation"
+         "alpha.deadcode.UnreachableCode"
+         "alpha.core.CallAndMessageUnInitRefArg"
+         "alpha.core.CastSize"
+         "alpha.core.CastToStruct"
+         "alpha.core.Conversion"
+         "alpha.core.FixedAddr"
+         "alpha.core.IdenticalExpr"
+         "alpha.core.PointerArithm"
+         "alpha.core.PointerSub"
+         "alpha.core.SizeofPtr"
+         # "alpha.core.StackAddressAsyncEscape" # Also not found
+         "alpha.core.TestAfterDivZero"
+         "alpha.unix.cstring.BufferOverlap"
+         "alpha.unix.cstring.NotNullTerminated"
+         "alpha.unix.cstring.OutOfBounds"
+       ] ;
+       analysisOptions =
+          pkgs.lib.strings.concatMapStringsSep
+             " "
+             (x: "-analyzer-checker " + x)
+             interestingExtrasAnalyzers ;
+     in
+     bakingApp:
         pkgs.runCommand
          "static-analysis-html-${if bakingApp then "baking" else "wallet"}" {} ''
             set -Eeuo pipefail
@@ -106,6 +142,7 @@ let
             export COMMIT='${if commit == null then "TEST" else commit}'
             export CCC_ANALYZER_HTML="$out"
             export CCC_ANALYZER_OUTPUT_FORMAT=html
+            export CCC_ANALYZER_ANALYSIS="${analysisOptions}"
             export CCC_CC='${bolosEnv}/clang-arm-fropi/bin/clang'
             export CLANG='${bolosEnv}/clang-arm-fropi/bin/clang'
             export APP='${if bakingApp then "tezos_baking" else "tezos_wallet"}'
