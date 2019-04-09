@@ -144,7 +144,7 @@ static inline void parse_contract(struct parsed_contract *out, const struct cont
     }
 }
 
-void parse_operations(
+static void parse_operations_throws_parse_error(
     struct parsed_operation_group *const out,
     void const *const data,
     size_t length,
@@ -322,4 +322,25 @@ void parse_operations(
     if (out->operation.tag == OPERATION_TAG_NONE && !out->has_reveal) {
         PARSE_ERROR(); // Must have at least one op
     }
+}
+
+bool parse_operations(
+    struct parsed_operation_group *const out,
+    uint8_t const *const data,
+    size_t length,
+    cx_curve_t curve,
+    bip32_path_t const *const bip32_path,
+    allowed_operation_set ops
+) {
+    BEGIN_TRY {
+        TRY {
+            parse_operations_throws_parse_error(out, data, length, curve, bip32_path, ops);
+        }
+        CATCH(EXC_PARSE_ERROR) {
+            return false;
+        }
+        FINALLY { }
+    }
+    END_TRY;
+    return true;
 }

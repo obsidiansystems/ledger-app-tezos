@@ -16,7 +16,7 @@ bool is_valid_level(level_t lvl) {
     return !(lvl & 0xC0000000);
 }
 
-static void write_high_watermark(parsed_baking_data_t const *const in) {
+void write_high_water_mark(parsed_baking_data_t const *const in) {
     check_null(in);
     if (!is_valid_level(in->level)) THROW(EXC_WRONG_VALUES);
     UPDATE_NVRAM(ram, {
@@ -57,23 +57,11 @@ bool is_path_authorized(cx_curve_t curve, bip32_path_t const *const bip32_path) 
         bip32_paths_eq(bip32_path, &N_data.baking_key.bip32_path);
 }
 
-void guard_baking_authorized(cx_curve_t curve, void *data, int datalen, bip32_path_t const *const bip32_path) {
-    check_null(data);
-    check_null(bip32_path);
-    if (!is_path_authorized(curve, bip32_path)) THROW(EXC_SECURITY);
-
-    parsed_baking_data_t baking_info;
-    if (!parse_baking_data(&baking_info, data, datalen)) THROW(EXC_PARSE_ERROR);
-    if (!is_level_authorized(&baking_info)) THROW(EXC_WRONG_VALUES);
-}
-
-void update_high_water_mark(void *data, int datalen) {
-    check_null(data);
-    parsed_baking_data_t baking_info;
-    if (!parse_baking_data(&baking_info, data, datalen)) {
-        return; // Must be signing a delegation
-    }
-    write_high_watermark(&baking_info);
+void guard_baking_authorized(parsed_baking_data_t const *const baking_info, bip32_path_with_curve_t const *const key) {
+    check_null(baking_info);
+    check_null(key);
+    if (!is_path_authorized(key->curve, &key->bip32_path)) THROW(EXC_SECURITY);
+    if (!is_level_authorized(baking_info)) THROW(EXC_WRONG_VALUES);
 }
 
 static const char *const pubkey_values[] = {

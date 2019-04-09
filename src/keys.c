@@ -93,6 +93,7 @@ cx_ecfp_public_key_t const *public_key_hash_return_global(
     cx_ecfp_public_key_t const *const restrict public_key)
 {
     check_null(out);
+    check_null(public_key);
     if (out_size < HASH_SIZE) THROW(EXC_WRONG_LENGTH);
 
     cx_ecfp_public_key_t *const compressed = &global.priv.public_key_hash.compressed;
@@ -114,9 +115,11 @@ cx_ecfp_public_key_t const *public_key_hash_return_global(
         default:
             THROW(EXC_WRONG_PARAM);
     }
-    b2b_init(&global.blake2b.hash_state, HASH_SIZE);
-    b2b_update(&global.blake2b.hash_state, compressed->W, compressed->W_len);
-    b2b_final(&global.blake2b.hash_state, out, HASH_SIZE);
+
+    b2b_state hash_state;
+    b2b_init(&hash_state, HASH_SIZE);
+    b2b_update(&hash_state, compressed->W, compressed->W_len);
+    b2b_final(&hash_state, out, HASH_SIZE);
     return compressed;
 }
 

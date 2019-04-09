@@ -24,13 +24,11 @@ static inline void clear_operation_set(allowed_operation_set *ops) {
     *ops = 0;
 }
 
-
-// Throws upon invalid data.
 // Allows arbitrarily many "REVEAL" operations but only one operation of any other type,
 // which is the one it puts into the group.
-void parse_operations(
+bool parse_operations(
     struct parsed_operation_group *const out,
-    void const *const data,
+    uint8_t const *const data,
     size_t length,
     cx_curve_t curve,
     bip32_path_t const *const bip32_path,
