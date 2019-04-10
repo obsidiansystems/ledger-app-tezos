@@ -77,8 +77,101 @@ let
     };
 
   buildResult = if commit == null then throw "Set 'commit' attribute to git commit or use nix/build.sh instead" else build commit;
+
+  # The package clang-analyzer comes with a perl script `scan-build` that seems
+  # to get quickly lost with the cross-compiler of the SDK if run by itself.
+  # So this script reproduces what it does with fewer magic attempts:
+  # * It prepares the SDK like for a normal build.
+  # * It intercepts the calls to the compiler with the `CC` make-variable
+  #   (pointing at `.../libexec/scan-build/ccc-analyzer`).
+  # * The `CCC_*` variables are used to configure `ccc-analyzer`: output directory
+  #   and which *real* compiler to call after doing the analysis.
+  # * After the build an `index.html` file is created to point to the individual
+  #   result pages.
+  #
+  # See 
+  # https://clang-analyzer.llvm.org/alpha_checks.html#clone_alpha_checkers
+  # for the list of extra analyzers that are run.
+  #
+  runClangStaticAnalyzer =
+     let
+       interestingExtrasAnalyzers = [
+         # "alpha.clone.CloneChecker" # this one is waaay too verbose
+         "alpha.security.ArrayBound"
+         "alpha.security.ArrayBoundV2"
+         "alpha.security.MallocOverflow"
+         # "alpha.security.MmapWriteExec" # errors as “not found” by ccc-analyzer
+         "alpha.security.ReturnPtrRange"
+         "alpha.security.taint.TaintPropagation"
+         "alpha.deadcode.UnreachableCode"
+         "alpha.core.CallAndMessageUnInitRefArg"
+         "alpha.core.CastSize"
+         "alpha.core.CastToStruct"
+         "alpha.core.Conversion"
+         # "alpha.core.FixedAddr" # Seems noisy, and about portability.
+         "alpha.core.IdenticalExpr"
+         "alpha.core.PointerArithm"
+         "alpha.core.PointerSub"
+         "alpha.core.SizeofPtr"
+         # "alpha.core.StackAddressAsyncEscape" # Also not found
+         "alpha.core.TestAfterDivZero"
+         "alpha.unix.cstring.BufferOverlap"
+         "alpha.unix.cstring.NotNullTerminated"
+         "alpha.unix.cstring.OutOfBounds"
+       ] ;
+       analysisOptions =
+          pkgs.lib.strings.concatMapStringsSep
+             " "
+             (x: "-analyzer-checker " + x)
+             interestingExtrasAnalyzers ;
+     in
+     bakingApp:
+        pkgs.runCommand
+         "static-analysis-html-${if bakingApp then "baking" else "wallet"}" {} ''
+            set -Eeuo pipefail
+            mkdir -p $out
+            cp -a '${src}'/* .
+            chmod -R u+w .
+            '${fhs}/bin/enter-fhs' <<EOF
+            set -Eeuxo pipefail
+            export BOLOS_SDK='${bolosSdk}'
+            export BOLOS_ENV='${bolosEnv}'
+            export COMMIT='${if commit == null then "TEST" else commit}'
+            export CCC_ANALYZER_HTML="$out"
+            export CCC_ANALYZER_OUTPUT_FORMAT=html
+            export CCC_ANALYZER_ANALYSIS="${analysisOptions}"
+            export CCC_CC='${bolosEnv}/clang-arm-fropi/bin/clang'
+            export CLANG='${bolosEnv}/clang-arm-fropi/bin/clang'
+            export APP='${if bakingApp then "tezos_baking" else "tezos_wallet"}'
+            make clean
+            make all CC=${pkgs.clangAnalyzer}/libexec/scan-build/ccc-analyzer
+            EOF
+            export outhtml="$out/index.html"
+            echo "<html><title>Analyzer Report</title><body><h1>Clang Static Analyzer Results</h1>" > $outhtml
+            printf "<p>App: <code>${if bakingApp then "tezos_baking" else "tezos_wallet"}</code></p>" >> $outhtml
+            printf "<p>Date: $(date -R)</p>" >> $outhtml
+            printf "<h2>File-results:</h2>" >> $outhtml
+            for html in $(ls $out/report*.html) ; do
+                echo "<p>" >> $outhtml
+                printf "<code>" >> $outhtml
+                cat $html | grep BUGFILE | sed 's/^<!-- [A-Z]* \(.*\) -->$/\1/' >> $outhtml
+                printf "</code>" >> $outhtml
+                printf "<code style=\"color: green\">+" >> $outhtml
+                cat $html | grep BUGLINE | sed 's/^<!-- [A-Z]* \(.*\) -->$/\1/' >> $outhtml
+                printf "</code><br/>" >> $outhtml
+                cat $html | grep BUGDESC | sed 's/^<!-- [A-Z]* \(.*\) -->$/\1/' >> $outhtml
+                printf " → <a href=\"./$(basename $html)\">full-report</a>" >> $outhtml
+                echo "</p>" >> $outhtml
+            done
+            echo "</body></html>" >> $outhtml
+          '';
 in {
   inherit (buildResult) wallet baking release;
+
+  clangAnalysis = {
+     baking = runClangStaticAnalyzer true;
+     wallet = runClangStaticAnalyzer false;
+  };
 
   env = {
     # Script that places you in the environment to run `make`, etc.
@@ -100,6 +193,7 @@ in {
         });
       };
     };
+
 
     compiler = bolosEnv;
     sdk = bolosSdk;
