@@ -167,8 +167,10 @@ let
 in {
   inherit (buildResult) wallet baking release;
 
-  clangAnalyzerOnBakingApp = runClangStaticAnalyzer true ;
-  clangAnalyzerOnWalletApp = runClangStaticAnalyzer false ;
+  clangAnalysis = {
+     baking = runClangStaticAnalyzer true;
+     wallet = runClangStaticAnalyzer false;
+  };
 
   env = {
     # Script that places you in the environment to run `make`, etc.
