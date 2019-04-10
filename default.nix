@@ -107,7 +107,7 @@ let
          "alpha.core.CastSize"
          "alpha.core.CastToStruct"
          "alpha.core.Conversion"
-         "alpha.core.FixedAddr"
+         # "alpha.core.FixedAddr" # Seems noisy, and about portability.
          "alpha.core.IdenticalExpr"
          "alpha.core.PointerArithm"
          "alpha.core.PointerSub"
