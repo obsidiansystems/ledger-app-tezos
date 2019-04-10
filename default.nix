@@ -87,10 +87,6 @@ let
   #   and which *real* compiler to call after doing the analysis.
   # * After the build an `index.html` file is created to point to the individual
   #   result pages.
-  # To run this:
-  #     nix-build -A clangAnalyzerOnWalletApp --no-out-link --show-trace
-  #     nix-build -A clangAnalyzerOnBakingApp --no-out-link --show-trace
-  # And check the `index.html` in the new nix-directories.
   #
   # See 
   # https://clang-analyzer.llvm.org/alpha_checks.html#clone_alpha_checkers
