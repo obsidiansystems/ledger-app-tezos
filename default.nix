@@ -203,8 +203,9 @@ in {
     # Script that places you in the environment to run `make`, etc.
     shell = pkgs.writeScriptBin "env-shell" ''
       #!${pkgs.stdenv.shell}
-      export BOLOS_SDK='${bolos.s.sdk}'
-      export BOLOS_ENV='${bolos.s.env}'
+      export BOLOS_SDK='${bolos.x.sdk}'
+      export BOLOS_ENV='${bolos.x.env}'
+      export TARGET=TARGET_NANOX
       export COMMIT='${if commit == null then "TEST" else commit}'
       exec '${fhs}/bin/enter-fhs'
     '';

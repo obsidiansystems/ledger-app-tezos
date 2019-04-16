@@ -1,3 +1,7 @@
+#include "bolos_target.h"
+
+#ifndef TARGET_NANOX
+
 #include "ui.h"
 
 #include "baking_auth.h"
@@ -290,35 +294,8 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
     return 1;
 }
 
-void io_seproxyhal_display(const bagl_element_t *element) {
-    return io_seproxyhal_display_default((bagl_element_t *)element);
-}
-
-__attribute__((noreturn))
-bool exit_app(void) {
-#ifdef BAKING_APP
-    require_pin();
-#endif
-    BEGIN_TRY_L(exit) {
-        TRY_L(exit) {
-            os_sched_exit(-1);
-        }
-        FINALLY_L(exit) {
-        }
-    }
-    END_TRY_L(exit);
-
-    THROW(0); // Suppress warning
-}
-
-void ui_init(void) {
-    UX_INIT();
-}
-
-
 
 #pragma mark uiprompt
-
 
 static const bagl_element_t ui_multi_screen[] = {
     {{BAGL_RECTANGLE, BAGL_STATIC_ELEMENT, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
@@ -383,12 +360,6 @@ void switch_screen(uint32_t which) {
         global.ui.prompt.callback_data[which]);
 }
 
-void register_ui_callback(uint32_t which, string_generation_callback cb, const void *data) {
-    if (which >= MAX_SCREEN_COUNT) THROW(EXC_MEMORY_ERROR);
-    global.ui.prompt.callbacks[which] = cb;
-    global.ui.prompt.callback_data[which] = data;
-}
-
 void clear_ui_callbacks(void) {
     for (int i = 0; i < MAX_SCREEN_COUNT; ++i) {
         global.ui.prompt.callbacks[i] = NULL;
@@ -447,3 +418,5 @@ void main_menu() {
     UX_MENU_DISPLAY(0, main_menu_data, NULL);
 }
 #endif
+
+#endif // #ifndef TARGET_NANOX

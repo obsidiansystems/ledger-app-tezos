@@ -3,6 +3,8 @@
 #include "blake2.h"
 #include "types.h"
 
+#include "bolos_target.h"
+
 void init_globals(void);
 
 #define MAX_APDU_SIZE 230  // Maximum number of bytes in a single APDU
@@ -104,11 +106,19 @@ typedef struct {
     struct {
       string_generation_callback callbacks[MAX_SCREEN_COUNT];
       const void *callback_data[MAX_SCREEN_COUNT];
+
+#ifdef TARGET_NANOX
+      struct {
+        char prompt[PROMPT_WIDTH + 1];
+        char value[VALUE_WIDTH + 1];
+      } screen[MAX_SCREEN_COUNT];
+#else
       char active_prompt[PROMPT_WIDTH + 1];
       char active_value[VALUE_WIDTH + 1];
 
       // This will and must always be static memory full of constants
       const char *const *prompts;
+#endif
     } prompt;
   } ui;
 
@@ -132,7 +142,12 @@ extern globals_t global;
 extern unsigned int app_stack_canary; // From SDK
 
 // Used by macros that we don't control.
+#ifdef TARGET_NANOX
+extern ux_state_t G_ux;
+extern bolos_ux_params_t G_ux_params;
+#else
 extern ux_state_t ux;
+#endif
 extern unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 static inline void throw_stack_size() {
@@ -143,9 +158,18 @@ static inline void throw_stack_size() {
 }
 
 // #ifdef BAKING_APP
-extern WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
 
+#ifdef TARGET_NANOX
+
+extern nvram_data const N_data_real;
+#define N_data (*(volatile nvram_data *)PIC(&N_data_real))
+
+#else
+
+extern WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
 #define N_data (*(WIDE nvram_data*)PIC(&N_data_real))
+
+#endif
 
 void update_baking_idle_screens(void);
 high_watermark_t *select_hwm_by_chain(chain_id_t const chain_id, nvram_data *const ram);

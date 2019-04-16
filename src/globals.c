@@ -3,6 +3,10 @@
 #include "exception.h"
 #include "to_string.h"
 
+#ifdef TARGET_NANOX
+#include "ux.h"
+#endif
+
 #include <string.h>
 
 
@@ -17,19 +21,37 @@
 globals_t global;
 
 // These are strange variables that the SDK relies on us to define but uses directly itself.
+#ifdef TARGET_NANOX
+ux_state_t G_ux;
+bolos_ux_params_t G_ux_params;
+#else // TARGET_NANOX
 ux_state_t ux;
+#endif // TARGET_NANOX
+
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 void init_globals(void) {
-  memset(&global, 0, sizeof(global));
-  memset(&ux, 0, sizeof(ux));
-  memset(G_io_seproxyhal_spi_buffer, 0, sizeof(G_io_seproxyhal_spi_buffer));
+    memset(&global, 0, sizeof(global));
+
+#ifdef TARGET_NANOX
+    memset(&G_ux, 0, sizeof(G_ux));
+    memset(&G_ux_params, 0, sizeof(G_ux_params));
+#else
+    memset(&ux, 0, sizeof(ux));
+#endif
+
+    memset(G_io_seproxyhal_spi_buffer, 0, sizeof(G_io_seproxyhal_spi_buffer));
 }
 
 // #ifdef BAKING_APP
+
 // DO NOT TRY TO INIT THIS. This can only be written via an system call.
 // The "N_" is *significant*. It tells the linker to put this in NVRAM.
+#ifdef TARGET_NANOX
+nvram_data const N_data_real;
+#else
 WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
+#endif
 
 high_watermark_t *select_hwm_by_chain(chain_id_t const chain_id, nvram_data *const ram) {
   check_null(ram);
