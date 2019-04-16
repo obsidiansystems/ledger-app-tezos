@@ -10,7 +10,6 @@
 #include "protocol.h"
 #include "to_string.h"
 #include "ui.h"
-#include "ui_prompt.h"
 
 #include "cx.h"
 

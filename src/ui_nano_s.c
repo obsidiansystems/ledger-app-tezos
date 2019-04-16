@@ -1,18 +1,40 @@
 #include "ui.h"
 
-#include "ui_menu.h"
-#include "ui_prompt.h"
-
 #include "baking_auth.h"
+#include "exception.h"
 #include "globals.h"
+#include "glyphs.h" // ui-menu
 #include "keys.h"
 #include "memory.h"
+#include "os_cx.h" // ui-menu
 #include "to_string.h"
 
 #include <stdbool.h>
 #include <string.h>
 
+
 #define G global.ui
+
+// CALLED BY THE SDK
+unsigned char io_event(unsigned char channel);
+void io_seproxyhal_display(const bagl_element_t *element);
+
+
+static void ui_display(const bagl_element_t *elems, size_t sz, ui_callback_t ok_c, ui_callback_t cxl_c,
+                uint32_t step_count);
+
+
+// ----------------------------- ui_prompt
+// This is called by internal UI code to implement buffering
+static void switch_screen(uint32_t which);
+// This is called by internal UI code to prevent callbacks from sticking around
+static void clear_ui_callbacks(void);
+
+// ------------------------------- ui_meno
+static void main_menu(void);
+
+
+
 
 static unsigned button_handler(unsigned button_mask, unsigned button_mask_counter);
 
@@ -292,3 +314,136 @@ bool exit_app(void) {
 void ui_init(void) {
     UX_INIT();
 }
+
+
+
+#pragma mark uiprompt
+
+
+static const bagl_element_t ui_multi_screen[] = {
+    {{BAGL_RECTANGLE, BAGL_STATIC_ELEMENT, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
+      0, 0},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_ICON, BAGL_STATIC_ELEMENT, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+      BAGL_GLYPH_ICON_CROSS},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_ICON, BAGL_STATIC_ELEMENT, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
+      BAGL_GLYPH_ICON_CHECK},
+     NULL,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, BAGL_STATIC_ELEMENT, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
+     global.ui.prompt.active_prompt,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+
+    {{BAGL_LABELINE, BAGL_SCROLLING_ELEMENT, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
+      BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
+     global.ui.prompt.active_value,
+     0,
+     0,
+     0,
+     NULL,
+     NULL,
+     NULL},
+};
+
+void switch_screen(uint32_t which) {
+    if (which >= MAX_SCREEN_COUNT) THROW(EXC_MEMORY_ERROR);
+    const char *label = (const char*)PIC(global.ui.prompt.prompts[which]);
+
+    strncpy(global.ui.prompt.active_prompt, label, sizeof(global.ui.prompt.active_prompt));
+    if (global.ui.prompt.callbacks[which] == NULL) THROW(EXC_MEMORY_ERROR);
+    global.ui.prompt.callbacks[which](
+        global.ui.prompt.active_value, sizeof(global.ui.prompt.active_value),
+        global.ui.prompt.callback_data[which]);
+}
+
+void register_ui_callback(uint32_t which, string_generation_callback cb, const void *data) {
+    if (which >= MAX_SCREEN_COUNT) THROW(EXC_MEMORY_ERROR);
+    global.ui.prompt.callbacks[which] = cb;
+    global.ui.prompt.callback_data[which] = data;
+}
+
+void clear_ui_callbacks(void) {
+    for (int i = 0; i < MAX_SCREEN_COUNT; ++i) {
+        global.ui.prompt.callbacks[i] = NULL;
+    }
+}
+
+__attribute__((noreturn))
+void ui_prompt(const char *const *labels, const char *const *data, ui_callback_t ok_c, ui_callback_t cxl_c) {
+    check_null(labels);
+    global.ui.prompt.prompts = labels;
+
+    size_t i;
+    for (i = 0; labels[i] != NULL; i++) {
+        const char *label = (const char *)PIC(labels[i]);
+        if (i >= MAX_SCREEN_COUNT || strlen(label) > PROMPT_WIDTH) THROW(EXC_MEMORY_ERROR);
+
+        if (data != NULL) {
+            register_ui_callback(i, copy_string, data[i]);
+        }
+    }
+    size_t screen_count = i;
+
+    ui_display(ui_multi_screen, NUM_ELEMENTS(ui_multi_screen),
+               ok_c, cxl_c, screen_count);
+    THROW(ASYNC_EXCEPTION);
+}
+
+
+#pragma mark ui_menu
+
+
+#ifndef BAKING_APP
+
+void exit_app_cb(__attribute__((unused)) unsigned int cb) {
+    exit_app();
+}
+
+// Mutually recursive static variables require forward declarations
+static const ux_menu_entry_t main_menu_data[];
+static const ux_menu_entry_t about_menu_data[];
+
+static const ux_menu_entry_t about_menu_data[] = {
+    {NULL, NULL, 0, NULL, "Tezos Wallet", "Version " VERSION, 0, 0},
+    {main_menu_data, NULL, 1, &C_icon_back, "Back", NULL, 61, 40}, // TODO: Put icon for "back" in
+    UX_MENU_END
+};
+
+static const ux_menu_entry_t main_menu_data[] = {
+    {NULL, NULL, 0, NULL, "Use wallet to", "view accounts", 0, 0},
+    {about_menu_data, NULL, 0, NULL, "About", NULL, 0, 0},
+    {NULL, exit_app_cb, 0, &C_icon_dashboard, "Quit app", NULL, 50, 29}, // TODO: Put icon for "dashboard" in
+    UX_MENU_END
+};
+
+void main_menu() {
+    UX_MENU_DISPLAY(0, main_menu_data, NULL);
+}
+#endif

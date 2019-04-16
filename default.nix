@@ -10,24 +10,47 @@ let
 
   fhsWith = runScript: pkgs.callPackage nix/fhs.nix { inherit runScript; };
   fhs = fhsWith "bash";
-  bolosEnv = pkgs.callPackage nix/bolos-env.nix {};
-  bolosSdk = fetchThunk nix/dep/nanos-secure-sdk;
+
+  bolos = {
+    s = {
+      sdk = fetchThunk nix/dep/nanos-secure-sdk;
+      env = pkgs.callPackage nix/bolos-env.nix { clangVersion = 4; };
+    };
+    x = {
+      sdk = /home/elliot/Downloads/nanox/sdk-nanox-1.2.4_dev3-rc2;
+      env = pkgs.callPackage nix/bolos-env.nix { clangVersion = 7; };
+    };
+  };
+
   src = pkgs.lib.sources.sourceFilesBySuffices (pkgs.lib.sources.cleanSource ./.) [".c" ".h" ".gif" "Makefile"];
 
-  build = commit:
+  build = target: commit:
     let
+      bolosSdk = if target == "x" then bolos.x.sdk else bolos.s.sdk;
+      bolosEnv = if target == "x" then bolos.x.env else bolos.s.env;
       app = bakingApp: pkgs.runCommand "ledger-app-tezos-${if bakingApp then "baking" else "wallet"}" {} ''
         set -Eeuo pipefail
 
         cp -a '${src}'/* .
         chmod -R u+w .
 
-        '${fhs}/bin/enter-fhs' <<EOF
-        set -Eeuxo pipefail
         export BOLOS_SDK='${bolosSdk}'
         export BOLOS_ENV='${bolosEnv}'
+
+        echo "MARKO!"
+        '${fhs}/bin/enter-fhs' <<EOF
+
+        set -Eeuxo pipefail
+
+        export BOLOS_SDK='${bolosSdk}'
+        export BOLOS_ENV='${bolosEnv}'
+
+        # For NanoX SDK Makefiles now require clang on the PATH.
+        export PATH="$BOLOS_ENV/clang-arm-fropi/bin:$PATH"
+
         export APP='${if bakingApp then "tezos_baking" else "tezos_wallet"}'
         export COMMIT='${commit}'
+
         make clean
         make all
         EOF
@@ -76,7 +99,7 @@ let
       };
     };
 
-  buildResult = if commit == null then throw "Set 'commit' attribute to git commit or use nix/build.sh instead" else build commit;
+  buildResult = target: if commit == null then throw "Set 'commit' attribute to git commit or use nix/build.sh instead" else build target commit;
 
   # The package clang-analyzer comes with a perl script `scan-build` that seems
   # to get quickly lost with the cross-compiler of the SDK if run by itself.
@@ -89,7 +112,7 @@ let
   # * After the build an `index.html` file is created to point to the individual
   #   result pages.
   #
-  # See 
+  # See
   # https://clang-analyzer.llvm.org/alpha_checks.html#clone_alpha_checkers
   # for the list of extra analyzers that are run.
   #
@@ -134,14 +157,14 @@ let
             chmod -R u+w .
             '${fhs}/bin/enter-fhs' <<EOF
             set -Eeuxo pipefail
-            export BOLOS_SDK='${bolosSdk}'
-            export BOLOS_ENV='${bolosEnv}'
+            export BOLOS_SDK='${bolos.s.sdk}'
+            export BOLOS_ENV='${bolos.s.env}'
             export COMMIT='${if commit == null then "TEST" else commit}'
             export CCC_ANALYZER_HTML="$out"
             export CCC_ANALYZER_OUTPUT_FORMAT=html
             export CCC_ANALYZER_ANALYSIS="${analysisOptions}"
-            export CCC_CC='${bolosEnv}/clang-arm-fropi/bin/clang'
-            export CLANG='${bolosEnv}/clang-arm-fropi/bin/clang'
+            export CCC_CC='${bolos.s.env}/clang-arm-fropi/bin/clang'
+            export CLANG='${bolos.s.env}/clang-arm-fropi/bin/clang'
             export APP='${if bakingApp then "tezos_baking" else "tezos_wallet"}'
             make clean
             make all CC=${pkgs.clangAnalyzer}/libexec/scan-build/ccc-analyzer
@@ -166,7 +189,10 @@ let
             echo "</body></html>" >> $outhtml
           '';
 in {
-  inherit (buildResult) wallet baking release;
+  nano = {
+    s = buildResult "s";
+    x = buildResult "x";
+  };
 
   clangAnalysis = {
      baking = runClangStaticAnalyzer true;
@@ -177,8 +203,8 @@ in {
     # Script that places you in the environment to run `make`, etc.
     shell = pkgs.writeScriptBin "env-shell" ''
       #!${pkgs.stdenv.shell}
-      export BOLOS_SDK='${bolosSdk}'
-      export BOLOS_ENV='${bolosEnv}'
+      export BOLOS_SDK='${bolos.s.sdk}'
+      export BOLOS_ENV='${bolos.s.env}'
       export COMMIT='${if commit == null then "TEST" else commit}'
       exec '${fhs}/bin/enter-fhs'
     '';
@@ -194,8 +220,7 @@ in {
       };
     };
 
-
-    compiler = bolosEnv;
-    sdk = bolosSdk;
+    compiler = bolos.s.env;
+    sdk = bolos.s.sdk;
   };
 }

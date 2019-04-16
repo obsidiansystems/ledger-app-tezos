@@ -6,7 +6,7 @@
 #include "memory.h"
 #include "protocol.h"
 #include "to_string.h"
-#include "ui_prompt.h"
+#include "ui.h"
 
 #include "os_cx.h"
 

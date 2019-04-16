@@ -11,10 +11,21 @@
 
 void ui_initial_screen(void);
 void ui_init(void);
-__attribute__((noreturn))
-bool exit_app(void); // Might want to send it arguments to use as callback
 
-void ui_display(const bagl_element_t *elems, size_t sz, ui_callback_t ok_c, ui_callback_t cxl_c,
-                uint32_t step_count);
-unsigned char io_event(unsigned char channel);
-void io_seproxyhal_display(const bagl_element_t *element);
+__attribute__((noreturn)) bool exit_app(void); // Might want to send it arguments to use as callback
+
+/// ui-prompt--------------------------
+
+// Displays labels (terminated with a NULL pointer) associated with data
+// labels must be completely static string constants
+// data may be dynamic
+// Alternatively, if data is NULL, assume we've registered appropriate callbacks to generate the data
+// All pointers may be unrelocated
+__attribute__((noreturn))
+void ui_prompt(const char *const *labels, const char *const *data, ui_callback_t ok_c, ui_callback_t cxl_c);
+// STAY THE SAME
+
+
+// This function registers how a value is to be produced
+void register_ui_callback(uint32_t which, string_generation_callback cb, const void *data); // STAY THE SAME
+#define REGISTER_STATIC_UI_VALUE(index, str) register_ui_callback(index, copy_string, STATIC_UI_VALUE(str))

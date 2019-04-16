@@ -5,7 +5,6 @@
 #include "globals.h"
 #include "keys.h"
 #include "to_string.h"
-#include "ui_prompt.h"
 #include "ui.h"
 
 #include <string.h>
