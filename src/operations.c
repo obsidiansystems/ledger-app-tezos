@@ -339,6 +339,9 @@ bool parse_operations(
         CATCH(EXC_PARSE_ERROR) {
             return false;
         }
+        CATCH_OTHER(e) {
+            THROW(e);
+        }
         FINALLY { }
     }
     END_TRY;

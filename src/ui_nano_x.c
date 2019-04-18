@@ -38,7 +38,7 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
 
     case SEPROXYHAL_TAG_STATUS_EVENT:
         if (G_io_apdu_media == IO_APDU_MEDIA_USB_HID && !(U4BE(G_io_seproxyhal_spi_buffer, 3) & SEPROXYHAL_TAG_STATUS_EVENT_FLAG_USB_POWERED)) {
-         THROW(EXCEPTION_IO_RESET);
+            THROW(EXCEPTION_IO_RESET);
         }
         // no break is intentional
     default:
@@ -107,7 +107,7 @@ PROMPT_SCREEN_TPL(5);
 PROMPT_SCREEN_TPL(6);
 
 static void prompt_response(bool const accepted) {
-    ux_flow_init(0, ux_idle_flow, NULL);
+    ui_initial_screen();
     if (accepted) {
         G.ok_callback();
     } else {

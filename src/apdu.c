@@ -70,6 +70,9 @@ void main_loop(apdu_handler const *const handlers, size_t const handlers_size) {
             CATCH(ASYNC_EXCEPTION) {
                 rx = io_exchange(CHANNEL_APDU | IO_ASYNCH_REPLY, 0);
             }
+            CATCH(EXCEPTION_IO_RESET) {
+                THROW(EXCEPTION_IO_RESET);
+            }
             CATCH_OTHER(e) {
                 uint16_t sw = e;
                 switch (sw) {
