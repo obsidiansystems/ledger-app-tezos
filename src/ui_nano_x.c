@@ -88,9 +88,10 @@ UX_FLOW(ux_idle_flow,
 
 
 // prompt
+#define PROMPT_SCREEN_NAME(idx) ux_prompt_flow_ ## idx ## _step
 #define PROMPT_SCREEN_TPL(idx) \
     UX_STEP_NOCB( \
-        ux_prompt_flow_ ## idx ## _step, \
+        PROMPT_SCREEN_NAME(idx), \
         bnnn_paging, \
         { \
             .title = G.prompt.screen[idx].prompt, \
@@ -132,64 +133,18 @@ UX_STEP_CB(
         "Reject"
     });
 
-
-// yes ridiculous
-UX_FLOW(ux_prompt_1_flow,
-    &ux_prompt_flow_0_step,
+UX_FLOW(ux_prompts_flow,
+    &PROMPT_SCREEN_NAME(0),
+    &PROMPT_SCREEN_NAME(1),
+    &PROMPT_SCREEN_NAME(2),
+    &PROMPT_SCREEN_NAME(3),
+    &PROMPT_SCREEN_NAME(4),
+    &PROMPT_SCREEN_NAME(5),
+    &PROMPT_SCREEN_NAME(6),
     &ux_prompt_flow_reject_step,
     &ux_prompt_flow_accept_step
 );
-UX_FLOW(ux_prompt_2_flow,
-    &ux_prompt_flow_0_step,
-    &ux_prompt_flow_1_step,
-    &ux_prompt_flow_reject_step,
-    &ux_prompt_flow_accept_step
-);
-UX_FLOW(ux_prompt_3_flow,
-    &ux_prompt_flow_0_step,
-    &ux_prompt_flow_1_step,
-    &ux_prompt_flow_2_step,
-    &ux_prompt_flow_reject_step,
-    &ux_prompt_flow_accept_step
-);
-UX_FLOW(ux_prompt_4_flow,
-    &ux_prompt_flow_0_step,
-    &ux_prompt_flow_1_step,
-    &ux_prompt_flow_2_step,
-    &ux_prompt_flow_3_step,
-    &ux_prompt_flow_reject_step,
-    &ux_prompt_flow_accept_step
-);
-UX_FLOW(ux_prompt_5_flow,
-    &ux_prompt_flow_0_step,
-    &ux_prompt_flow_1_step,
-    &ux_prompt_flow_2_step,
-    &ux_prompt_flow_3_step,
-    &ux_prompt_flow_4_step,
-    &ux_prompt_flow_reject_step,
-    &ux_prompt_flow_accept_step
-);
-UX_FLOW(ux_prompt_6_flow,
-    &ux_prompt_flow_0_step,
-    &ux_prompt_flow_1_step,
-    &ux_prompt_flow_2_step,
-    &ux_prompt_flow_3_step,
-    &ux_prompt_flow_4_step,
-    &ux_prompt_flow_5_step,
-    &ux_prompt_flow_reject_step,
-    &ux_prompt_flow_accept_step
-);
-UX_FLOW(ux_prompt_7_flow,
-    &ux_prompt_flow_0_step,
-    &ux_prompt_flow_1_step,
-    &ux_prompt_flow_2_step,
-    &ux_prompt_flow_3_step,
-    &ux_prompt_flow_4_step,
-    &ux_prompt_flow_5_step,
-    &ux_prompt_flow_6_step,
-    &ux_prompt_flow_reject_step,
-    &ux_prompt_flow_accept_step
-);
+_Static_assert(NUM_ELEMENTS(ux_prompts_flow) - 3 /*reject + accept + end*/ == MAX_SCREEN_COUNT, "ux_prompts_flow doesn't have the same number of screens as MAX_SCREEN_COUNT");
 
 
 void ui_initial_screen(void) {
@@ -209,35 +164,30 @@ __attribute__((noreturn))
 void ui_prompt(const char *const *labels, const char *const *data, ui_callback_t ok_c, ui_callback_t cxl_c) {
     check_null(labels);
 
-    size_t i;
-    for (i = 0; labels[i] != NULL; i++) {
-        const char *const label = (const char *)PIC(labels[i]);
-        if (i >= MAX_SCREEN_COUNT || strlen(label) > PROMPT_WIDTH) THROW(EXC_MEMORY_ERROR);
+    size_t const screen_count = ({
+        size_t i = 0;
+        while (i < MAX_SCREEN_COUNT && labels[i] != NULL) { i++; }
+        i;
+    });
 
-        strcpy(G.prompt.screen[i].prompt, label);
+    // We fill the destination buffers at the end instead of the beginning so we can
+    // use the same array for any number of screens.
+    size_t const offset = MAX_SCREEN_COUNT - screen_count;
+    for (size_t i = 0; labels[i] != NULL; i++) {
+        const char *const label = (const char *)PIC(labels[i]);
+        if (strlen(label) > sizeof(G.prompt.screen[i].prompt)) THROW(EXC_MEMORY_ERROR);
+        strcpy(G.prompt.screen[offset + i].prompt, label);
 
         if (data == NULL) {
-            G.prompt.callbacks[i](G.prompt.screen[i].value, sizeof(G.prompt.screen[i].value), global.ui.prompt.callback_data[i]);
+            G.prompt.callbacks[i](G.prompt.screen[offset + i].value, sizeof(G.prompt.screen[offset + i].value), G.prompt.callback_data[i]);
         } else {
-            copy_string(G.prompt.screen[i].value, sizeof(G.prompt.screen[i].value), data[i]);
+            copy_string(G.prompt.screen[offset + i].value, sizeof(G.prompt.screen[offset + i].value), data[i]);
         }
     }
-    size_t const screen_count = i;
-
 
     G.ok_callback = ok_c;
     G.cxl_callback = cxl_c;
-    switch (screen_count) {
-        case 1: ux_flow_init(0, ux_prompt_1_flow, NULL); break;
-        case 2: ux_flow_init(0, ux_prompt_2_flow, NULL); break;
-        case 3: ux_flow_init(0, ux_prompt_3_flow, NULL); break;
-        case 4: ux_flow_init(0, ux_prompt_4_flow, NULL); break;
-        case 5: ux_flow_init(0, ux_prompt_5_flow, NULL); break;
-        case 6: ux_flow_init(0, ux_prompt_6_flow, NULL); break;
-        case 7: ux_flow_init(0, ux_prompt_7_flow, NULL); break;
-        default: THROW(EXC_WRONG_LENGTH);
-    }
-
+    ux_flow_init(0, &ux_prompts_flow[offset], NULL);
     THROW(ASYNC_EXCEPTION);
 }
 
