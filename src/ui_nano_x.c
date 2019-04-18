@@ -93,8 +93,8 @@ UX_FLOW(ux_idle_flow,
         ux_prompt_flow_ ## idx ## _step, \
         bnnn_paging, \
         { \
-            G.prompt.screen[idx].prompt, \
-            G.prompt.screen[idx].value, \
+            .title = G.prompt.screen[idx].prompt, \
+            .text = G.prompt.screen[idx].value, \
         })
 
 PROMPT_SCREEN_TPL(0);
@@ -119,7 +119,7 @@ UX_STEP_CB(
     pb,
     prompt_response(true),
     {
-        &C_icon_dashboard,
+        &C_icon_validate_14,
         "Accept"
     });
 
@@ -128,7 +128,7 @@ UX_STEP_CB(
     pb,
     prompt_response(false),
     {
-        &C_icon_dashboard,
+        &C_icon_crossmark,
         "Reject"
     });
 
