@@ -33,7 +33,7 @@ APP_LOAD_PARAMS=--appFlags 0 --curve ed25519 --curve secp256k1 --curve prime256r
 VERSION_TAG ?= $(shell git describe --tags 2>/dev/null | cut -f1 -d-)
 APPVERSION_M=2
 APPVERSION_N=0
-APPVERSION_P=0
+APPVERSION_P=1
 APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 
 # Only warn about version tags if specified/inferred
