@@ -38,8 +38,6 @@ static void clear_ui_callbacks(void);
 static void main_menu(void);
 
 
-
-
 static unsigned button_handler(unsigned button_mask, unsigned button_mask_counter);
 
 #define PROMPT_CYCLES 3
@@ -146,20 +144,20 @@ static bool do_nothing(void) {
 #endif
 
 static void ui_idle(void) {
-#ifdef BAKING_APP
-    update_baking_idle_screens();
-    ui_display(ui_idle_screen, NUM_ELEMENTS(ui_idle_screen),
-               do_nothing, exit_app, 3);
-#else
-    G.cxl_callback = exit_app;
-    main_menu();
-#endif
+#   ifdef BAKING_APP
+        update_baking_idle_screens();
+        ui_display(ui_idle_screen, NUM_ELEMENTS(ui_idle_screen),
+                do_nothing, exit_app, 3);
+#   else
+        G.cxl_callback = exit_app;
+        main_menu();
+#   endif
 }
 
 void ui_initial_screen(void) {
-#ifdef BAKING_APP
-    update_baking_idle_screens();
-#endif
+#   ifdef BAKING_APP
+        update_baking_idle_screens();
+#   endif
     clear_ui_callbacks();
     ui_idle();
 }
@@ -171,7 +169,9 @@ static bool is_idling(void) {
 static void timeout(void) {
     if (is_idling()) {
         // Idle app timeout
-        update_baking_idle_screens();
+#       ifdef BAKING_APP
+            update_baking_idle_screens();
+#       endif
         G.timeout_cycle_count = 0;
         UX_REDISPLAY();
     } else {
@@ -417,6 +417,6 @@ static const ux_menu_entry_t main_menu_data[] = {
 void main_menu() {
     UX_MENU_DISPLAY(0, main_menu_data, NULL);
 }
-#endif
+#endif // #ifdef BAKING_APP
 
 #endif // #ifndef TARGET_NANOX

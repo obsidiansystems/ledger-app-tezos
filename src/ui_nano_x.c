@@ -148,16 +148,15 @@ _Static_assert(NUM_ELEMENTS(ux_prompts_flow) - 3 /*reject + accept + end*/ == MA
 
 
 void ui_initial_screen(void) {
+#   ifdef BAKING_APP
+        update_baking_idle_screens();
+#   endif
+
     // reserve a display stack slot if none yet
     if(G_ux.stack_count == 0) {
         ux_stack_push();
     }
     ux_flow_init(0, ux_idle_flow, NULL);
-// #ifdef BAKING_APP
-//     update_baking_idle_screens();
-// #endif
-//     clear_ui_callbacks();
-//     ui_idle();
 }
 
 __attribute__((noreturn))

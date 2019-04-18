@@ -1,10 +1,11 @@
 #include "apdu_pubkey.h"
 
 #include "apdu.h"
-#include "baking_auth.h"
 #include "cx.h"
 #include "globals.h"
 #include "keys.h"
+#include "protocol.h"
+#include "to_string.h"
 #include "ui.h"
 
 #include <string.h>
@@ -23,6 +24,49 @@ static bool baking_ok(void) {
     return true;
 }
 #endif
+
+#ifdef BAKING_APP
+char const *const *get_baking_prompts() {
+    static const char *const baking_prompts[] = {
+        PROMPT("Authorize Baking"),
+        PROMPT("Public Key Hash"),
+        NULL,
+    };
+    return baking_prompts;
+}
+#endif
+
+__attribute__((noreturn))
+static void prompt_address(
+#ifndef BAKING_APP
+    __attribute__((unused))
+#endif
+    bool baking,
+    ui_callback_t ok_cb,
+    ui_callback_t cxl_cb
+) {
+    static size_t const TYPE_INDEX = 0;
+    static size_t const ADDRESS_INDEX = 1;
+
+#   ifdef BAKING_APP
+    if (baking) {
+        REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "With Public Key?");
+        register_ui_callback(ADDRESS_INDEX, bip32_path_with_curve_to_pkh_string, &G.key);
+        ui_prompt(get_baking_prompts(), NULL, ok_cb, cxl_cb);
+    } else {
+#   endif
+        static const char *const pubkey_labels[] = {
+            PROMPT("Provide"),
+            PROMPT("Public Key Hash"),
+            NULL,
+        };
+        REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Public Key");
+        register_ui_callback(ADDRESS_INDEX, bip32_path_with_curve_to_pkh_string, &G.key);
+        ui_prompt(pubkey_labels, NULL, ok_cb, cxl_cb);
+#   ifdef BAKING_APP
+    }
+#   endif
+}
 
 size_t handle_apdu_get_public_key(uint8_t instruction) {
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
@@ -67,6 +111,6 @@ size_t handle_apdu_get_public_key(uint8_t instruction) {
 #ifdef BAKING_APP
         }
 #endif
-        prompt_address(bake, G.key.curve, &G.public_key, cb, delay_reject);
+        prompt_address(bake, cb, delay_reject);
     }
 }

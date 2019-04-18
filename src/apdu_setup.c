@@ -1,3 +1,5 @@
+#ifdef BAKING_APP
+
 #include "apdu_setup.h"
 
 #include "apdu.h"
@@ -87,3 +89,5 @@ __attribute__((noreturn)) size_t handle_apdu_setup(__attribute__((unused)) uint8
 
     prompt_setup(ok, delay_reject);
 }
+
+#endif // #ifdef BAKING_APP

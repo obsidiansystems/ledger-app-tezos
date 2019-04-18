@@ -1,4 +1,6 @@
 #include "apdu.h"
+#include "globals.h"
+#include "to_string.h"
 #include "version.h"
 
 #include <stdbool.h>

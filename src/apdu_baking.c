@@ -1,3 +1,5 @@
+#ifdef BAKING_APP
+
 #include "apdu_baking.h"
 
 #include "apdu.h"
@@ -114,3 +116,5 @@ size_t handle_apdu_deauthorize(__attribute__((unused)) uint8_t instruction) {
 
     return finalize_successful_send(0);
 }
+
+#endif // #ifdef BAKING_APP

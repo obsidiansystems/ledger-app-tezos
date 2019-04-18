@@ -22,11 +22,11 @@ globals_t global;
 
 // These are strange variables that the SDK relies on us to define but uses directly itself.
 #ifdef TARGET_NANOX
-ux_state_t G_ux;
-bolos_ux_params_t G_ux_params;
-#else // TARGET_NANOX
-ux_state_t ux;
-#endif // TARGET_NANOX
+    ux_state_t G_ux;
+    bolos_ux_params_t G_ux_params;
+#else
+    ux_state_t ux;
+#endif
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
@@ -43,15 +43,15 @@ void init_globals(void) {
     memset(G_io_seproxyhal_spi_buffer, 0, sizeof(G_io_seproxyhal_spi_buffer));
 }
 
-// #ifdef BAKING_APP
+#ifdef BAKING_APP
 
 // DO NOT TRY TO INIT THIS. This can only be written via an system call.
 // The "N_" is *significant*. It tells the linker to put this in NVRAM.
-#ifdef TARGET_NANOX
-nvram_data const N_data_real;
-#else
-WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
-#endif
+#    ifdef TARGET_NANOX
+        nvram_data const N_data_real;
+#    else
+        WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
+#    endif
 
 high_watermark_t *select_hwm_by_chain(chain_id_t const chain_id, nvram_data *const ram) {
   check_null(ram);
@@ -75,4 +75,5 @@ void update_baking_idle_screens(void) {
 
     chain_id_to_string_with_aliases(global.ui.baking_idle_screens.chain, sizeof(global.ui.baking_idle_screens.chain), &N_data.main_chain_id);
 }
-//#endif
+
+#endif // #ifdef BAKING_APP

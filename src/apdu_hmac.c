@@ -1,3 +1,5 @@
+#ifdef BAKING_APP
+
 #include "apdu_hmac.h"
 
 #include "globals.h"
@@ -69,3 +71,5 @@ size_t handle_apdu_hmac(__attribute__((unused)) uint8_t instruction) {
     tx += hmac_size;
     return finalize_successful_send(tx);
 }
+
+#endif // #ifdef BAKING_APP
