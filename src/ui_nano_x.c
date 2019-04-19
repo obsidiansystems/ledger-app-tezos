@@ -160,7 +160,7 @@ void ui_initial_screen(void) {
 }
 
 __attribute__((noreturn))
-void ui_prompt(const char *const *labels, const char *const *data, ui_callback_t ok_c, ui_callback_t cxl_c) {
+void ui_prompt(const char *const *labels, ui_callback_t ok_c, ui_callback_t cxl_c) {
     check_null(labels);
 
     size_t const screen_count = ({
@@ -177,11 +177,7 @@ void ui_prompt(const char *const *labels, const char *const *data, ui_callback_t
         if (strlen(label) > sizeof(G.prompt.screen[i].prompt)) THROW(EXC_MEMORY_ERROR);
         strcpy(G.prompt.screen[offset + i].prompt, label);
 
-        if (data == NULL) {
-            G.prompt.callbacks[i](G.prompt.screen[offset + i].value, sizeof(G.prompt.screen[offset + i].value), G.prompt.callback_data[i]);
-        } else {
-            copy_string(G.prompt.screen[offset + i].value, sizeof(G.prompt.screen[offset + i].value), data[i]);
-        }
+        G.prompt.callbacks[i](G.prompt.screen[offset + i].value, sizeof(G.prompt.screen[offset + i].value), G.prompt.callback_data[i]);
     }
 
     G.ok_callback = ok_c;

@@ -52,7 +52,7 @@ static void prompt_address(
     if (baking) {
         REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "With Public Key?");
         register_ui_callback(ADDRESS_INDEX, bip32_path_with_curve_to_pkh_string, &G.key);
-        ui_prompt(get_baking_prompts(), NULL, ok_cb, cxl_cb);
+        ui_prompt(get_baking_prompts(), ok_cb, cxl_cb);
     } else {
 #   endif
         static const char *const pubkey_labels[] = {
@@ -62,7 +62,7 @@ static void prompt_address(
         };
         REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Public Key");
         register_ui_callback(ADDRESS_INDEX, bip32_path_with_curve_to_pkh_string, &G.key);
-        ui_prompt(pubkey_labels, NULL, ok_cb, cxl_cb);
+        ui_prompt(pubkey_labels, ok_cb, cxl_cb);
 #   ifdef BAKING_APP
     }
 #   endif

@@ -367,7 +367,7 @@ void clear_ui_callbacks(void) {
 }
 
 __attribute__((noreturn))
-void ui_prompt(const char *const *labels, const char *const *data, ui_callback_t ok_c, ui_callback_t cxl_c) {
+void ui_prompt(const char *const *labels, ui_callback_t ok_c, ui_callback_t cxl_c) {
     check_null(labels);
     global.ui.prompt.prompts = labels;
 
@@ -375,10 +375,6 @@ void ui_prompt(const char *const *labels, const char *const *data, ui_callback_t
     for (i = 0; labels[i] != NULL; i++) {
         const char *label = (const char *)PIC(labels[i]);
         if (i >= MAX_SCREEN_COUNT || strlen(label) > PROMPT_WIDTH) THROW(EXC_MEMORY_ERROR);
-
-        if (data != NULL) {
-            register_ui_callback(i, copy_string, data[i]);
-        }
     }
     size_t screen_count = i;
 

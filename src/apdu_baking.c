@@ -33,7 +33,7 @@ size_t handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
         PROMPT("Reset HWM"),
         NULL,
     };
-    ui_prompt(reset_prompts, NULL, reset_ok, delay_reject);
+    ui_prompt(reset_prompts, reset_ok, delay_reject);
 }
 
 bool reset_ok(void) {

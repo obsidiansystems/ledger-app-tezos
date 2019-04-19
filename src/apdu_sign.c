@@ -128,7 +128,7 @@ __attribute__((noreturn)) static void prompt_register_delegate(
     register_ui_callback(ADDRESS_INDEX, bip32_path_with_curve_to_pkh_string, &G.key);
     register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &G.maybe_ops.v.total_fee);
 
-    ui_prompt(prompts, NULL, ok_cb, cxl_cb);
+    ui_prompt(prompts, ok_cb, cxl_cb);
 }
 
 uint32_t baking_sign_complete(void) {
@@ -206,7 +206,7 @@ bool prompt_transaction(
                 register_ui_callback(PROTOCOL_HASH_INDEX, protocol_hash_to_string, ops->operation.proposal.protocol_hash);
 
                 REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Proposal");
-                ui_prompt(proposal_prompts, NULL, ok, cxl);
+                ui_prompt(proposal_prompts, ok, cxl);
             }
 
         case OPERATION_TAG_BALLOT:
@@ -241,7 +241,7 @@ bool prompt_transaction(
                         break;
                 }
 
-                ui_prompt(ballot_prompts, NULL, ok, cxl);
+                ui_prompt(ballot_prompts, ok, cxl);
             }
 
         case OPERATION_TAG_ORIGINATION:
@@ -316,7 +316,7 @@ bool prompt_transaction(
                     REGISTER_STATIC_UI_VALUE(DELEGATE_INDEX, "Disabled");
                 }
 
-                ui_prompt(prompts, NULL, ok, cxl);
+                ui_prompt(prompts, ok, cxl);
             }
         case OPERATION_TAG_DELEGATION:
             {
@@ -356,7 +356,7 @@ bool prompt_transaction(
                 bool withdrawal = ops->operation.destination.originated == 0 &&
                     ops->operation.destination.curve_code == TEZOS_NO_CURVE;
 
-                ui_prompt(withdrawal ? withdrawal_prompts : delegation_prompts, NULL, ok, cxl);
+                ui_prompt(withdrawal ? withdrawal_prompts : delegation_prompts, ok, cxl);
             }
 
         case OPERATION_TAG_TRANSACTION:
@@ -388,7 +388,7 @@ bool prompt_transaction(
 
                 REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Transaction");
 
-                ui_prompt(transaction_prompts, NULL, ok, cxl);
+                ui_prompt(transaction_prompts, ok, cxl);
             }
         case OPERATION_TAG_NONE:
             {
@@ -414,7 +414,7 @@ bool prompt_transaction(
                                      &ops->total_storage_limit);
                 register_ui_callback(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
 
-                ui_prompt(reveal_prompts, NULL, ok, cxl);
+                ui_prompt(reveal_prompts, ok, cxl);
             }
     }
 }
@@ -443,7 +443,7 @@ static size_t wallet_sign_complete(uint8_t instruction) {
         G.message_data_as_buffer.length = G.message_data_length;
         // Base58 encoding of 32-byte hash is 43 bytes long.
         register_ui_callback(HASH_INDEX, buffer_to_base58, &G.message_data_as_buffer);
-        ui_prompt(prehashed_prompts, NULL, sign_unsafe_ok, sign_reject);
+        ui_prompt(prehashed_prompts, sign_unsafe_ok, sign_reject);
     } else {
         switch (G.magic_number) {
             case MAGIC_BYTE_BLOCK:
@@ -465,7 +465,7 @@ unsafe:
         G.message_data_as_buffer.length = sizeof(G.final_hash);
         // Base58 encoding of 32-byte hash is 43 bytes long.
         register_ui_callback(HASH_INDEX, buffer_to_base58, &G.message_data_as_buffer);
-        ui_prompt(parse_fail_prompts, NULL, sign_ok, sign_reject);
+        ui_prompt(parse_fail_prompts, sign_ok, sign_reject);
     }
 }
 

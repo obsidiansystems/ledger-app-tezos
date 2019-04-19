@@ -17,12 +17,11 @@ __attribute__((noreturn)) bool exit_app(void); // Might want to send it argument
 /// ui-prompt--------------------------
 
 // Displays labels (terminated with a NULL pointer) associated with data
-// labels must be completely static string constants
-// data may be dynamic
-// Alternatively, if data is NULL, assume we've registered appropriate callbacks to generate the data
-// All pointers may be unrelocated
+// labels must be completely static string constants while data may be dynamic
+// Assumes we've registered appropriate callbacks to generate the data.
+// All pointers may be unrelocated.
 __attribute__((noreturn))
-void ui_prompt(const char *const *labels, const char *const *data, ui_callback_t ok_c, ui_callback_t cxl_c);
+void ui_prompt(const char *const *labels, ui_callback_t ok_c, ui_callback_t cxl_c);
 
 
 // This function registers how a value is to be produced

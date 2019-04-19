@@ -63,7 +63,7 @@ __attribute__((noreturn)) static void prompt_setup(
     register_ui_callback(MAIN_HWM_INDEX, number_to_string_indirect32, &G.hwm.main);
     register_ui_callback(TEST_HWM_INDEX, number_to_string_indirect32, &G.hwm.test);
 
-    ui_prompt(prompts, NULL, ok_cb, cxl_cb);
+    ui_prompt(prompts, ok_cb, cxl_cb);
 }
 
 __attribute__((noreturn)) size_t handle_apdu_setup(__attribute__((unused)) uint8_t instruction) {
