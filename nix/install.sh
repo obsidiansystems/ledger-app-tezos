@@ -5,7 +5,7 @@ root="$(git rev-parse --show-toplevel)"
 
 install() {
   local release_file
-  release_file=$("$root/nix/build.sh" -A "release.$1")
+  release_file=$("$root/nix/build.sh" -A "nano.s.release.$1")
   bash "$root/release-installer.sh" "$release_file"
 }
 

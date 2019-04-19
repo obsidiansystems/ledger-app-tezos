@@ -1,3 +1,5 @@
+#ifdef BAKING_APP
+
 #include "apdu_baking.h"
 
 #include "apdu.h"
@@ -6,7 +8,7 @@
 #include "os_cx.h"
 #include "protocol.h"
 #include "to_string.h"
-#include "ui_prompt.h"
+#include "ui.h"
 
 #include <string.h>
 
@@ -31,7 +33,7 @@ size_t handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
         PROMPT("Reset HWM"),
         NULL,
     };
-    ui_prompt(reset_prompts, NULL, reset_ok, delay_reject);
+    ui_prompt(reset_prompts, reset_ok, delay_reject);
 }
 
 bool reset_ok(void) {
@@ -114,3 +116,5 @@ size_t handle_apdu_deauthorize(__attribute__((unused)) uint8_t instruction) {
 
     return finalize_successful_send(0);
 }
+
+#endif // #ifdef BAKING_APP

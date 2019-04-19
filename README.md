@@ -165,6 +165,7 @@ configuration file typically located at `/etc/nixos/configuration.nix`:
     SUBSYSTEMS=="usb", ATTRS{idVendor}=="2581", ATTRS{idProduct}=="1808", MODE="0660", GROUP="users"
     SUBSYSTEMS=="usb", ATTRS{idVendor}=="2c97", ATTRS{idProduct}=="0000", MODE="0660", GROUP="users"
     SUBSYSTEMS=="usb", ATTRS{idVendor}=="2c97", ATTRS{idProduct}=="0001", MODE="0660", GROUP="users"
+    SUBSYSTEMS=="usb", ATTRS{idVendor}=="2c97", ATTRS{idProduct}=="0004", MODE="0660", GROUP="users"
   '';
 }
 ```
@@ -180,7 +181,7 @@ take effect.
 ## Installing the Applications with Ledger Live
 
 The easiest way to obtain and install the Tezos Ledger Nano S apps is to download them
-from [Ledger Live](https://www.ledger.com/pages/ledger-live). Tezos Wallet is readily available 
+from [Ledger Live](https://www.ledger.com/pages/ledger-live). Tezos Wallet is readily available
 in Ledger Live's Manager. To download Tezos Baking, you'll need to enable 'Developer Mode' in Settings.
 
 If you've used Ledger Live for app installation, you can skip ahead to [Registering the Ledger Nano S with the node](#registering-the-ledger-nano-s-with-the-node).
@@ -793,7 +794,7 @@ $ tezos-client register key <ALIAS> as delegate
 ```
 
 This command is intended to inform the blockchain itself of your intention to
-bake with this key. It can be signed with either Tezos Wallet or Tezos Baking, however 
+bake with this key. It can be signed with either Tezos Wallet or Tezos Baking, however
 Tezos Baking can only sign self-delegations.
 
 ### Sign
@@ -834,7 +835,7 @@ confirmation from the user:
 $ tezos-client set ledger high watermark for "ledger://<tz...>/" to <HWM>
 ```
 
-`<HWM>` indicates the new high watermark to reset to. Both the main and test chain HWMs will be 
+`<HWM>` indicates the new high watermark to reset to. Both the main and test chain HWMs will be
 simultaneously changed to this value.
 
 If you would like to know the current high watermark of the ledger device, you can run:
@@ -843,7 +844,7 @@ If you would like to know the current high watermark of the ledger device, you c
 $ tezos-client get ledger high watermark for "ledger://<tz...>/"
 ```
 
-While the ledger device's UI displays the HWM of the main chain it is signing on, it will not 
+While the ledger device's UI displays the HWM of the main chain it is signing on, it will not
 display the HWM of a test chain it may be signing on during the 3rd period of the Tezos Amendment Process.
 Running this command will return both HWMs as well as the chain ID of the main chain.
 

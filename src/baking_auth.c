@@ -1,3 +1,5 @@
+#ifdef BAKING_APP
+
 #include "baking_auth.h"
 
 #include "apdu.h"
@@ -6,7 +8,7 @@
 #include "memory.h"
 #include "protocol.h"
 #include "to_string.h"
-#include "ui_prompt.h"
+#include "ui.h"
 
 #include "os_cx.h"
 
@@ -64,63 +66,6 @@ void guard_baking_authorized(parsed_baking_data_t const *const baking_info, bip3
     if (!is_level_authorized(baking_info)) THROW(EXC_WRONG_VALUES);
 }
 
-static const char *const pubkey_values[] = {
-    "Public Key",
-    global.baking_auth.address_display_data,
-    NULL,
-};
-
-#ifdef BAKING_APP
-
-static char const * const * get_baking_prompts() {
-    static const char *const baking_prompts[] = {
-        PROMPT("Authorize Baking"),
-        PROMPT("Public Key Hash"),
-        NULL,
-    };
-    return baking_prompts;
-}
-
-static const char *const baking_values[] = {
-    "With Public Key?",
-    global.baking_auth.address_display_data,
-    NULL,
-};
-
-// TODO: Unshare code with next function
-void prompt_contract_for_baking(struct parsed_contract *contract, ui_callback_t ok_cb, ui_callback_t cxl_cb) {
-    parsed_contract_to_string(
-        global.baking_auth.address_display_data, sizeof(global.baking_auth.address_display_data), contract);
-    ui_prompt(get_baking_prompts(), baking_values, ok_cb, cxl_cb);
-}
-#endif
-
-void prompt_address(
-#ifndef BAKING_APP
-        __attribute__((unused))
-#endif
-        bool baking,
-        cx_curve_t curve, const cx_ecfp_public_key_t *key, ui_callback_t ok_cb,
-        ui_callback_t cxl_cb) {
-    pubkey_to_pkh_string(
-        global.baking_auth.address_display_data, sizeof(global.baking_auth.address_display_data), curve, key);
-
-#ifdef BAKING_APP
-    if (baking) {
-        ui_prompt(get_baking_prompts(), baking_values, ok_cb, cxl_cb);
-    } else {
-#endif
-        static const char *const pubkey_labels[] = {
-            PROMPT("Provide"),
-            PROMPT("Public Key Hash"),
-            NULL,
-        };
-        ui_prompt(pubkey_labels, pubkey_values, ok_cb, cxl_cb);
-#ifdef BAKING_APP
-    }
-#endif
-}
-
 struct block_wire {
     uint8_t magic_byte;
     uint32_t chain_id;
@@ -158,3 +103,5 @@ bool parse_baking_data(parsed_baking_data_t *const out, void const *const data, 
             return false;
     }
 }
+
+#endif // #ifdef BAKING_APP

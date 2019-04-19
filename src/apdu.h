@@ -37,6 +37,7 @@
 #define INS_DEAUTHORIZE 0x0C
 #define INS_QUERY_AUTH_KEY_WITH_CURVE 0x0D
 #define INS_HMAC 0x0E
+#define INS_SIGN_WITH_HASH 0x0F
 
 __attribute__((noreturn))
 void main_loop(apdu_handler const *const handlers, size_t const handlers_size);
