@@ -11,7 +11,7 @@ shift
 
 root="$(git rev-parse --show-toplevel)"
 
-watchdirs=("$root/default.nix" "$root/nix" "$root/Makefile" "$root/src")
+watchdirs=("$root/default.nix" "$root/nix" "$root/Makefile" "$root/src" "$root/icons")
 
 inotifywait="$(nix-build "$root/nix/nixpkgs.nix" -A inotify-tools --no-out-link)/bin/inotifywait"
 while true; do

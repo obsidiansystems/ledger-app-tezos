@@ -55,7 +55,11 @@ else
   $(info COMMIT=$(COMMIT))
 endif
 
-ICONNAME=icon.gif
+ifeq ($(TARGET_NAME),TARGET_NANOX)
+ICONNAME=icons/nano-x-tezos.gif
+else
+ICONNAME=icons/nano-s-tezos.gif
+endif
 
 ################
 # Default rule #
