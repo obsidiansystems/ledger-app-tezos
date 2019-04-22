@@ -95,10 +95,12 @@ typedef struct {
     ui_callback_t ok_callback;
     ui_callback_t cxl_callback;
 
+#   ifndef TARGET_NANOX
     uint32_t ux_step;
     uint32_t ux_step_count;
 
     uint32_t timeout_cycle_count;
+#   endif
 
 #   ifdef BAKING_APP
     struct {
@@ -173,6 +175,7 @@ static inline void throw_stack_size() {
 #       define N_data (*(nvram_data*)PIC(&N_data_real))
 #    endif
 
+void calculate_baking_idle_screens_data(void);
 void update_baking_idle_screens(void);
 high_watermark_t *select_hwm_by_chain(chain_id_t const chain_id, nvram_data *const ram);
 

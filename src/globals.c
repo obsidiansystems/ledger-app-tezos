@@ -60,20 +60,45 @@ high_watermark_t *select_hwm_by_chain(chain_id_t const chain_id, nvram_data *con
       : &ram->hwm.test;
 }
 
-void update_baking_idle_screens(void) {
-    number_to_string(global.ui.baking_idle_screens.hwm, N_data.hwm.main.highest_level);
+void calculate_baking_idle_screens_data(void) {
+#   ifdef TARGET_NANOX
+        memset(global.ui.baking_idle_screens.hwm, 0, sizeof(global.ui.baking_idle_screens.hwm));
+        static char const HWM_PREFIX[] = "HWM: ";
+        strcpy(global.ui.baking_idle_screens.hwm, HWM_PREFIX);
+        number_to_string(&global.ui.baking_idle_screens.hwm[sizeof(HWM_PREFIX) - 1], (level_t const)N_data.hwm.main.highest_level);
+#   else
+        number_to_string(global.ui.baking_idle_screens.hwm, (level_t const)N_data.hwm.main.highest_level);
+#   endif
 
     if (N_data.baking_key.bip32_path.length == 0) {
         STRCPY(global.ui.baking_idle_screens.pkh, "No Key Authorized");
     } else {
         cx_ecfp_public_key_t const *const pubkey = generate_public_key_return_global(
-            N_data.baking_key.curve, &N_data.baking_key.bip32_path);
+            (cx_curve_t const)N_data.baking_key.curve,
+            (bip32_path_t const *const)&N_data.baking_key.bip32_path);
         pubkey_to_pkh_string(
             global.ui.baking_idle_screens.pkh, sizeof(global.ui.baking_idle_screens.pkh),
-            N_data.baking_key.curve, pubkey);
+            (cx_curve_t const)N_data.baking_key.curve, pubkey);
     }
 
-    chain_id_to_string_with_aliases(global.ui.baking_idle_screens.chain, sizeof(global.ui.baking_idle_screens.chain), &N_data.main_chain_id);
+#   ifdef TARGET_NANOX
+        if (N_data.main_chain_id.v == 0) {
+            strcpy(global.ui.baking_idle_screens.chain, "Chain: any");
+        } else {
+#   endif
+
+    chain_id_to_string_with_aliases(
+        global.ui.baking_idle_screens.chain, sizeof(global.ui.baking_idle_screens.chain),
+        (chain_id_t const *const)&N_data.main_chain_id);
+
+#   ifdef TARGET_NANOX
+        }
+#   endif
+}
+
+void update_baking_idle_screens(void) {
+    calculate_baking_idle_screens_data();
+    ui_refresh();
 }
 
 #endif // #ifdef BAKING_APP

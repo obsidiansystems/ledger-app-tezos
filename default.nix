@@ -79,12 +79,12 @@ let
       bakingApp = app true;
     in {
       wallet = walletApp;
-      baking = if bolos.name == "x" then null else bakingApp;
+      baking = bakingApp;
 
       release = rec {
         wallet = mkRelease "wallet" "Tezos Wallet" walletApp;
-        baking = if bolos.name == "x" then null else mkRelease "baking" "Tezos Baking" bakingApp;
-        all = if bolos.name == "x" then null else pkgs.runCommand "release.tar.gz" {} ''
+        baking = mkRelease "baking" "Tezos Baking" bakingApp;
+        all = pkgs.runCommand "release.tar.gz" {} ''
           cp -r '${wallet}' wallet
           cp -r '${baking}' baking
           cp '${./release-installer.sh}' install.sh
@@ -203,7 +203,7 @@ in rec {
   };
 
   clangAnalysis = mkTargets (bolos: {
-    baking = if bolos.name == "x" then null else runClangStaticAnalyzer true bolos;
+    baking = runClangStaticAnalyzer true bolos;
     wallet = runClangStaticAnalyzer false bolos;
   });
 
