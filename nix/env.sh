@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
-commit=$(git describe --tags --abbrev=8 --always --long --dirty 2>/dev/null)
-echo >&2 "Git commit: $commit"
-shell_dir="$(nix-build -A env-shell --no-out-link --argstr commit "$commit" "${NIX_BUILD_ARGS:-}")"
-shell="$shell_dir/bin/env-shell"
+target="${1:?Please specify target, either 's' for Nano S or 'x' for Nano X}"
+shift
+
+root="$(git rev-parse --show-toplevel)"
+
+shell="$(nix-build "$root" -A "env.${target}.shell" --no-out-link ${NIX_BUILD_ARGS:-})/bin/env-shell"
 
 if [ $# -eq 0 ]; then
   echo >&2 "Entering via $shell"

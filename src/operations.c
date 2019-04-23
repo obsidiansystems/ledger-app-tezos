@@ -114,13 +114,14 @@ static inline void compute_pkh(
     check_null(bip32_path);
     check_null(compressed_pubkey_out);
     check_null(contract_out);
-    cx_ecfp_public_key_t const *const pubkey = generate_public_key(curve, bip32_path);
-    cx_ecfp_public_key_t const *const compressed_pubkey = public_key_hash(contract_out->hash, curve, pubkey);
+    cx_ecfp_public_key_t const *const pubkey = generate_public_key_return_global(curve, bip32_path);
+    public_key_hash(
+        contract_out->hash, sizeof(contract_out->hash),
+        compressed_pubkey_out,
+        curve, pubkey);
     contract_out->curve_code = curve_to_curve_code(curve);
     if (contract_out->curve_code == TEZOS_NO_CURVE) THROW(EXC_MEMORY_ERROR);
     contract_out->originated = 0;
-
-    memcpy(compressed_pubkey_out, compressed_pubkey, sizeof(*compressed_pubkey_out));
 }
 
 static inline void parse_implicit(
@@ -143,7 +144,7 @@ static inline void parse_contract(struct parsed_contract *out, const struct cont
     }
 }
 
-void parse_operations(
+static void parse_operations_throws_parse_error(
     struct parsed_operation_group *const out,
     void const *const data,
     size_t length,
@@ -321,4 +322,28 @@ void parse_operations(
     if (out->operation.tag == OPERATION_TAG_NONE && !out->has_reveal) {
         PARSE_ERROR(); // Must have at least one op
     }
+}
+
+bool parse_operations(
+    struct parsed_operation_group *const out,
+    uint8_t const *const data,
+    size_t length,
+    cx_curve_t curve,
+    bip32_path_t const *const bip32_path,
+    allowed_operation_set ops
+) {
+    BEGIN_TRY {
+        TRY {
+            parse_operations_throws_parse_error(out, data, length, curve, bip32_path, ops);
+        }
+        CATCH(EXC_PARSE_ERROR) {
+            return false;
+        }
+        CATCH_OTHER(e) {
+            THROW(e);
+        }
+        FINALLY { }
+    }
+    END_TRY;
+    return true;
 }

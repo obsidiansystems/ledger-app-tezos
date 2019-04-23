@@ -5,6 +5,6 @@
 #   4. Update the URL and SHA256 values below.
 
 import (builtins.fetchTarball {
-  url = "https://releases.nixos.org/nixpkgs/nixpkgs-19.03pre167327.11cf7d6e1ff/nixexprs.tar.xz";
-  sha256 = "0y0fs0j6pb9p9hzv1zagcavvpv50z2anqnbri6kq5iy1j4yqaric";
+  url = "https://releases.nixos.org/nixos/unstable/nixos-19.09pre174426.acbdaa569f4/nixexprs.tar.xz";
+  sha256 = "1r5vk4z90wzh9k7xyib0zr9r6nssbw9fady620ma9cima1ixzyqj";
 })
