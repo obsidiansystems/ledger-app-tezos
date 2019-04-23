@@ -15,9 +15,8 @@
 #define MAGIC_BYTE_UNSAFE_OP2 0x04
 #define MAGIC_BYTE_UNSAFE_OP3 0x05
 
-static inline uint8_t get_magic_byte(const uint8_t *data, size_t length) {
-    if (data == NULL || length == 0) return MAGIC_BYTE_INVALID;
-    else return *data;
+static inline uint8_t get_magic_byte(uint8_t const *const data, size_t const length) {
+    return (data == NULL || length == 0) ? MAGIC_BYTE_INVALID : *data;
 }
 
 #define READ_UNALIGNED_BIG_ENDIAN(type, in) \

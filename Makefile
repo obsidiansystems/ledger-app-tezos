@@ -1,20 +1,3 @@
-#*******************************************************************************
-#   Ledger Nano S
-#   (c) 2016 Ledger
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
-#*******************************************************************************
-
 ifeq ($(BOLOS_SDK),)
 $(error Environment variable BOLOS_SDK is not set)
 endif
@@ -30,10 +13,13 @@ else ifeq ($(APP),tezos_wallet)
 APPNAME = "Tezos Wallet"
 endif
 APP_LOAD_PARAMS=--appFlags 0 --curve ed25519 --curve secp256k1 --curve prime256r1 --path "44'/1729'" $(COMMON_LOAD_PARAMS)
-VERSION_TAG ?= $(shell git describe --tags 2>/dev/null | cut -f1 -d-)
+
+GIT_DESCRIBE ?= $(shell git describe --tags --abbrev=8 --always --long --dirty 2>/dev/null)
+
+VERSION_TAG ?= $(shell echo "$(GIT_DESCRIBE)" | cut -f1 -d-)
 APPVERSION_M=2
 APPVERSION_N=0
-APPVERSION_P=0
+APPVERSION_P=1
 APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 
 # Only warn about version tags if specified/inferred
@@ -41,16 +27,22 @@ ifeq ($(VERSION_TAG),)
   $(warning VERSION_TAG not checked)
 else
   ifneq (v$(APPVERSION), $(VERSION_TAG))
-    $(warning "Version-Tag Mismatch: v$(APPVERSION) version and $(VERSION_TAG) tag")
+    $(warning Version-Tag Mismatch: v$(APPVERSION) version and $(VERSION_TAG) tag)
   endif
 endif
 
-COMMIT ?= $(shell git describe --tags --abbrev=8 --always --long --dirty 2>/dev/null)
+COMMIT ?= $(shell echo "$(GIT_DESCRIBE)" | awk -F'-g' '{print $$2}' | sed 's/-dirty/*/')
 ifeq ($(COMMIT),)
-  $(error COMMIT not specified and could not be determined with git)
+  $(error COMMIT not specified and could not be determined with git from "$(GIT_DESCRIBE)")
+else
+  $(info COMMIT=$(COMMIT))
 endif
 
-ICONNAME=icon.gif
+ifeq ($(TARGET_NAME),TARGET_NANOX)
+ICONNAME=icons/nano-x-tezos.gif
+else
+ICONNAME=icons/nano-s-tezos.gif
+endif
 
 ################
 # Default rule #
@@ -73,6 +65,20 @@ DEFINES   += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=6 IO_HID_EP_LENGTH=
 DEFINES   += VERSION=\"$(APPVERSION)\" APPVERSION_M=$(APPVERSION_M)
 DEFINES   += COMMIT=\"$(COMMIT)\" APPVERSION_N=$(APPVERSION_N) APPVERSION_P=$(APPVERSION_P)
 
+ifeq ($(TARGET_NAME),TARGET_NANOX)
+DEFINES   += HAVE_BLE BLE_COMMAND_TIMEOUT_MS=2000
+DEFINES   += HAVE_BLE_APDU # basic ledger apdu transport over BLE
+
+DEFINES   += HAVE_GLO096 HAVE_UX_FLOW
+DEFINES   += HAVE_BAGL BAGL_WIDTH=128 BAGL_HEIGHT=64
+DEFINES   += HAVE_BAGL_ELLIPSIS # long label truncation feature
+DEFINES   += HAVE_BAGL_FONT_OPEN_SANS_REGULAR_11PX
+DEFINES   += HAVE_BAGL_FONT_OPEN_SANS_EXTRABOLD_11PX
+DEFINES   += HAVE_BAGL_FONT_OPEN_SANS_LIGHT_16PX
+
+SDK_SOURCE_PATH  += lib_blewbxx lib_blewbxx_impl
+SDK_SOURCE_PATH  += lib_ux
+endif
 
 
 ##############

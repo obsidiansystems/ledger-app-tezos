@@ -38,28 +38,51 @@ void pubkey_to_pkh_string(
     check_null(public_key);
 
     uint8_t hash[HASH_SIZE];
-    public_key_hash(hash, curve, public_key);
+    public_key_hash(hash, sizeof(hash), NULL, curve, public_key);
     pkh_to_string(out, out_size, curve, hash);
 }
 
-void bip32_path_with_curve_to_pkh_string(char *const out, size_t const out_size, bip32_path_with_curve_t const *const key) {
+void bip32_path_with_curve_to_pkh_string(
+    char *const out, size_t const out_size,
+    bip32_path_with_curve_t const *const key
+) {
     check_null(out);
     check_null(key);
 
-    cx_ecfp_public_key_t const *const pubkey = generate_public_key(key->curve, &key->bip32_path);
+    cx_ecfp_public_key_t const *const pubkey = generate_public_key_return_global(
+        key->curve, &key->bip32_path);
     pubkey_to_pkh_string(out, out_size, key->curve, pubkey);
 }
 
 
 void compute_hash_checksum(uint8_t out[TEZOS_HASH_CHECKSUM_SIZE], void const *const data, size_t size) {
-    uint8_t checksum[32];
+    uint8_t checksum[CX_SHA256_SIZE];
     cx_hash_sha256(data, size, checksum, sizeof(checksum));
     cx_hash_sha256(checksum, sizeof(checksum), checksum, sizeof(checksum));
     memcpy(out, checksum, TEZOS_HASH_CHECKSUM_SIZE);
 }
 
+void bin_to_base58(
+    char *const out, size_t const out_size,
+    uint8_t const *const in, size_t const in_size
+) {
+    check_null(out);
+    check_null(in);
+    size_t buff_size = out_size;
+    if (!b58enc(out, &buff_size, (uint8_t const *)PIC(in), in_size)) THROW(EXC_WRONG_LENGTH);
+}
+
+void buffer_to_base58(char *const out, size_t const out_size, buffer_t const *const in) {
+    check_null(out);
+    check_null(in);
+    buffer_t const *const src = (buffer_t const *)PIC(in);
+    bin_to_base58(out, out_size, src->bytes, src->length);
+}
+
 void pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve,
                    const uint8_t hash[HASH_SIZE]) {
+    check_null(buff);
+    check_null(hash);
     if (buff_size < PKH_STRING_SIZE) THROW(EXC_WRONG_LENGTH);
 
     // Data to encode
@@ -104,6 +127,8 @@ void pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve,
 }
 
 void protocol_hash_to_string(char *buff, const size_t buff_size, const uint8_t hash[PROTOCOL_HASH_SIZE]) {
+    check_null(buff);
+    check_null(hash);
     if (buff_size < PROTOCOL_HASH_BASE58_STRING_SIZE) THROW(EXC_WRONG_LENGTH);
 
     // Data to encode
@@ -123,6 +148,7 @@ void protocol_hash_to_string(char *buff, const size_t buff_size, const uint8_t h
 }
 
 void chain_id_to_string(char *const buff, size_t const buff_size, chain_id_t const chain_id) {
+    check_null(buff);
     if (buff_size < CHAIN_ID_BASE58_STRING_SIZE) THROW(EXC_WRONG_LENGTH);
 
     // Data to encode
@@ -149,6 +175,7 @@ void chain_id_to_string(char *const buff, size_t const buff_size, chain_id_t con
 })
 
 void chain_id_to_string_with_aliases(char *const out, size_t const out_size, chain_id_t const *const chain_id) {
+    check_null(out);
     check_null(chain_id);
     if (chain_id->v == 0) {
         STRCPY_OR_THROW(out, out_size, "any", EXC_WRONG_LENGTH);
@@ -165,6 +192,7 @@ void chain_id_to_string_with_aliases(char *const out, size_t const out_size, cha
 // This is intended to be used with a temporary buffer of length MAX_INT_DIGITS
 // Returns offset of where it stopped filling in
 static inline size_t convert_number(char dest[MAX_INT_DIGITS], uint64_t number, bool leading_zeroes) {
+    check_null(dest);
     char *const end = dest + MAX_INT_DIGITS;
     for (char *ptr = end - 1; ptr >= dest; ptr--) {
         *ptr = '0' + number % 10;
@@ -176,22 +204,29 @@ static inline size_t convert_number(char dest[MAX_INT_DIGITS], uint64_t number, 
     return 0;
 }
 
-void number_to_string_indirect64(char *dest, size_t buff_size, const uint64_t *number) {
+void number_to_string_indirect64(char *const dest, size_t const buff_size, uint64_t const *const number) {
+    check_null(dest);
+    check_null(number);
     if (buff_size < MAX_INT_DIGITS + 1) THROW(EXC_WRONG_LENGTH); // terminating null
     number_to_string(dest, *number);
 }
 
-void number_to_string_indirect32(char *dest, size_t buff_size, const uint32_t *number) {
+void number_to_string_indirect32(char *const dest, size_t const buff_size, uint32_t const *const number) {
+    check_null(dest);
+    check_null(number);
     if (buff_size < MAX_INT_DIGITS + 1) THROW(EXC_WRONG_LENGTH); // terminating null
     number_to_string(dest, *number);
 }
 
-void microtez_to_string_indirect(char *dest, size_t buff_size, const uint64_t *number) {
+void microtez_to_string_indirect(char *const dest, size_t const buff_size, uint64_t const *const number) {
+    check_null(dest);
+    check_null(number);
     if (buff_size < MAX_INT_DIGITS + 1) THROW(EXC_WRONG_LENGTH); // + terminating null + decimal point
     microtez_to_string(dest, *number);
 }
 
-size_t number_to_string(char *dest, uint64_t number) {
+size_t number_to_string(char *const dest, uint64_t number) {
+    check_null(dest);
     char tmp[MAX_INT_DIGITS];
     size_t off = convert_number(tmp, number, false);
 
@@ -206,7 +241,8 @@ size_t number_to_string(char *dest, uint64_t number) {
 #define TEZ_SCALE 1000000
 #define DECIMAL_DIGITS 6
 
-size_t microtez_to_string(char *dest, uint64_t number) {
+size_t microtez_to_string(char *const dest, uint64_t number) {
+    check_null(dest);
     uint64_t whole_tez = number / TEZ_SCALE;
     uint64_t fractional = number % TEZ_SCALE;
     size_t off = number_to_string(dest, whole_tez);
@@ -236,8 +272,32 @@ size_t microtez_to_string(char *dest, uint64_t number) {
 }
 
 void copy_string(char *const dest, size_t const buff_size, char const *const src) {
+    check_null(dest);
+    check_null(src);
     char const *const src_in = (char const *)PIC(src);
     // I don't care that we will loop through the string twice, latency is not an issue
     if (strlen(src_in) >= buff_size) THROW(EXC_WRONG_LENGTH);
     strcpy(dest, src_in);
+}
+
+void bin_to_hex(char *const out, size_t const out_size, uint8_t const *const in, size_t const in_size) {
+    check_null(out);
+    check_null(in);
+
+    size_t const out_len = in_size * 2;
+    if (out_size < out_len + 1) THROW(EXC_MEMORY_ERROR);
+
+    char const *const src = (char const *)PIC(in);
+    for (size_t i = 0; i < in_size; i++) {
+        out[i*2]   = "0123456789ABCDEF"[src[i] >> 4];
+        out[i*2+1] = "0123456789ABCDEF"[src[i] & 0x0F];
+    }
+    out[out_len] = '\0';
+}
+
+void buffer_to_hex(char *const out, size_t const out_size, buffer_t const *const in) {
+    check_null(out);
+    check_null(in);
+    buffer_t const *const src = (buffer_t const *)PIC(in);
+    bin_to_hex(out, out_size, src->bytes, src->length);
 }

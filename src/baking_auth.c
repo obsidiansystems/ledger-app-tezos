@@ -1,3 +1,5 @@
+#ifdef BAKING_APP
+
 #include "baking_auth.h"
 
 #include "apdu.h"
@@ -6,7 +8,7 @@
 #include "memory.h"
 #include "protocol.h"
 #include "to_string.h"
-#include "ui_prompt.h"
+#include "ui.h"
 
 #include "os_cx.h"
 
@@ -16,7 +18,7 @@ bool is_valid_level(level_t lvl) {
     return !(lvl & 0xC0000000);
 }
 
-static void write_high_watermark(parsed_baking_data_t const *const in) {
+void write_high_water_mark(parsed_baking_data_t const *const in) {
     check_null(in);
     if (!is_valid_level(in->level)) THROW(EXC_WRONG_VALUES);
     UPDATE_NVRAM(ram, {
@@ -57,80 +59,11 @@ bool is_path_authorized(cx_curve_t curve, bip32_path_t const *const bip32_path) 
         bip32_paths_eq(bip32_path, &N_data.baking_key.bip32_path);
 }
 
-void guard_baking_authorized(cx_curve_t curve, void *data, int datalen, bip32_path_t const *const bip32_path) {
-    check_null(data);
-    check_null(bip32_path);
-    if (!is_path_authorized(curve, bip32_path)) THROW(EXC_SECURITY);
-
-    parsed_baking_data_t baking_info;
-    if (!parse_baking_data(&baking_info, data, datalen)) THROW(EXC_PARSE_ERROR);
-    if (!is_level_authorized(&baking_info)) THROW(EXC_WRONG_VALUES);
-}
-
-void update_high_water_mark(void *data, int datalen) {
-    check_null(data);
-    parsed_baking_data_t baking_info;
-    if (!parse_baking_data(&baking_info, data, datalen)) {
-        return; // Must be signing a delegation
-    }
-    write_high_watermark(&baking_info);
-}
-
-static const char *const pubkey_values[] = {
-    "Public Key",
-    global.baking_auth.address_display_data,
-    NULL,
-};
-
-#ifdef BAKING_APP
-
-static char const * const * get_baking_prompts() {
-    static const char *const baking_prompts[] = {
-        PROMPT("Authorize Baking"),
-        PROMPT("Public Key Hash"),
-        NULL,
-    };
-    return baking_prompts;
-}
-
-static const char *const baking_values[] = {
-    "With Public Key?",
-    global.baking_auth.address_display_data,
-    NULL,
-};
-
-// TODO: Unshare code with next function
-void prompt_contract_for_baking(struct parsed_contract *contract, ui_callback_t ok_cb, ui_callback_t cxl_cb) {
-    parsed_contract_to_string(
-        global.baking_auth.address_display_data, sizeof(global.baking_auth.address_display_data), contract);
-    ui_prompt(get_baking_prompts(), baking_values, ok_cb, cxl_cb);
-}
-#endif
-
-void prompt_address(
-#ifndef BAKING_APP
-        __attribute__((unused))
-#endif
-        bool baking,
-        cx_curve_t curve, const cx_ecfp_public_key_t *key, ui_callback_t ok_cb,
-        ui_callback_t cxl_cb) {
-    pubkey_to_pkh_string(
-        global.baking_auth.address_display_data, sizeof(global.baking_auth.address_display_data), curve, key);
-
-#ifdef BAKING_APP
-    if (baking) {
-        ui_prompt(get_baking_prompts(), baking_values, ok_cb, cxl_cb);
-    } else {
-#endif
-        static const char *const pubkey_labels[] = {
-            PROMPT("Provide"),
-            PROMPT("Public Key Hash"),
-            NULL,
-        };
-        ui_prompt(pubkey_labels, pubkey_values, ok_cb, cxl_cb);
-#ifdef BAKING_APP
-    }
-#endif
+void guard_baking_authorized(parsed_baking_data_t const *const baking_info, bip32_path_with_curve_t const *const key) {
+    check_null(baking_info);
+    check_null(key);
+    if (!is_path_authorized(key->curve, &key->bip32_path)) THROW(EXC_SECURITY);
+    if (!is_level_authorized(baking_info)) THROW(EXC_WRONG_VALUES);
 }
 
 struct block_wire {
@@ -170,3 +103,5 @@ bool parse_baking_data(parsed_baking_data_t *const out, void const *const data, 
             return false;
     }
 }
+
+#endif // #ifdef BAKING_APP
