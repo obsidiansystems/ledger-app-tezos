@@ -76,7 +76,7 @@ UX_STEP_CB(
     pb,
     exit_app(),
     {
-      &C_icon_dashboard,
+      &C_icon_dashboard_x,
       "Quit",
     });
 
