@@ -50,7 +50,7 @@ void init_globals(void) {
 #    ifdef TARGET_NANOX
         nvram_data const N_data_real;
 #    else
-        WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
+        nvram_data N_data_real;
 #    endif
 
 high_watermark_t *select_hwm_by_chain(chain_id_t const chain_id, nvram_data *const ram) {

@@ -169,8 +169,8 @@ static inline void throw_stack_size() {
         extern nvram_data const N_data_real;
 #       define N_data (*(volatile nvram_data *)PIC(&N_data_real))
 #    else
-        extern WIDE nvram_data N_data_real; // TODO: What does WIDE actually mean?
-#       define N_data (*(WIDE nvram_data*)PIC(&N_data_real))
+        extern nvram_data N_data_real;
+#       define N_data (*(nvram_data*)PIC(&N_data_real))
 #    endif
 
 void update_baking_idle_screens(void);
