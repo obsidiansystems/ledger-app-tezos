@@ -65,11 +65,10 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
 
 UX_STEP_NOCB(
     ux_idle_flow_1_step,
-    bnn,
+    bn,
     {
       "Tezos Wallet",
-      VERSION,
-      COMMIT
+      VERSION
     });
 UX_STEP_CB(
     ux_idle_flow_2_step,
