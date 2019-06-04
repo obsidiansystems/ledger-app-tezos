@@ -28,9 +28,11 @@ void require_pin(void) {
 
 __attribute__((noreturn))
 bool exit_app(void) {
-#ifdef BAKING_APP
-    require_pin();
-#endif
+#   ifdef BAKING_APP
+#       ifndef TARGET_NANOX
+            require_pin();
+#       endif
+#   endif
     BEGIN_TRY_L(exit) {
         TRY_L(exit) {
             os_sched_exit(-1);
