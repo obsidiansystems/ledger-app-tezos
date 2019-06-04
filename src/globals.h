@@ -177,14 +177,14 @@ static inline void throw_stack_size() {
 
 void calculate_baking_idle_screens_data(void);
 void update_baking_idle_screens(void);
-high_watermark_t *select_hwm_by_chain(chain_id_t const chain_id, nvram_data *const ram);
+high_watermark_t volatile *select_hwm_by_chain(chain_id_t const chain_id, nvram_data volatile *const ram);
 
 // Properly updates NVRAM data to prevent any clobbering of data.
 // 'out_param' defines the name of a pointer to the nvram_data struct
 // that 'body' can change to apply updates.
 #define UPDATE_NVRAM(out_name, body) ({ \
     nvram_data *const out_name = &global.baking_auth.new_data; \
-    memcpy(&global.baking_auth.new_data, &N_data, sizeof(global.baking_auth.new_data)); \
+    memcpy(&global.baking_auth.new_data, (nvram_data const *const)&N_data, sizeof(global.baking_auth.new_data)); \
     body; \
     nvm_write((void*)&N_data, &global.baking_auth.new_data, sizeof(N_data)); \
     update_baking_idle_screens(); \

@@ -53,7 +53,7 @@ void init_globals(void) {
         nvram_data N_data_real;
 #    endif
 
-high_watermark_t *select_hwm_by_chain(chain_id_t const chain_id, nvram_data *const ram) {
+high_watermark_t volatile *select_hwm_by_chain(chain_id_t const chain_id, nvram_data volatile *const ram) {
   check_null(ram);
   return chain_id.v == ram->main_chain_id.v || ram->main_chain_id.v == 0
       ? &ram->hwm.main
