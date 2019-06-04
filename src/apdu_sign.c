@@ -5,6 +5,7 @@
 #include "base58.h"
 #include "blake2.h"
 #include "globals.h"
+#include "key_macros.h"
 #include "keys.h"
 #include "memory.h"
 #include "protocol.h"
@@ -602,7 +603,9 @@ static int perform_signature(bool const on_hash, bool const send_hash) {
 
     uint8_t const *const data = on_hash ? G.final_hash : G.message_data;
     size_t const data_length = on_hash ? sizeof(G.final_hash) : G.message_data_length;
-    tx += sign(&G_io_apdu_buffer[tx], MAX_SIGNATURE_SIZE, &G.key, data, data_length);
+    tx += WITH_KEY_PAIR(G.key, key_pair, size_t, ({
+        sign(&G_io_apdu_buffer[tx], MAX_SIGNATURE_SIZE, G.key.curve, key_pair, data, data_length);
+    }));
 
     clear_data();
     return finalize_successful_send(tx);

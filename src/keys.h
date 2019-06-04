@@ -71,7 +71,8 @@ static inline void public_key_hash(
 
 size_t sign(
     uint8_t *const out, size_t const out_size,
-    bip32_path_with_curve_t const *const key,
+    cx_curve_t const curve,
+    key_pair_t const *const key,
     uint8_t const *const in, size_t const in_size);
 
 enum curve_code {

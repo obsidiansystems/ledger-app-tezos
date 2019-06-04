@@ -125,17 +125,16 @@ cx_ecfp_public_key_t const *public_key_hash_return_global(
 
 size_t sign(
     uint8_t *const out, size_t const out_size,
-    bip32_path_with_curve_t const *const key,
+    cx_curve_t const curve,
+    key_pair_t const *const pair,
     uint8_t const *const in, size_t const in_size
 ) {
     check_null(out);
-    check_null(key);
+    check_null(pair);
     check_null(in);
 
-    struct key_pair *const pair = generate_key_pair_return_global(key->curve, &key->bip32_path);
-
     size_t tx = 0;
-    switch (key->curve) {
+    switch (curve) {
     case CX_CURVE_Ed25519: {
         static size_t const SIG_SIZE = 64;
         if (out_size < SIG_SIZE) THROW(EXC_WRONG_LENGTH);
@@ -175,8 +174,6 @@ size_t sign(
     default:
         THROW(EXC_WRONG_PARAM); // This should not be able to happen.
     }
-
-    memset(&pair->private_key, 0, sizeof(pair->private_key));
 
     return tx;
 }
