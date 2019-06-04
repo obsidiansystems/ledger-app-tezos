@@ -18,7 +18,7 @@ void init_globals(void);
 
 struct priv_generate_key_pair {
     uint8_t privateKeyData[PRIVATE_KEY_DATA_SIZE];
-    struct key_pair res;
+    key_pair_t res;
 };
 
 #ifdef BAKING_APP

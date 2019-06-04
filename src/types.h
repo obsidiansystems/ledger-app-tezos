@@ -43,10 +43,10 @@ typedef bool (*ui_callback_t)(void); // return true to go back to idle screen
 typedef void (*string_generation_callback)(/* char *buffer, size_t buffer_size, const void *data */);
 
 // Keys
-struct key_pair {
+typedef struct {
     cx_ecfp_public_key_t public_key;
     cx_ecfp_private_key_t private_key;
-};
+} key_pair_t;
 
 // Baking Auth
 #define MAX_BIP32_PATH 10
