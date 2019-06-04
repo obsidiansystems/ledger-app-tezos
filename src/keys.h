@@ -30,6 +30,7 @@ static inline void generate_key_pair(
     check_null(out);
     struct key_pair *const result = generate_key_pair_return_global(curve, bip32_path);
     memcpy(out, result, sizeof(*out));
+    memset(result, 0, sizeof(*result));
 }
 
 // Non-reentrant
