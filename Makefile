@@ -33,7 +33,7 @@ endif
 
 COMMIT ?= $(shell echo "$(GIT_DESCRIBE)" | awk -F'-g' '{print $$2}' | sed 's/-dirty/*/')
 ifeq ($(COMMIT),)
-  $(error COMMIT not specified and could not be determined with git from "$(GIT_DESCRIBE)")
+  $(warning COMMIT not specified and could not be determined with git from "$(GIT_DESCRIBE)")
 else
   $(info COMMIT=$(COMMIT))
 endif
@@ -145,9 +145,6 @@ ifeq ($(APP), tezos_wallet)
 SDK_SOURCE_PATH  += lib_u2f lib_stusb_impl
 
 DEFINES   += USB_SEGMENT_SIZE=64
-DEFINES   += HAVE_BAGL HAVE_SPRINTF
-DEFINES   += HAVE_PRINTF PRINTF=screen_printf
-DEFINES   += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=6 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
 
 DEFINES   += U2F_PROXY_MAGIC=\"XTZ\"
 DEFINES   += HAVE_IO_U2F HAVE_U2F
