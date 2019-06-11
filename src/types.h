@@ -82,11 +82,24 @@ static inline bool bip32_paths_eq(
     );
 }
 
-
 typedef struct {
     bip32_path_t bip32_path;
     cx_curve_t curve;
 } bip32_path_with_curve_t;
+
+
+// BIP32 path and curve used to identify the ledger with its kung-fu animal path in tezos-client.
+static bip32_path_with_curve_t const kung_fu_animal_bip32_path_with_curve = {
+    .bip32_path = {
+        .length = 2,
+        .components = {
+            0x8000002c, // 44'
+            0x800006c1  // 1729'
+        }
+    },
+    .curve = CX_CURVE_Ed25519
+};
+
 
 static inline void copy_bip32_path_with_curve(
     bip32_path_with_curve_t *const out,

@@ -16,7 +16,7 @@ void pubkey_to_pkh_string(
 );
 void bip32_path_with_curve_to_pkh_string(
     char *const out, size_t const out_size,
-    bip32_path_with_curve_t const *const key
+    bip32_path_with_curve_t volatile const *const key
 );
 void protocol_hash_to_string(char *buff, const size_t buff_size, const uint8_t hash[PROTOCOL_HASH_SIZE]);
 void parsed_contract_to_string(char *buff, uint32_t buff_size, const struct parsed_contract *contract);

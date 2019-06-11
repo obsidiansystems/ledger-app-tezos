@@ -3,6 +3,7 @@
 #include "apdu.h"
 #include "base58.h"
 #include "keys.h"
+#include "key_macros.h"
 
 #include <string.h>
 
@@ -44,14 +45,14 @@ void pubkey_to_pkh_string(
 
 void bip32_path_with_curve_to_pkh_string(
     char *const out, size_t const out_size,
-    bip32_path_with_curve_t const *const key
+    bip32_path_with_curve_t volatile const *const key
 ) {
     check_null(out);
     check_null(key);
 
-    cx_ecfp_public_key_t const *const pubkey = generate_public_key_return_global(
-        key->curve, &key->bip32_path);
-    pubkey_to_pkh_string(out, out_size, key->curve, pubkey);
+    cx_ecfp_public_key_t pubkey;
+    generate_public_key_cached(&pubkey, key);
+    pubkey_to_pkh_string(out, out_size, key->curve, &pubkey);
 }
 
 
@@ -228,6 +229,7 @@ void microtez_to_string_indirect(char *const dest, size_t const buff_size, uint6
 size_t number_to_string(char *const dest, uint64_t number) {
     check_null(dest);
     char tmp[MAX_INT_DIGITS];
+    memset(tmp, 0, sizeof(tmp));
     size_t off = convert_number(tmp, number, false);
 
     // Copy without leading 0s

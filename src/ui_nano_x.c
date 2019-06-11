@@ -54,12 +54,7 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
         break;
 
     case SEPROXYHAL_TAG_TICKER_EVENT:
-#       ifdef BAKING_APP
-            // Disable ticker event handling to prevent screen saver from starting.
-#       else
-            UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {});
-#       endif
-
+        UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {});
         break;
     }
 

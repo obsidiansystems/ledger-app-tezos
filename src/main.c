@@ -20,7 +20,7 @@ void app_main(void) {
     global.handlers[APDU_INS(INS_GIT)] = handle_apdu_git;
     global.handlers[APDU_INS(INS_SIGN_WITH_HASH)] = handle_apdu_sign_with_hash;
 #ifdef BAKING_APP
-    global.handlers[APDU_INS(INS_AUTHORIZE_BAKING)] = handle_apdu_get_public_key;
+    global.handlers[APDU_INS(INS_AUTHORIZE_BAKING)] = handle_apdu_authorize_baking;
     global.handlers[APDU_INS(INS_RESET)] = handle_apdu_reset;
     global.handlers[APDU_INS(INS_QUERY_AUTH_KEY)] = handle_apdu_query_auth_key;
     global.handlers[APDU_INS(INS_QUERY_MAIN_HWM)] = handle_apdu_main_hwm;
@@ -32,5 +32,10 @@ void app_main(void) {
 #else
     global.handlers[APDU_INS(INS_SIGN_UNSAFE)] = handle_apdu_sign;
 #endif
+
+#   ifdef BAKING_APP
+    update_baking_keys_cache();
+#   endif
+
     main_loop(global.handlers, sizeof(global.handlers));
 }
