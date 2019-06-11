@@ -1,6 +1,6 @@
 { pkgs ? import nix/nixpkgs.nix {}, gitDescribe ? null, nanoXSdk ? throw "No NanoX SDK", ... }:
+assert builtins.typeOf nanoXSdk == "path";
 let
-
   fetchThunk = p:
     if builtins.pathExists (p + /git.json)
       then pkgs.fetchgit { inherit (builtins.fromJSON (builtins.readFile (p + /git.json))) url rev sha256; }
@@ -46,6 +46,7 @@ let
         export BOLOS_ENV='${bolos.env}'
         export APP='${if bakingApp then "tezos_baking" else "tezos_wallet"}'
         export GIT_DESCRIBE='${gitDescribe}'
+        export TARGET='${bolos.target}'
         make clean
         make all
         EOF
