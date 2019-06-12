@@ -1,5 +1,4 @@
-{ pkgs ? import nix/nixpkgs.nix {}, gitDescribe ? null, nanoXSdk ? throw "No NanoX SDK", ... }:
-assert builtins.typeOf nanoXSdk == "path";
+{ pkgs ? import nix/nixpkgs.nix {}, gitDescribe ? null, nanoXSdk ? null, ... }:
 let
   fetchThunk = p:
     if builtins.pathExists (p + /git.json)
@@ -23,7 +22,9 @@ let
       };
       x = rec {
         name = "x";
-        sdk = nanoXSdk;
+        sdk = if nanoXSdk == null
+          then throw "No NanoX SDK"
+          else assert builtins.typeOf nanoXSdk == "path"; nanoXSdk;
         env = pkgs.callPackage nix/bolos-env.nix { clangVersion = 7; };
         target = "TARGET_NANOX";
         fhsWith = fhs (_: [env.clang]);
