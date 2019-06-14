@@ -18,7 +18,14 @@ let
         sdk = fetchThunk nix/dep/nanos-secure-sdk;
         env = pkgs.callPackage nix/bolos-env.nix { clangVersion = 4; };
         target = "TARGET_NANOS";
+        targetId = "0x31100004";
         fhsWith = fhs (_: [env.clang]);
+        iconHex = pkgs.runCommand "nano-s-icon-hex" {} ''
+          '${fhsWith "python"}' ${sdk + /icon.py} '${icons/nano-s-tezos.gif}' hexbitmaponly > "$out"
+        '';
+        nvramDataSize = appDir: pkgs.runCommand "${name}-nvram-data-size" {} ''
+          grep _nvram_data_size '${appDir + /debug/app.map}' | tr -s ' ' | cut -f2 -d' ' > "$out"
+        '';
       };
       x = rec {
         name = "x";
@@ -27,7 +34,16 @@ let
           else assert builtins.typeOf nanoXSdk == "path"; nanoXSdk;
         env = pkgs.callPackage nix/bolos-env.nix { clangVersion = 7; };
         target = "TARGET_NANOX";
+        targetId = "0x33000004";
         fhsWith = fhs (_: [env.clang]);
+        iconHex = pkgs.runCommand "${name}-icon-hex" {} ''
+          '${fhsWith "python3"}' '${sdk + /icon3.py}' --hexbitmaponly '${icons/nano-x-tezos.gif}' > "$out"
+        '';
+        nvramDataSize = appDir: pkgs.runCommand "${name}-nvram-data-size" {} ''
+          envram_data="0x$(cat  | grep _envram_data '${appDir + /debug/app.map}' | cut -f1 -d' ')"
+          nvram_data="0x$(grep _nvram_data '${appDir + /debug/app.map}' | cut -f1 -d' ')"
+          echo "$(($envram_data - $nvram_data))" > "$out"
+        '';
       };
     };
 
@@ -68,13 +84,12 @@ let
 
         cat > "$out/app.manifest" <<EOF
         name='${name}'
-        nvram_size=$(grep _nvram_data_size '${appDir + /debug/app.map}' | tr -s ' ' | cut -f2 -d' ')
+        nvram_size=$(cat '${bolos.nvramDataSize appDir}')
         target='nano_${bolos.name}'
-        target_id=0x31100004
+        target_id=${bolos.targetId}
         version=$(echo '${gitDescribe}' | cut -f1 -d- | cut -f2 -dv)
+        icon_hex=$(cat '${bolos.iconHex}')
         EOF
-
-        cp '${dist/icon.hex}' "$out/icon.hex"
       '';
 
       walletApp = app false;
@@ -86,7 +101,7 @@ let
       release = rec {
         wallet = mkRelease "wallet" "Tezos Wallet" walletApp;
         baking = mkRelease "baking" "Tezos Baking" bakingApp;
-        all = pkgs.runCommand "release.tar.gz" {} ''
+        all = pkgs.runCommand "${bolos.name}-release.tar.gz" {} ''
           cp -r '${wallet}' wallet
           cp -r '${baking}' baking
           cp '${./release-installer.sh}' install.sh

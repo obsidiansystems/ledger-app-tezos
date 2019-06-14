@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+export target="${1:?Please specify target, either 's' for Nano S or 'x' for Nano X}"
+shift
+
 root="$(git rev-parse --show-toplevel)"
+export root
 
 install() {
   local release_file
-  release_file=$("$root/nix/build.sh" -A "nano.s.release.$1")
+  release_file=$("$root/nix/build.sh" -A "nano.${target}.release.$1")
   bash "$root/release-installer.sh" "$release_file"
 }
-
-export root
 export -f install
 
 nix-shell "$root/nix/ledgerblue.nix" -A shell --run "$(cat <<EOF
