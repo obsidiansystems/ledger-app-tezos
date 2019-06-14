@@ -67,7 +67,7 @@ void calculate_baking_idle_screens_data(void) {
         strcpy(global.ui.baking_idle_screens.hwm, HWM_PREFIX);
         number_to_string(&global.ui.baking_idle_screens.hwm[sizeof(HWM_PREFIX) - 1], (level_t const)N_data.hwm.main.highest_level);
 #   else
-        number_to_string(global.ui.baking_idle_screens.hwm, (level_t const)N_data.hwm.main.highest_level);
+        number_to_string(global.ui.baking_idle_screens.hwm, N_data.hwm.main.highest_level);
 #   endif
 
     if (N_data.baking_key.bip32_path.length == 0) {

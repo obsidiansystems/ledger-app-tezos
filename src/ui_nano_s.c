@@ -20,7 +20,7 @@
 #define G global.ui
 
 void ui_refresh(void) {
-    UX_REDISPLAY();
+    // DO NOTHING
 }
 
 // CALLED BY THE SDK
