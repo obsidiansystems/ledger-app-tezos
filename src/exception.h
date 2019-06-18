@@ -22,7 +22,7 @@
 #define EXC_MEMORY_ERROR 0x9200
 
 // Crashes can be harder to debug than exceptions and latency isn't a big concern
-static inline void check_null(const void *ptr) {
+static inline void check_null(void volatile const *const ptr) {
     if (ptr == NULL) {
         THROW(EXC_MEMORY_ERROR);
     }

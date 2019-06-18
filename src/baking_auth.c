@@ -23,7 +23,7 @@ void write_high_water_mark(parsed_baking_data_t const *const in) {
     if (!is_valid_level(in->level)) THROW(EXC_WRONG_VALUES);
     UPDATE_NVRAM(ram, {
         // If the chain matches the main chain *or* the main chain is not set, then use 'main' HWM.
-        high_watermark_t *const dest = select_hwm_by_chain(in->chain_id, ram);
+        high_watermark_t volatile *const dest = select_hwm_by_chain(in->chain_id, ram);
         dest->highest_level = MAX(in->level, dest->highest_level);
         dest->had_endorsement = in->is_endorsement;
     });
@@ -42,7 +42,7 @@ void authorize_baking(cx_curve_t const curve, bip32_path_t const *const bip32_pa
 static bool is_level_authorized(parsed_baking_data_t const *const baking_info) {
     check_null(baking_info);
     if (!is_valid_level(baking_info->level)) return false;
-    high_watermark_t const *const hwm = select_hwm_by_chain(baking_info->chain_id, &N_data);
+    high_watermark_t volatile const *const hwm = select_hwm_by_chain(baking_info->chain_id, &N_data);
     return baking_info->level > hwm->highest_level
 
         // Levels are tied. In order for this to be OK, this must be an endorsement, and we must not
@@ -56,7 +56,7 @@ bool is_path_authorized(cx_curve_t curve, bip32_path_t const *const bip32_path) 
     return
         curve == N_data.baking_key.curve &&
         bip32_path->length > 0 &&
-        bip32_paths_eq(bip32_path, &N_data.baking_key.bip32_path);
+        bip32_paths_eq(bip32_path, (const bip32_path_t *)&N_data.baking_key.bip32_path);
 }
 
 void guard_baking_authorized(parsed_baking_data_t const *const baking_info, bip32_path_with_curve_t const *const key) {

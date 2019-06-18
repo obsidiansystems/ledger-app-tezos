@@ -17,19 +17,20 @@ struct bip32_path_wire {
 size_t read_bip32_path(bip32_path_t *const out, uint8_t const *const in, size_t const in_size);
 
 // Non-reentrant
-struct key_pair *generate_key_pair_return_global(
+key_pair_t *generate_key_pair_return_global(
     cx_curve_t const curve,
     bip32_path_t const *const bip32_path);
 
 // Non-reentrant
 static inline void generate_key_pair(
-    struct key_pair *const out,
+    key_pair_t *const out,
     cx_curve_t const curve,
     bip32_path_t const *const bip32_path
 ) {
     check_null(out);
-    struct key_pair *const result = generate_key_pair_return_global(curve, bip32_path);
+    key_pair_t *const result = generate_key_pair_return_global(curve, bip32_path);
     memcpy(out, result, sizeof(*out));
+    memset(result, 0, sizeof(*result));
 }
 
 // Non-reentrant
@@ -70,7 +71,8 @@ static inline void public_key_hash(
 
 size_t sign(
     uint8_t *const out, size_t const out_size,
-    bip32_path_with_curve_t const *const key,
+    cx_curve_t const curve,
+    key_pair_t const *const key,
     uint8_t const *const in, size_t const in_size);
 
 enum curve_code {

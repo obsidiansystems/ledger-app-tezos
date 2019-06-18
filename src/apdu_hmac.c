@@ -3,6 +3,7 @@
 #include "apdu_hmac.h"
 
 #include "globals.h"
+#include "key_macros.h"
 #include "keys.h"
 #include "protocol.h"
 
@@ -27,10 +28,12 @@ static inline size_t hmac(
         0x5a, 0x90, 0x47, 0x5e, 0xc0, 0xdb, 0xdb, 0x9f };
 
     // Deterministically sign the SHA256 value to get something directly tied to the secret key.
-    size_t const signed_hmac_key_size = sign(
-        state->signed_hmac_key, sizeof(state->signed_hmac_key),
-        &state->key,
-        key_sha256, sizeof(key_sha256));
+    size_t const signed_hmac_key_size = WITH_KEY_PAIR(state->key, key_pair, size_t, ({
+        sign(
+            state->signed_hmac_key, sizeof(state->signed_hmac_key),
+            state->key.curve, key_pair,
+            key_sha256, sizeof(key_sha256));
+    }));
 
     // Hash the signed value with SHA512 to get a 64-byte key for HMAC.
     cx_hash_sha512(
