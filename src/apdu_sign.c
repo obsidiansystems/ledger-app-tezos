@@ -108,7 +108,7 @@ static bool parse_allowed_operations(
         // TODO: Add still other operations
 #   endif
 
-    return parse_operations(out, in, in_size, key->curve, &key->bip32_path, allowed);
+    return parse_operations(out, in, in_size, key, allowed);
 }
 
 #ifdef BAKING_APP // ----------------------------------------------------------
@@ -603,6 +603,7 @@ static int perform_signature(bool const on_hash, bool const send_hash) {
 
     uint8_t const *const data = on_hash ? G.final_hash : G.message_data;
     size_t const data_length = on_hash ? sizeof(G.final_hash) : G.message_data_length;
+
     tx += WITH_KEY_PAIR(G.key, key_pair, size_t, ({
         sign(&G_io_apdu_buffer[tx], MAX_SIGNATURE_SIZE, G.key.curve, key_pair, data, data_length);
     }));

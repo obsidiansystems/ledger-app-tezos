@@ -1,6 +1,8 @@
 #include "globals.h"
 
 #include "exception.h"
+#include "keys.h"
+#include "key_macros.h"
 #include "to_string.h"
 
 #ifdef TARGET_NANOX
@@ -70,15 +72,12 @@ void calculate_baking_idle_screens_data(void) {
         number_to_string(global.ui.baking_idle_screens.hwm, N_data.hwm.main.highest_level);
 #   endif
 
-    if (N_data.baking_key.bip32_path.length == 0) {
-        STRCPY(global.ui.baking_idle_screens.pkh, "No Key Authorized");
-    } else {
-        cx_ecfp_public_key_t const *const pubkey = generate_public_key_return_global(
-            (cx_curve_t const)N_data.baking_key.curve,
-            (bip32_path_t const *const)&N_data.baking_key.bip32_path);
-        pubkey_to_pkh_string(
+    if (baking_has_authorized_key()) {
+        bip32_path_with_curve_to_pkh_string(
             global.ui.baking_idle_screens.pkh, sizeof(global.ui.baking_idle_screens.pkh),
-            (cx_curve_t const)N_data.baking_key.curve, pubkey);
+            &N_data.baking_key);
+    } else {
+        STRCPY(global.ui.baking_idle_screens.pkh, "No Key Authorized");
     }
 
 #   ifdef TARGET_NANOX
@@ -99,6 +98,21 @@ void calculate_baking_idle_screens_data(void) {
 void update_baking_idle_screens(void) {
     calculate_baking_idle_screens_data();
     ui_refresh();
+}
+
+void update_baking_keys_cache(void) {
+    if (baking_has_authorized_key()) {
+        generate_public_key(
+            &global.baking_cache.root_public_key,
+            kung_fu_animal_bip32_path_with_curve.curve,
+            &kung_fu_animal_bip32_path_with_curve.bip32_path);
+        generate_key_pair(
+            &global.baking_cache.keys,
+            N_data.baking_key.curve,
+            (const bip32_path_t *)&N_data.baking_key.bip32_path);
+    } else {
+        memset(&global.baking_cache, 0, sizeof(global.baking_cache));
+    }
 }
 
 #endif // #ifdef BAKING_APP

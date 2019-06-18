@@ -2,6 +2,7 @@
 
 #include "apdu.h"
 #include "globals.h"
+#include "key_macros.h"
 #include "memory.h"
 #include "to_string.h"
 #include "ui.h"
@@ -108,18 +109,20 @@ static inline uint64_t parse_z(const void *data, size_t *ix, size_t length, uint
 static inline void compute_pkh(
     cx_ecfp_public_key_t *const compressed_pubkey_out,
     struct parsed_contract *const contract_out,
-    cx_curve_t const curve,
-    bip32_path_t const *const bip32_path
+    bip32_path_with_curve_t const *const key
 ) {
-    check_null(bip32_path);
     check_null(compressed_pubkey_out);
     check_null(contract_out);
-    cx_ecfp_public_key_t const *const pubkey = generate_public_key_return_global(curve, bip32_path);
+    check_null(key);
+
+    cx_ecfp_public_key_t pubkey;
+    generate_public_key_cached(&pubkey, key);
     public_key_hash(
         contract_out->hash, sizeof(contract_out->hash),
         compressed_pubkey_out,
-        curve, pubkey);
-    contract_out->curve_code = curve_to_curve_code(curve);
+        key->curve, &pubkey);
+
+    contract_out->curve_code = curve_to_curve_code(key->curve);
     if (contract_out->curve_code == TEZOS_NO_CURVE) THROW(EXC_MEMORY_ERROR);
     contract_out->originated = 0;
 }
@@ -148,18 +151,17 @@ static void parse_operations_throws_parse_error(
     struct parsed_operation_group *const out,
     void const *const data,
     size_t length,
-    cx_curve_t curve,
-    bip32_path_t const *const bip32_path,
+    bip32_path_with_curve_t const *const key,
     allowed_operation_set ops
 ) {
     check_null(out);
     check_null(data);
-    check_null(bip32_path);
+    check_null(key);
     memset(out, 0, sizeof(*out));
 
     out->operation.tag = OPERATION_TAG_NONE;
 
-    compute_pkh(&out->public_key, &out->signing, curve, bip32_path);
+    compute_pkh(&out->public_key, &out->signing, key);
 
     size_t ix = 0;
 
@@ -328,13 +330,12 @@ bool parse_operations(
     struct parsed_operation_group *const out,
     uint8_t const *const data,
     size_t length,
-    cx_curve_t curve,
-    bip32_path_t const *const bip32_path,
+    bip32_path_with_curve_t const *const key,
     allowed_operation_set ops
 ) {
     BEGIN_TRY {
         TRY {
-            parse_operations_throws_parse_error(out, data, length, curve, bip32_path, ops);
+            parse_operations_throws_parse_error(out, data, length, key, ops);
         }
         CATCH(EXC_PARSE_ERROR) {
             return false;

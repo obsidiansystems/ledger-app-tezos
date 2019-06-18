@@ -62,6 +62,16 @@ typedef struct {
 } apdu_sign_state_t;
 
 typedef struct {
+# ifdef BAKING_APP
+  struct {
+    // cached so we can bake while the device is locked.
+    key_pair_t keys;
+
+    // tezos-client queries the root key to generate kung-fu animal names.
+    cx_ecfp_public_key_t root_public_key;
+  } baking_cache;
+# endif
+
   void *stack_root;
   apdu_handler handlers[INS_MAX + 1];
 
@@ -179,6 +189,27 @@ void calculate_baking_idle_screens_data(void);
 void update_baking_idle_screens(void);
 high_watermark_t volatile *select_hwm_by_chain(chain_id_t const chain_id, nvram_data volatile *const ram);
 
+void update_baking_keys_cache(void);
+
+static inline bool baking_has_authorized_key() {
+    return N_data.baking_key.curve != CX_CURVE_NONE && N_data.baking_key.bip32_path.length > 0;
+}
+
+// Returns NULL if the cache is not valid.
+static inline key_pair_t const *get_cached_baking_key_pair() {
+    return baking_has_authorized_key()
+      ? &global.baking_cache.keys
+      : NULL;
+}
+
+// Returns NULL if the cache is not valid.
+static inline cx_ecfp_public_key_t const *get_cached_baking_pubkey() {
+    key_pair_t const *const key_pair = get_cached_baking_key_pair();
+    return key_pair == NULL
+      ? NULL
+      : &key_pair->public_key;
+}
+
 // Properly updates NVRAM data to prevent any clobbering of data.
 // 'out_param' defines the name of a pointer to the nvram_data struct
 // that 'body' can change to apply updates.
@@ -186,7 +217,9 @@ high_watermark_t volatile *select_hwm_by_chain(chain_id_t const chain_id, nvram_
     nvram_data *const out_name = &global.baking_auth.new_data; \
     memcpy(&global.baking_auth.new_data, (nvram_data const *const)&N_data, sizeof(global.baking_auth.new_data)); \
     body; \
-    nvm_write((void*)&N_data, &global.baking_auth.new_data, sizeof(N_data)); \
+    bool const baking_keys_changed = memcmp((void const *const)&N_data.baking_key, &global.baking_auth.new_data.baking_key, sizeof(N_data.baking_key)) != 0; \
+    nvm_write((void *const)&N_data, &global.baking_auth.new_data, sizeof(N_data)); \
+    if (baking_keys_changed) { /* requires secure chip so update only when necessary */ update_baking_keys_cache(); } \
     update_baking_idle_screens(); \
 })
 #endif

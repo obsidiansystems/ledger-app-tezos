@@ -1,9 +1,11 @@
 #include "apdu_pubkey.h"
 
 #include "apdu.h"
+#include "baking_auth.h"
 #include "cx.h"
 #include "globals.h"
 #include "keys.h"
+#include "key_macros.h"
 #include "protocol.h"
 #include "to_string.h"
 #include "ui.h"
@@ -68,9 +70,23 @@ static void prompt_address(
 #   endif
 }
 
-size_t handle_apdu_get_public_key(uint8_t instruction) {
-    uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
+#ifdef BAKING_APP
+size_t handle_apdu_authorize_baking(__attribute__((unused)) uint8_t instruction) {
+    if (READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_P1]) != 0) THROW(EXC_WRONG_PARAM);
 
+    uint8_t const curve_code = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]);
+    G.key.curve = curve_code_to_curve(curve_code);
+
+    size_t const cdata_size = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]);
+    uint8_t const *const cdata = &G_io_apdu_buffer[OFFSET_CDATA];
+    read_bip32_path(&G.key.bip32_path, cdata, cdata_size);
+    if (G.key.bip32_path.length == 0) THROW(EXC_WRONG_LENGTH_FOR_INS);
+
+    prompt_address(true, baking_ok, delay_reject);
+}
+#endif
+
+size_t handle_apdu_get_public_key(uint8_t instruction) {
     if (READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_P1]) != 0) THROW(EXC_WRONG_PARAM);
 
     // do not expose pks without prompt over U2F (browser support)
@@ -80,37 +96,15 @@ size_t handle_apdu_get_public_key(uint8_t instruction) {
     G.key.curve = curve_code_to_curve(curve_code);
 
     size_t const cdata_size = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]);
+    uint8_t const *const cdata = &G_io_apdu_buffer[OFFSET_CDATA];
+    read_bip32_path(&G.key.bip32_path, cdata, cdata_size);
 
-#ifdef BAKING_APP
-    if (cdata_size == 0 && instruction == INS_AUTHORIZE_BAKING) {
-        copy_bip32_path_with_curve(&G.key, &N_data.baking_key);
-    } else {
-#endif
-        read_bip32_path(&G.key.bip32_path, dataBuffer, cdata_size);
-#ifdef BAKING_APP
-        if (G.key.bip32_path.length == 0) THROW(EXC_WRONG_LENGTH_FOR_INS);
-    }
-#endif
-    generate_public_key(&G.public_key, G.key.curve, &G.key.bip32_path);
+    generate_public_key_cached(&G.public_key, &G.key);
 
     if (instruction == INS_GET_PUBLIC_KEY) {
         return provide_pubkey(G_io_apdu_buffer, &G.public_key);
     } else {
-        // instruction == INS_PROMPT_PUBLIC_KEY || instruction == INS_AUTHORIZE_BAKING
-        ui_callback_t cb;
-        bool bake;
-#ifdef BAKING_APP
-        if (instruction == INS_AUTHORIZE_BAKING) {
-            cb = baking_ok;
-            bake = true;
-        } else {
-#endif
-            // INS_PROMPT_PUBLIC_KEY
-            cb = pubkey_ok;
-            bake = false;
-#ifdef BAKING_APP
-        }
-#endif
-        prompt_address(bake, cb, delay_reject);
+        // instruction == INS_PROMPT_PUBLIC_KEY
+        prompt_address(false, pubkey_ok, delay_reject);
     }
 }
