@@ -12,7 +12,7 @@
     bip32_path_with_curve_t volatile const *const MACROVAR(vname, key) = &(bip32_path_with_curve); \
     key_pair_t *const MACROVAR(vname, generated_pair) = \
         generate_key_pair_return_global( \
-            (cx_curve_t const /* cast away volatile! */)MACROVAR(vname, key)->curve, \
+            (derivation_type_t const /* cast away volatile! */)MACROVAR(vname, key)->derivation_type, \
             (bip32_path_t const *const /* cast away volatile! */)&MACROVAR(vname, key)->bip32_path); \
     volatile type MACROVAR(vname, retval); \
     BEGIN_TRY { \

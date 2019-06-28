@@ -33,7 +33,7 @@ static bool ok(void) {
     });
 
     cx_ecfp_public_key_t const *const pubkey = generate_public_key_return_global(
-        G.key.curve, &G.key.bip32_path);
+        G.key.derivation_type, &G.key.bip32_path);
     delayed_send(provide_pubkey(G_io_apdu_buffer, pubkey));
     return true;
 }
@@ -72,8 +72,7 @@ __attribute__((noreturn)) size_t handle_apdu_setup(__attribute__((unused)) uint8
     uint32_t const buff_size = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]);
     if (buff_size < sizeof(struct setup_wire)) THROW(EXC_WRONG_LENGTH_FOR_INS);
 
-    uint8_t const curve_code = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]);
-    G.key.curve = curve_code_to_curve(curve_code);
+    G.key.derivation_type = parse_derivation_type(READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
 
     {
         struct setup_wire const *const buff_as_setup = (struct setup_wire const *)&G_io_apdu_buffer[OFFSET_CDATA];
