@@ -13,6 +13,32 @@
 #undef false
 #define false ((bool)0)
 
+// NOTE: There are *two* ways that "key type" or "curve code" are represented in
+// this code base:
+//   1. `derivation_type` represents how a key will be derived from the seed. It
+//      is almost the same as `signature_type` but allows for multiple derivation
+//      strategies for ed25519. This type is often parsed from the APDU
+//      instruction. See `parse_derivation_type` for the mapping.
+//   2. `signature_type` represents how a key will be used for signing.
+//      The mapping from `derivation_type` to `signature_type` is injective.
+//      See `derivation_type_to_signature_type`.
+//      This type is parsed from Tezos data headers. See the relevant parsing
+//      code for the mapping.
+typedef enum {
+    DERIVATION_TYPE_SECP256K1 = 1,
+    DERIVATION_TYPE_SECP256R1 = 2,
+    DERIVATION_TYPE_ED25519 = 3,
+    DERIVATION_TYPE_BIP32_ED25519 = 4
+} derivation_type_t;
+
+typedef enum {
+    SIGNATURE_TYPE_UNSET = 0,
+    SIGNATURE_TYPE_SECP256K1 = 1,
+    SIGNATURE_TYPE_SECP256R1 = 2,
+    SIGNATURE_TYPE_ED25519 = 3
+} signature_type_t;
+
+
 // Return number of bytes to transmit (tx)
 typedef size_t (*apdu_handler)(uint8_t instruction);
 
@@ -85,7 +111,7 @@ static inline bool bip32_paths_eq(
 
 typedef struct {
     bip32_path_t bip32_path;
-    cx_curve_t curve;
+    derivation_type_t derivation_type;
 } bip32_path_with_curve_t;
 
 static inline void copy_bip32_path_with_curve(
@@ -95,7 +121,7 @@ static inline void copy_bip32_path_with_curve(
     check_null(out);
     check_null(in);
     copy_bip32_path(&out->bip32_path, &in->bip32_path);
-    out->curve = in->curve;
+    out->derivation_type = in->derivation_type;
 }
 
 static inline bool bip32_path_with_curve_eq(
@@ -106,7 +132,7 @@ static inline bool bip32_path_with_curve_eq(
         a != NULL &&
         b != NULL &&
         bip32_paths_eq(&a->bip32_path, &b->bip32_path) &&
-        a->curve == b->curve
+        a->derivation_type == b->derivation_type
     );
 }
 
@@ -158,12 +184,12 @@ typedef struct {
     level_t level;
 } parsed_baking_data_t;
 
-struct parsed_contract {
-    uint8_t originated; // a lightweight bool
-    uint8_t curve_code; // TEZOS_NO_CURVE in originated case
-                        // An implicit contract with TEZOS_NO_CURVE means not present
+typedef struct parsed_contract {
+    uint8_t originated;  // a lightweight bool
+    signature_type_t signature_type; // 0 in originated case
+                                     // An implicit contract with signature_type of 0 means not present
     uint8_t hash[HASH_SIZE];
-};
+} parsed_contract_t;
 
 struct parsed_proposal {
     uint32_t voting_period;

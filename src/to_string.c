@@ -10,36 +10,45 @@
 
 #define TEZOS_HASH_CHECKSUM_SIZE 4
 
-static void pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve, const uint8_t hash[HASH_SIZE]);
+void pkh_to_string(
+    char *const buff, size_t const buff_size,
+    signature_type_t const signature_type,
+    uint8_t const hash[HASH_SIZE]
+);
 
 // These functions output terminating null bytes, and return the ending offset.
 static size_t microtez_to_string(char *dest, uint64_t number);
 
-void parsed_contract_to_string(char *buff, uint32_t buff_size, const struct parsed_contract *contract) {
-    if (contract->originated == 0 && contract->curve_code == TEZOS_NO_CURVE) {
+void parsed_contract_to_string(
+    char *const buff,
+    size_t const buff_size,
+    parsed_contract_t const *const contract
+) {
+    if (contract->originated == 0 && contract->signature_type == SIGNATURE_TYPE_UNSET) {
         if (buff_size < sizeof(NO_CONTRACT_STRING)) THROW(EXC_WRONG_LENGTH);
         strcpy(buff, NO_CONTRACT_STRING);
         return;
     }
 
-    cx_curve_t const curve = contract->originated != 0
-        ? CX_CURVE_NONE
-        : curve_code_to_curve(contract->curve_code);
-    pkh_to_string(buff, buff_size, curve, contract->hash);
+    signature_type_t const signature_type =
+        contract->originated != 0
+            ? SIGNATURE_TYPE_UNSET
+            : contract->signature_type;
+    pkh_to_string(buff, buff_size, signature_type, contract->hash);
 }
 
 void pubkey_to_pkh_string(
     char *const out,
     size_t const out_size,
-    cx_curve_t const curve,
+    derivation_type_t const derivation_type,
     cx_ecfp_public_key_t const *const public_key
 ) {
     check_null(out);
     check_null(public_key);
 
     uint8_t hash[HASH_SIZE];
-    public_key_hash(hash, sizeof(hash), NULL, curve, public_key);
-    pkh_to_string(out, out_size, curve, hash);
+    public_key_hash(hash, sizeof(hash), NULL, derivation_type, public_key);
+    pkh_to_string(out, out_size, derivation_type_to_signature_type(derivation_type), hash);
 }
 
 void bip32_path_with_curve_to_pkh_string(
@@ -50,8 +59,8 @@ void bip32_path_with_curve_to_pkh_string(
     check_null(key);
 
     cx_ecfp_public_key_t const *const pubkey = generate_public_key_return_global(
-        key->curve, &key->bip32_path);
-    pubkey_to_pkh_string(out, out_size, key->curve, pubkey);
+        key->derivation_type, &key->bip32_path);
+    pubkey_to_pkh_string(out, out_size, key->derivation_type, pubkey);
 }
 
 
@@ -79,8 +88,11 @@ void buffer_to_base58(char *const out, size_t const out_size, buffer_t const *co
     bin_to_base58(out, out_size, src->bytes, src->length);
 }
 
-void pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve,
-                   const uint8_t hash[HASH_SIZE]) {
+void pkh_to_string(
+    char *const buff, size_t const buff_size,
+    signature_type_t const signature_type,
+    uint8_t const hash[HASH_SIZE]
+) {
     check_null(buff);
     check_null(hash);
     if (buff_size < PKH_STRING_SIZE) THROW(EXC_WRONG_LENGTH);
@@ -93,23 +105,23 @@ void pkh_to_string(char *buff, const size_t buff_size, const cx_curve_t curve,
     } data;
 
     // prefix
-    switch (curve) {
-        case CX_CURVE_NONE:
+    switch (signature_type) {
+        case SIGNATURE_TYPE_UNSET:
             data.prefix[0] = 2;
             data.prefix[1] = 90;
             data.prefix[2] = 121;
             break;
-        case CX_CURVE_Ed25519: // Ed25519
+        case SIGNATURE_TYPE_ED25519:
             data.prefix[0] = 6;
             data.prefix[1] = 161;
             data.prefix[2] = 159;
             break;
-        case CX_CURVE_SECP256K1: // Secp256k1
+        case SIGNATURE_TYPE_SECP256K1:
             data.prefix[0] = 6;
             data.prefix[1] = 161;
             data.prefix[2] = 161;
             break;
-        case CX_CURVE_SECP256R1: // Secp256r1
+        case SIGNATURE_TYPE_SECP256R1:
             data.prefix[0] = 6;
             data.prefix[1] = 161;
             data.prefix[2] = 164;

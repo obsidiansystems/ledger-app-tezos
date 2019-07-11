@@ -31,7 +31,7 @@ static inline size_t hmac(
     size_t const signed_hmac_key_size = WITH_KEY_PAIR(state->key, key_pair, size_t, ({
         sign(
             state->signed_hmac_key, sizeof(state->signed_hmac_key),
-            state->key.curve, key_pair,
+            state->key.derivation_type, key_pair,
             key_sha256, sizeof(key_sha256));
     }));
 
@@ -55,7 +55,7 @@ size_t handle_apdu_hmac(__attribute__((unused)) uint8_t instruction) {
 
     memset(&G, 0, sizeof(G));
 
-    G.key.curve = curve_code_to_curve(
+    G.key.derivation_type = parse_derivation_type(
         READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
 
     size_t consumed = 0;

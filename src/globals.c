@@ -74,11 +74,11 @@ void calculate_baking_idle_screens_data(void) {
         STRCPY(global.ui.baking_idle_screens.pkh, "No Key Authorized");
     } else {
         cx_ecfp_public_key_t const *const pubkey = generate_public_key_return_global(
-            (cx_curve_t const)N_data.baking_key.curve,
+            (derivation_type_t const)N_data.baking_key.derivation_type,
             (bip32_path_t const *const)&N_data.baking_key.bip32_path);
         pubkey_to_pkh_string(
             global.ui.baking_idle_screens.pkh, sizeof(global.ui.baking_idle_screens.pkh),
-            (cx_curve_t const)N_data.baking_key.curve, pubkey);
+            (derivation_type_t const)N_data.baking_key.derivation_type, pubkey);
     }
 
 #   ifdef TARGET_NANOX

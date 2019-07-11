@@ -17,7 +17,7 @@ void init_globals(void);
 #define MAX_SIGNATURE_SIZE 100
 
 struct priv_generate_key_pair {
-    uint8_t privateKeyData[PRIVATE_KEY_DATA_SIZE];
+    uint8_t private_key_data[PRIVATE_KEY_DATA_SIZE];
     key_pair_t res;
 };
 
