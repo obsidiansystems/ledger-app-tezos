@@ -11,10 +11,9 @@
 
 void ui_initial_screen(void);
 void ui_init(void);
+void ui_refresh(void);
 
 __attribute__((noreturn)) bool exit_app(void); // Might want to send it arguments to use as callback
-
-/// ui-prompt--------------------------
 
 // Displays labels (terminated with a NULL pointer) associated with data
 // labels must be completely static string constants while data may be dynamic

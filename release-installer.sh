@@ -29,10 +29,10 @@ for arg in "$@"; do
     --curve prime256r1 \
     --targetId "${target_id:?manifest file is missing field}" \
     --delete \
-    --path 44"'"/1729"'" \
+    --path "44'/1729'" \
     --fileName "$app_dir/app.hex" \
     --appName "$name" \
     --appVersion "$version" \
-    --icon "$(cat "$app_dir/icon.hex")" \
+    --icon "${icon_hex:?manifest file is missing field}" \
     --targetVersion ""
 done

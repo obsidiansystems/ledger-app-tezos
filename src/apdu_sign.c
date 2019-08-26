@@ -5,6 +5,7 @@
 #include "base58.h"
 #include "blake2.h"
 #include "globals.h"
+#include "key_macros.h"
 #include "keys.h"
 #include "memory.h"
 #include "protocol.h"
@@ -107,7 +108,7 @@ static bool parse_allowed_operations(
         // TODO: Add still other operations
 #   endif
 
-    return parse_operations(out, in, in_size, key->curve, &key->bip32_path, allowed);
+    return parse_operations(out, in, in_size, key->derivation_type, &key->bip32_path, allowed);
 }
 
 #ifdef BAKING_APP // ----------------------------------------------------------
@@ -304,7 +305,7 @@ bool prompt_transaction(
 
                 char const *const *prompts;
                 bool const delegatable = ops->operation.flags & ORIGINATION_FLAG_DELEGATABLE;
-                bool const has_delegate = ops->operation.delegate.curve_code != TEZOS_NO_CURVE;
+                bool const has_delegate = ops->operation.delegate.signature_type != SIGNATURE_TYPE_UNSET;
                 if (delegatable && has_delegate) {
                     prompts = origination_prompts_delegatable;
                     register_ui_callback(DELEGATE_INDEX, parsed_contract_to_string,
@@ -358,8 +359,8 @@ bool prompt_transaction(
 
                 REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Delegation");
 
-                bool withdrawal = ops->operation.destination.originated == 0 &&
-                    ops->operation.destination.curve_code == TEZOS_NO_CURVE;
+                bool const withdrawal = ops->operation.destination.originated == 0 &&
+                    ops->operation.destination.signature_type == SIGNATURE_TYPE_UNSET;
 
                 ui_prompt(withdrawal ? withdrawal_prompts : delegation_prompts, ok, cxl);
             }
@@ -494,7 +495,7 @@ static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, 
     case P1_FIRST:
         clear_data();
         read_bip32_path(&G.key.bip32_path, buff, buff_size);
-        G.key.curve = curve_code_to_curve(READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
+        G.key.derivation_type = parse_derivation_type(READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
         return finalize_successful_send(0);
 #ifndef BAKING_APP
     case P1_HASH_ONLY_NEXT:
@@ -602,7 +603,9 @@ static int perform_signature(bool const on_hash, bool const send_hash) {
 
     uint8_t const *const data = on_hash ? G.final_hash : G.message_data;
     size_t const data_length = on_hash ? sizeof(G.final_hash) : G.message_data_length;
-    tx += sign(&G_io_apdu_buffer[tx], MAX_SIGNATURE_SIZE, &G.key, data, data_length);
+    tx += WITH_KEY_PAIR(G.key, key_pair, size_t, ({
+        sign(&G_io_apdu_buffer[tx], MAX_SIGNATURE_SIZE, G.key.derivation_type, key_pair, data, data_length);
+    }));
 
     clear_data();
     return finalize_successful_send(tx);

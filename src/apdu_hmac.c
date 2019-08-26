@@ -3,6 +3,7 @@
 #include "apdu_hmac.h"
 
 #include "globals.h"
+#include "key_macros.h"
 #include "keys.h"
 #include "protocol.h"
 
@@ -27,10 +28,12 @@ static inline size_t hmac(
         0x5a, 0x90, 0x47, 0x5e, 0xc0, 0xdb, 0xdb, 0x9f };
 
     // Deterministically sign the SHA256 value to get something directly tied to the secret key.
-    size_t const signed_hmac_key_size = sign(
-        state->signed_hmac_key, sizeof(state->signed_hmac_key),
-        &state->key,
-        key_sha256, sizeof(key_sha256));
+    size_t const signed_hmac_key_size = WITH_KEY_PAIR(state->key, key_pair, size_t, ({
+        sign(
+            state->signed_hmac_key, sizeof(state->signed_hmac_key),
+            state->key.derivation_type, key_pair,
+            key_sha256, sizeof(key_sha256));
+    }));
 
     // Hash the signed value with SHA512 to get a 64-byte key for HMAC.
     cx_hash_sha512(
@@ -52,7 +55,7 @@ size_t handle_apdu_hmac(__attribute__((unused)) uint8_t instruction) {
 
     memset(&G, 0, sizeof(G));
 
-    G.key.curve = curve_code_to_curve(
+    G.key.derivation_type = parse_derivation_type(
         READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
 
     size_t consumed = 0;

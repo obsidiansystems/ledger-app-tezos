@@ -17,8 +17,8 @@ void init_globals(void);
 #define MAX_SIGNATURE_SIZE 100
 
 struct priv_generate_key_pair {
-    uint8_t privateKeyData[PRIVATE_KEY_DATA_SIZE];
-    struct key_pair res;
+    uint8_t private_key_data[PRIVATE_KEY_DATA_SIZE];
+    key_pair_t res;
 };
 
 #ifdef BAKING_APP
@@ -95,10 +95,12 @@ typedef struct {
     ui_callback_t ok_callback;
     ui_callback_t cxl_callback;
 
+#   ifndef TARGET_NANOX
     uint32_t ux_step;
     uint32_t ux_step_count;
 
     uint32_t timeout_cycle_count;
+#   endif
 
 #   ifdef BAKING_APP
     struct {
@@ -173,15 +175,16 @@ static inline void throw_stack_size() {
 #       define N_data (*(nvram_data*)PIC(&N_data_real))
 #    endif
 
+void calculate_baking_idle_screens_data(void);
 void update_baking_idle_screens(void);
-high_watermark_t *select_hwm_by_chain(chain_id_t const chain_id, nvram_data *const ram);
+high_watermark_t volatile *select_hwm_by_chain(chain_id_t const chain_id, nvram_data volatile *const ram);
 
 // Properly updates NVRAM data to prevent any clobbering of data.
 // 'out_param' defines the name of a pointer to the nvram_data struct
 // that 'body' can change to apply updates.
 #define UPDATE_NVRAM(out_name, body) ({ \
     nvram_data *const out_name = &global.baking_auth.new_data; \
-    memcpy(&global.baking_auth.new_data, &N_data, sizeof(global.baking_auth.new_data)); \
+    memcpy(&global.baking_auth.new_data, (nvram_data const *const)&N_data, sizeof(global.baking_auth.new_data)); \
     body; \
     nvm_write((void*)&N_data, &global.baking_auth.new_data, sizeof(N_data)); \
     update_baking_idle_screens(); \
