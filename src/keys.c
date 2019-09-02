@@ -47,7 +47,8 @@ size_t read_bip32_path(bip32_path_t *const out, uint8_t const *const in, size_t 
 
 struct key_pair *generate_key_pair_return_global(
     cx_curve_t const curve,
-    bip32_path_t const *const bip32_path
+    bip32_path_t const *const bip32_path,
+    unsigned char *const chain_code
 ) {
     check_null(bip32_path);
     struct priv_generate_key_pair *const priv = &global.priv.generate_key_pair;
@@ -56,10 +57,10 @@ struct key_pair *generate_key_pair_return_global(
     if (curve == CX_CURVE_Ed25519) {
         os_perso_derive_node_bip32_seed_key(
             HDW_ED25519_SLIP10, curve, bip32_path->components, bip32_path->length,
-            priv->privateKeyData, NULL, NULL, 0);
+            priv->privateKeyData, chain_code, NULL, 0);
     } else {
 #endif
-        os_perso_derive_node_bip32(curve, bip32_path->components, bip32_path->length, priv->privateKeyData, NULL);
+        os_perso_derive_node_bip32(curve, bip32_path->components, bip32_path->length, priv->privateKeyData, chain_code);
 #if CX_APILEVEL > 8
     }
 #endif
@@ -79,10 +80,11 @@ struct key_pair *generate_key_pair_return_global(
 
 cx_ecfp_public_key_t const *generate_public_key_return_global(
     cx_curve_t const curve,
-    bip32_path_t const *const bip32_path
+    bip32_path_t const *const bip32_path,
+    unsigned char *const chain_code
 ) {
     check_null(bip32_path);
-    struct key_pair *const pair = generate_key_pair_return_global(curve, bip32_path);
+    struct key_pair *const pair = generate_key_pair_return_global(curve, bip32_path, chain_code);
     memset(&pair->private_key, 0, sizeof(pair->private_key));
     return &pair->public_key;
 }
@@ -132,7 +134,7 @@ size_t sign(
     check_null(key);
     check_null(in);
 
-    struct key_pair *const pair = generate_key_pair_return_global(key->curve, &key->bip32_path);
+    struct key_pair *const pair = generate_key_pair_return_global(key->curve, &key->bip32_path, NULL);
 
     size_t tx = 0;
     switch (key->curve) {

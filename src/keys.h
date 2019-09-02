@@ -19,7 +19,8 @@ size_t read_bip32_path(bip32_path_t *const out, uint8_t const *const in, size_t 
 // Non-reentrant
 struct key_pair *generate_key_pair_return_global(
     cx_curve_t const curve,
-    bip32_path_t const *const bip32_path);
+    bip32_path_t const *const bip32_path,
+    unsigned char *const chain_code);
 
 // Non-reentrant
 static inline void generate_key_pair(
@@ -28,23 +29,25 @@ static inline void generate_key_pair(
     bip32_path_t const *const bip32_path
 ) {
     check_null(out);
-    struct key_pair *const result = generate_key_pair_return_global(curve, bip32_path);
+    struct key_pair *const result = generate_key_pair_return_global(curve, bip32_path, NULL);
     memcpy(out, result, sizeof(*out));
 }
 
 // Non-reentrant
 cx_ecfp_public_key_t const *generate_public_key_return_global(
     cx_curve_t const curve,
-    bip32_path_t const *const bip32_path);
+    bip32_path_t const *const bip32_path,
+    unsigned char *const chain_code);
 
 // Non-reentrant
 static inline void generate_public_key(
     cx_ecfp_public_key_t *const out,
     cx_curve_t const curve,
-    bip32_path_t const *const bip32_path
+    bip32_path_t const *const bip32_path,
+    unsigned char *const chain_code
 ) {
     check_null(out);
-    cx_ecfp_public_key_t const *const result = generate_public_key_return_global(curve, bip32_path);
+    cx_ecfp_public_key_t const *const result = generate_public_key_return_global(curve, bip32_path, chain_code);
     memcpy(out, result, sizeof(*out));
 }
 

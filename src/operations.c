@@ -114,7 +114,7 @@ static inline void compute_pkh(
     check_null(bip32_path);
     check_null(compressed_pubkey_out);
     check_null(contract_out);
-    cx_ecfp_public_key_t const *const pubkey = generate_public_key_return_global(curve, bip32_path);
+    cx_ecfp_public_key_t const *const pubkey = generate_public_key_return_global(curve, bip32_path, NULL);
     public_key_hash(
         contract_out->hash, sizeof(contract_out->hash),
         compressed_pubkey_out,
