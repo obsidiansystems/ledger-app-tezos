@@ -169,7 +169,7 @@ static void parse_operations_throws_parse_error(
     size_t length,
     derivation_type_t derivation_type,
     bip32_path_t const *const bip32_path,
-    allowed_operation_set ops
+    is_operation_allowed_t is_operation_allowed
 ) {
     check_null(out);
     check_null(data);
@@ -193,7 +193,7 @@ static void parse_operations_throws_parse_error(
     while (ix < length) {
         const enum operation_tag tag = NEXT_BYTE(data, &ix, length);  // 1 byte is always aligned
 
-        if (!is_operation_allowed(ops, tag)) PARSE_ERROR();
+        if (!is_operation_allowed(tag)) PARSE_ERROR();
 
         if (tag == OPERATION_TAG_PROPOSAL || tag == OPERATION_TAG_BALLOT) {
             // These tags don't have the "originated" byte so we have to parse PKH differently.
@@ -350,11 +350,11 @@ bool parse_operations(
     size_t length,
     derivation_type_t derivation_type,
     bip32_path_t const *const bip32_path,
-    allowed_operation_set ops
+    is_operation_allowed_t is_operation_allowed
 ) {
     BEGIN_TRY {
         TRY {
-            parse_operations_throws_parse_error(out, data, length, derivation_type, bip32_path, ops);
+            parse_operations_throws_parse_error(out, data, length, derivation_type, bip32_path, is_operation_allowed);
         }
         CATCH(EXC_PARSE_ERROR) {
             return false;
