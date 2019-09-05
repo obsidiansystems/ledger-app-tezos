@@ -10,19 +10,7 @@
 #include "cx.h"
 #include "types.h"
 
-typedef uint32_t allowed_operation_set;
-
-static inline void allow_operation(allowed_operation_set *ops, enum operation_tag tag) {
-    *ops |= (1 << (uint32_t)tag);
-}
-
-static inline bool is_operation_allowed(allowed_operation_set ops, enum operation_tag tag) {
-    return (ops & (1 << (uint32_t)tag)) != 0;
-}
-
-static inline void clear_operation_set(allowed_operation_set *ops) {
-    *ops = 0;
-}
+typedef bool (*is_operation_allowed_t)(enum operation_tag);
 
 // Allows arbitrarily many "REVEAL" operations but only one operation of any other type,
 // which is the one it puts into the group.
@@ -32,5 +20,5 @@ bool parse_operations(
     size_t length,
     derivation_type_t curve,
     bip32_path_t const *const bip32_path,
-    allowed_operation_set ops
+    is_operation_allowed_t is_operation_allowed
 );
