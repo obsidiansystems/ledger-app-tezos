@@ -195,16 +195,12 @@ static void parse_operations_throws_parse_error(
 
         if (!is_operation_allowed(tag)) PARSE_ERROR();
 
-        if (tag == OPERATION_TAG_PROPOSAL || tag == OPERATION_TAG_BALLOT) {
-            // These tags don't have the "originated" byte so we have to parse PKH differently.
-            const struct implicit_contract *implicit_source = NEXT_TYPE(struct implicit_contract);
-            out->operation.source.originated = 0;
-            out->operation.source.signature_type = parse_raw_tezos_header_signature_type(&implicit_source->signature_type);
-            memcpy(out->operation.source.hash, implicit_source->pkh, sizeof(out->operation.source.hash));
-        } else {
-            const struct contract *source = NEXT_TYPE(struct contract);
-            parse_contract(&out->operation.source, source);
+        const struct implicit_contract *implicit_source = NEXT_TYPE(struct implicit_contract);
+        out->operation.source.originated = 0;
+        out->operation.source.signature_type = parse_raw_tezos_header_signature_type(&implicit_source->signature_type);
+        memcpy(out->operation.source.hash, implicit_source->pkh, sizeof(out->operation.source.hash));
 
+        if (!(tag == OPERATION_TAG_PROPOSAL || tag == OPERATION_TAG_BALLOT)) {
             out->total_fee += PARSE_Z(data, &ix, length); // fee
             PARSE_Z(data, &ix, length); // counter
             PARSE_Z(data, &ix, length); // gas limit
