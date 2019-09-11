@@ -509,12 +509,14 @@ The output of this command includes three Tezos addresses derived from the secre
 stored on the device, via different signing curves and BIP32 paths.
 
 ```
-Found a Tezos Wallet 1.4.0 (commit 764625b1) application running on Ledger Nano S at [0001:002a:00].
+Found a Tezos Baking 2.0.1 (git-description: "") application running on
+Ledger Nano S at [0001:0003:00].
 
-To use keys at BIP32 path m/44'/1729'/0'/0' (default Tezos key path), use one of
- tezos-client import secret key ledger_jhartzell "ledger://major-squirrel-thick-hedgehog/ed25519/0'/0'"
- tezos-client import secret key ledger_jhartzell "ledger://major-squirrel-thick-hedgehog/secp256k1/0'/0'"
- tezos-client import secret key ledger_jhartzell "ledger://major-squirrel-thick-hedgehog/P-256/0'/0'"
+To use keys at BIP32 path m/44'/1729'/0'/0' (default Tezos key path), use one
+of:
+  tezos-client import secret key ledger_kiln "ledger://major-squirrel-thick-hedgehog/ed25519/0h/0h"
+  tezos-client import secret key ledger_kiln "ledger://major-squirrel-thick-hedgehog/secp256k1/0h/0h"
+  tezos-client import secret key ledger_kiln "ledger://major-squirrel-thick-hedgehog/P-256/0h/0h"
 ```
 
 These show you how to import keys with a specific signing curve (e.g. `ed25519`) and derivation path (e.g. `/0'/0'`). The
