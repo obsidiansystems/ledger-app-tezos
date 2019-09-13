@@ -529,8 +529,8 @@ static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, 
         // FALL THROUGH
 #endif
     case P1_NEXT:
-        if (G.key.bip32_path.length == 0) {
-            THROW(EXC_WRONG_LENGTH_FOR_INS);
+        if (G.key.bip32_path.length == 0) THROW(EXC_WRONG_LENGTH_FOR_INS);
+
         // Guard against overflow
         if (G.packet_index >= 0xFF) PARSE_ERROR();
         G.packet_index++;
