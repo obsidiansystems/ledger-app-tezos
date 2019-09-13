@@ -38,11 +38,10 @@ typedef struct {
 typedef struct {
     bip32_path_with_curve_t key;
 
+    uint8_t packet_index; // 0-index is the initial setup packet, 1 is first packet to hash, etc.
+
 #   ifdef BAKING_APP
-    struct {
-      bool is_valid;
-      parsed_baking_data_t v;
-    } maybe_parsed_baking_data;
+    parsed_baking_data_t parsed_baking_data;
 #   endif
 
     struct {
@@ -57,7 +56,7 @@ typedef struct {
     blake2b_hash_state_t hash_state;
     uint8_t final_hash[SIGN_HASH_SIZE];
 
-    uint8_t magic_number;
+    uint8_t magic_byte;
     bool hash_only;
 } apdu_sign_state_t;
 
