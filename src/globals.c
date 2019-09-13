@@ -30,6 +30,10 @@ globals_t global;
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
+void clear_apdu_globals(void) {
+    memset(&global.apdu, 0, sizeof(global.apdu));
+}
+
 void init_globals(void) {
     memset(&global, 0, sizeof(global));
 

@@ -11,7 +11,7 @@
 
 #include <string.h>
 
-#define G global.u.setup
+#define G global.apdu.u.setup
 
 struct setup_wire {
     uint32_t main_chain_id;

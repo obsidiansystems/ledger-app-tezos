@@ -8,7 +8,7 @@
 #include "protocol.h"
 
 
-#define G global.u.hmac
+#define G global.apdu.u.hmac
 
 static inline size_t hmac(
     uint8_t *const out, size_t const out_size,

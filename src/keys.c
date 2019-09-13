@@ -50,7 +50,7 @@ key_pair_t *generate_key_pair_return_global(
     bip32_path_t const *const bip32_path
 ) {
     check_null(bip32_path);
-    struct priv_generate_key_pair *const priv = &global.priv.generate_key_pair;
+    struct priv_generate_key_pair *const priv = &global.apdu.priv.generate_key_pair;
 
     cx_curve_t const cx_curve = signature_type_to_cx_curve(derivation_type_to_signature_type(derivation_type));
 
@@ -98,7 +98,7 @@ cx_ecfp_public_key_t const *public_key_hash_return_global(
     check_null(public_key);
     if (out_size < HASH_SIZE) THROW(EXC_WRONG_LENGTH);
 
-    cx_ecfp_public_key_t *const compressed = &global.priv.public_key_hash.compressed;
+    cx_ecfp_public_key_t *const compressed = &global.apdu.priv.public_key_hash.compressed;
     switch (derivation_type_to_signature_type(curve)) {
         case SIGNATURE_TYPE_ED25519:
             {
