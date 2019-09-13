@@ -9,7 +9,7 @@ C doesn't have them. So you don't have to think about bracketing, exception safe
 
 Well not on the Ledger. You have exceptions! Which means you also have out-of-band code paths, and you now have to worry about exception safety.
 
-You can `THROW` an `uint16_t` like this `THROW(0x9000)`.
+You can `THROW` a `uint16_t` like this `THROW(0x9000)`.
 
 Handling exceptions looks like this.
 
@@ -30,7 +30,7 @@ BEGIN_TRY {
 END_TRY;
 ```
 
-Exceptions that make it all the way to the top of the application are caught and return as status codes from the APDU.
+Exceptions that make it all the way to the top of the application are caught and returned as status codes from the APDU.
 
 #### Gotchas
 
@@ -43,7 +43,7 @@ Exceptions that make it all the way to the top of the application are caught and
   1. If you have some global state and an exception is thrown then, unless you do something about it, that global state will remain. That might be a *very bad thing*. As long as you use globals our way (see Globals Our Way) you should be safe.
 
 
-### Globals
+### Globals Our Way
 
 `static const` globals are fine. `static` non-const are not fine for two reasons:
 
