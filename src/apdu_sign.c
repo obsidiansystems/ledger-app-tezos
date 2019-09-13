@@ -18,6 +18,8 @@
 
 #define G global.u.sign
 
+#define PARSE_ERROR() THROW(EXC_PARSE_ERROR)
+
 #define B2B_BLOCKBYTES 128
 
 static inline void conditional_init_hash_state(blake2b_hash_state_t *const state) {
@@ -167,11 +169,12 @@ size_t baking_sign_complete(bool const send_hash) {
                     prompt_register_delegate(ok_c, sign_reject);
                 }
                 THROW(EXC_SECURITY);
+                break;
             }
         case MAGIC_BYTE_UNSAFE_OP2:
         case MAGIC_BYTE_UNSAFE_OP3:
         default:
-            THROW(EXC_PARSE_ERROR);
+            PARSE_ERROR();
     }
 }
 
@@ -194,7 +197,7 @@ bool prompt_transaction(
 
     switch (ops->operation.tag) {
         default:
-            THROW(EXC_PARSE_ERROR);
+            PARSE_ERROR();
 
         case OPERATION_TAG_PROPOSAL:
             {
@@ -464,7 +467,7 @@ static size_t wallet_sign_complete(uint8_t instruction) {
             case MAGIC_BYTE_BLOCK:
             case MAGIC_BYTE_BAKING_OP:
             default:
-                THROW(EXC_PARSE_ERROR);
+                PARSE_ERROR();
             case MAGIC_BYTE_UNSAFE_OP:
                 if (!G.maybe_ops.is_valid || !prompt_transaction(&G.maybe_ops.v, &G.key, ok_c, sign_reject)) {
                     goto unsafe;
@@ -545,9 +548,7 @@ static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, 
             &G.hash_state);
     }
 
-    if (G.message_data_length + buff_size > sizeof(G.message_data)) {
-        THROW(EXC_PARSE_ERROR);
-    }
+    if (G.message_data_length + buff_size > sizeof(G.message_data)) PARSE_ERROR();
 
     memmove(G.message_data + G.message_data_length, buff, buff_size);
     G.message_data_length += buff_size;
