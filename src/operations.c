@@ -195,21 +195,45 @@ static void parse_operations_throws_parse_error(
 
         if (!is_operation_allowed(tag)) PARSE_ERROR();
 
-        const struct implicit_contract *implicit_source = NEXT_TYPE(struct implicit_contract);
-        out->operation.source.originated = 0;
-        out->operation.source.signature_type = parse_raw_tezos_header_signature_type(&implicit_source->signature_type);
-        memcpy(out->operation.source.hash, implicit_source->pkh, sizeof(out->operation.source.hash));
+        // Parse 'source'
+        switch (tag) {
+            // Tags that don't have "originated" byte only support tz accounts, not KT or tz.
+            case OPERATION_TAG_PROPOSAL:
+            case OPERATION_TAG_BALLOT:
+            case OPERATION_TAG_BABYLON_DELEGATION:
+            case OPERATION_TAG_BABYLON_ORIGINATION:
+            case OPERATION_TAG_BABYLON_REVEAL:
+            case OPERATION_TAG_BABYLON_TRANSACTION: {
+                struct implicit_contract const *const implicit_source = NEXT_TYPE(struct implicit_contract);
+                out->operation.source.originated = 0;
+                out->operation.source.signature_type = parse_raw_tezos_header_signature_type(&implicit_source->signature_type);
+                memcpy(out->operation.source.hash, implicit_source->pkh, sizeof(out->operation.source.hash));
+                break;
+            }
 
-        if (!(tag == OPERATION_TAG_PROPOSAL || tag == OPERATION_TAG_BALLOT)) {
+            case OPERATION_TAG_ATHENS_DELEGATION:
+            case OPERATION_TAG_ATHENS_ORIGINATION:
+            case OPERATION_TAG_ATHENS_REVEAL:
+            case OPERATION_TAG_ATHENS_TRANSACTION: {
+                struct contract const *const source = NEXT_TYPE(struct contract);
+                parse_contract(&out->operation.source, source);
+                break;
+            }
+
+            default: PARSE_ERROR();
+        }
+
+        // out->operation.source IS NORMALIZED AT THIS POINT
+
+        // Parse common fields for non-governance related operations.
+        if (tag != OPERATION_TAG_PROPOSAL && tag != OPERATION_TAG_BALLOT) {
             out->total_fee += PARSE_Z(data, &ix, length); // fee
             PARSE_Z(data, &ix, length); // counter
             PARSE_Z(data, &ix, length); // gas limit
             out->total_storage_limit += PARSE_Z(data, &ix, length); // storage limit
         }
 
-        // out->operation.source IS NORMALIZED AT THIS POINT
-
-        if (tag == OPERATION_TAG_REVEAL) {
+        if (tag == OPERATION_TAG_ATHENS_REVEAL || tag == OPERATION_TAG_BABYLON_REVEAL) {
             // Public key up next! Ensure it matches signing key.
             // Ignore source :-) and do not parse it from hdr.
             // We don't much care about reveals, they have very little in the way of bad security
@@ -282,7 +306,8 @@ static void parse_operations_throws_parse_error(
                     }
                 }
                 break;
-            case OPERATION_TAG_DELEGATION:
+            case OPERATION_TAG_ATHENS_DELEGATION:
+            case OPERATION_TAG_BABYLON_DELEGATION:
                 {
                     uint8_t delegate_present = NEXT_BYTE(data, &ix, length);
                     if (delegate_present) {
@@ -295,7 +320,8 @@ static void parse_operations_throws_parse_error(
                     }
                 }
                 break;
-            case OPERATION_TAG_ORIGINATION:
+            case OPERATION_TAG_ATHENS_ORIGINATION:
+            case OPERATION_TAG_BABYLON_ORIGINATION:
                 {
                     struct origination_header {
                         raw_tezos_header_signature_type_t signature_type;
@@ -319,7 +345,8 @@ static void parse_operations_throws_parse_error(
                     if (NEXT_BYTE(data, &ix, length) != 0) PARSE_ERROR(); // Has script
                 }
                 break;
-            case OPERATION_TAG_TRANSACTION:
+            case OPERATION_TAG_ATHENS_TRANSACTION:
+            case OPERATION_TAG_BABYLON_TRANSACTION:
                 {
                     out->operation.amount = PARSE_Z(data, &ix, length);
 
