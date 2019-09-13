@@ -76,6 +76,8 @@ void main_loop(apdu_handler const *const handlers, size_t const handlers_size) {
                 THROW(EXCEPTION_IO_RESET);
             }
             CATCH_OTHER(e) {
+                clear_apdu_globals(); // IMPORTANT: Application state must not persist through errors
+
                 uint16_t sw = e;
                 switch (sw) {
                 default:

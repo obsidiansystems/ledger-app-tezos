@@ -16,7 +16,7 @@
 
 #include <string.h>
 
-#define G global.u.sign
+#define G global.apdu.u.sign
 
 #define PARSE_ERROR() THROW(EXC_PARSE_ERROR)
 
