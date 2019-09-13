@@ -118,7 +118,7 @@ static inline signature_type_t parse_raw_tezos_header_signature_type(
         case 0: return SIGNATURE_TYPE_ED25519;
         case 1: return SIGNATURE_TYPE_SECP256K1;
         case 2: return SIGNATURE_TYPE_SECP256R1;
-        default: THROW(EXC_PARSE_ERROR);
+        default: PARSE_ERROR();
     }
 }
 
