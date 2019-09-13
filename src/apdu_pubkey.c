@@ -13,7 +13,7 @@
 #define G global.u.pubkey
 
 static bool pubkey_ok(void) {
-    delayed_send(provide_pubkey(G_io_apdu_buffer, &G.public_key, G.chain_code));
+    delayed_send(provide_pubkey(G_io_apdu_buffer, &G.public_key));
     return true;
 }
 
@@ -91,10 +91,10 @@ size_t handle_apdu_get_public_key(uint8_t instruction) {
         if (G.key.bip32_path.length == 0) THROW(EXC_WRONG_LENGTH_FOR_INS);
     }
 #endif
-    generate_public_key(&G.public_key, G.key.curve, &G.key.bip32_path, G.chain_code);
+    generate_public_key(&G.public_key, G.key.curve, &G.key.bip32_path);
 
     if (instruction == INS_GET_PUBLIC_KEY) {
-        return provide_pubkey(G_io_apdu_buffer, &G.public_key, G.chain_code);
+        return provide_pubkey(G_io_apdu_buffer, &G.public_key);
     } else {
         // instruction == INS_PROMPT_PUBLIC_KEY || instruction == INS_AUTHORIZE_BAKING
         ui_callback_t cb;

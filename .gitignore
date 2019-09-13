@@ -5,12 +5,7 @@ obj
 src/u2f_crypto_data.h
 src/glyphs.h
 src/glyphs.c
-/ledger
-*.hex
-Dockerfile
-prepare-devenv.sh
 
 #ide
 *.code-workspace
 compile_commands.json
-.idea/
