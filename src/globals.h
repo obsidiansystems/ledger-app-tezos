@@ -67,9 +67,8 @@ typedef struct {
 
   union {
     struct {
-        bip32_path_with_curve_t key;
-        cx_ecfp_public_key_t public_key;
-        unsigned char chain_code[32];
+      bip32_path_with_curve_t key;
+      cx_ecfp_public_key_t public_key;
     } pubkey;
 
     apdu_sign_state_t sign;
