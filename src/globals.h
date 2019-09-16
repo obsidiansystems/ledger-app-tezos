@@ -5,6 +5,11 @@
 
 #include "bolos_target.h"
 
+// Zeros out all globals that can keep track of APDU instruction state.
+// Notably this does *not* include UI state.
+void clear_apdu_globals(void);
+
+// Zeros out all application-specific globals and SDK-specific UI/exchange buffers.
 void init_globals(void);
 
 #define MAX_APDU_SIZE 230  // Maximum number of bytes in a single APDU
@@ -38,11 +43,10 @@ typedef struct {
 typedef struct {
     bip32_path_with_curve_t key;
 
+    uint8_t packet_index; // 0-index is the initial setup packet, 1 is first packet to hash, etc.
+
 #   ifdef BAKING_APP
-    struct {
-      bool is_valid;
-      parsed_baking_data_t v;
-    } maybe_parsed_baking_data;
+    parsed_baking_data_t parsed_baking_data;
 #   endif
 
     struct {
@@ -57,39 +61,13 @@ typedef struct {
     blake2b_hash_state_t hash_state;
     uint8_t final_hash[SIGN_HASH_SIZE];
 
-    uint8_t magic_number;
+    uint8_t magic_byte;
     bool hash_only;
 } apdu_sign_state_t;
 
 typedef struct {
   void *stack_root;
   apdu_handler handlers[INS_MAX + 1];
-
-  union {
-    struct {
-      bip32_path_with_curve_t key;
-      cx_ecfp_public_key_t public_key;
-    } pubkey;
-
-    apdu_sign_state_t sign;
-
-#   ifdef BAKING_APP
-    struct {
-      level_t reset_level;
-    } baking;
-
-    struct {
-        bip32_path_with_curve_t key;
-        chain_id_t main_chain_id;
-        struct {
-            level_t main;
-            level_t test;
-        } hwm;
-    } setup;
-
-    apdu_hmac_state_t hmac;
-#   endif
-  } u;
 
   struct {
     ui_callback_t ok_callback;
@@ -129,21 +107,49 @@ typedef struct {
     } prompt;
   } ui;
 
-#ifdef BAKING_APP
   struct {
-    nvram_data new_data;  // Staging area for setting N_data
+      union {
+          struct {
+              bip32_path_with_curve_t key;
+              cx_ecfp_public_key_t public_key;
+          } pubkey;
 
-    char address_display_data[VALUE_WIDTH + 1];
-  } baking_auth;
-#endif
+          apdu_sign_state_t sign;
 
-  struct {
-    struct priv_generate_key_pair generate_key_pair;
+#         ifdef BAKING_APP
+          struct {
+            level_t reset_level;
+          } baking;
 
-    struct {
-      cx_ecfp_public_key_t compressed;
-    } public_key_hash;
-  } priv;
+          struct {
+              bip32_path_with_curve_t key;
+              chain_id_t main_chain_id;
+              struct {
+                  level_t main;
+                  level_t test;
+              } hwm;
+          } setup;
+
+          apdu_hmac_state_t hmac;
+#         endif
+      } u;
+
+#     ifdef BAKING_APP
+      struct {
+          nvram_data new_data;  // Staging area for setting N_data
+
+          char address_display_data[VALUE_WIDTH + 1];
+      } baking_auth;
+#     endif
+
+      struct {
+          struct priv_generate_key_pair generate_key_pair;
+
+          struct {
+              cx_ecfp_public_key_t compressed;
+          } public_key_hash;
+      } priv;
+    } apdu;
 } globals_t;
 
 extern globals_t global;
@@ -183,10 +189,10 @@ high_watermark_t volatile *select_hwm_by_chain(chain_id_t const chain_id, nvram_
 // 'out_param' defines the name of a pointer to the nvram_data struct
 // that 'body' can change to apply updates.
 #define UPDATE_NVRAM(out_name, body) ({ \
-    nvram_data *const out_name = &global.baking_auth.new_data; \
-    memcpy(&global.baking_auth.new_data, (nvram_data const *const)&N_data, sizeof(global.baking_auth.new_data)); \
+    nvram_data *const out_name = &global.apdu.baking_auth.new_data; \
+    memcpy(&global.apdu.baking_auth.new_data, (nvram_data const *const)&N_data, sizeof(global.apdu.baking_auth.new_data)); \
     body; \
-    nvm_write((void*)&N_data, &global.baking_auth.new_data, sizeof(N_data)); \
+    nvm_write((void*)&N_data, &global.apdu.baking_auth.new_data, sizeof(N_data)); \
     update_baking_idle_screens(); \
 })
 #endif

@@ -10,7 +10,7 @@
 
 #include <string.h>
 
-#define G global.u.pubkey
+#define G global.apdu.u.pubkey
 
 static bool pubkey_ok(void) {
     delayed_send(provide_pubkey(G_io_apdu_buffer, &G.public_key));

@@ -12,7 +12,7 @@
 
 #include <string.h>
 
-#define G global.u.baking
+#define G global.apdu.u.baking
 
 static bool reset_ok(void);
 
