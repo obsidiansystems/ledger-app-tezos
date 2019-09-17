@@ -19,6 +19,10 @@
 
 #define G global.ui
 
+void ui_refresh(void) {
+    // DO NOTHING
+}
+
 // CALLED BY THE SDK
 unsigned char io_event(unsigned char channel);
 void io_seproxyhal_display(const bagl_element_t *element);
@@ -41,13 +45,6 @@ static void main_menu(void);
 static unsigned button_handler(unsigned button_mask, unsigned button_mask_counter);
 
 #define PROMPT_CYCLES 3
-
-void require_pin(void) {
-    bolos_ux_params_t params;
-    memset(&params, 0, sizeof(params));
-    params.ux_id = BOLOS_UX_VALIDATE_PIN;
-    os_ux_blocking(&params);
-}
 
 #ifdef BAKING_APP
 static const bagl_element_t ui_idle_screen[] = {
@@ -146,8 +143,9 @@ static bool do_nothing(void) {
 static void ui_idle(void) {
 #   ifdef BAKING_APP
         update_baking_idle_screens();
-        ui_display(ui_idle_screen, NUM_ELEMENTS(ui_idle_screen),
-                do_nothing, exit_app, 3);
+        ui_display(
+            ui_idle_screen, NUM_ELEMENTS(ui_idle_screen),
+            do_nothing, exit_app, 3);
 #   else
         G.cxl_callback = exit_app;
         main_menu();
@@ -256,6 +254,7 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
     case SEPROXYHAL_TAG_DISPLAY_PROCESSED_EVENT:
         UX_DISPLAYED_EVENT({});
         break;
+
     case SEPROXYHAL_TAG_TICKER_EVENT:
         if (ux.callback_interval_ms != 0) {
             ux.callback_interval_ms -= MIN(ux.callback_interval_ms, 100u);

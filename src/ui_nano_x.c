@@ -19,6 +19,10 @@
 
 #define G global.ui
 
+void ui_refresh(void) {
+    ux_stack_display(0);
+}
+
 // CALLED BY THE SDK
 unsigned char io_event(unsigned char channel);
 
@@ -50,7 +54,12 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
         break;
 
     case SEPROXYHAL_TAG_TICKER_EVENT:
-        UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {});
+#       ifdef BAKING_APP
+            // Disable ticker event handling to prevent screen saver from starting.
+#       else
+            UX_TICKER_EVENT(G_io_seproxyhal_spi_buffer, {});
+#       endif
+
         break;
     }
 
@@ -63,6 +72,39 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
     return 1;
 }
 
+
+#ifdef BAKING_APP
+UX_STEP_NOCB(
+    ux_idle_flow_1_step,
+    nnn,
+    {
+      global.ui.baking_idle_screens.chain,
+      global.ui.baking_idle_screens.pkh,
+      global.ui.baking_idle_screens.hwm
+    });
+UX_STEP_NOCB(
+    ux_idle_flow_2_step,
+    bnn,
+    {
+      "Tezos Baking",
+      VERSION,
+      COMMIT
+    });
+UX_STEP_CB(
+    ux_idle_flow_3_step,
+    pb,
+    exit_app(),
+    {
+      &C_icon_dashboard,
+      "Quit",
+    });
+
+UX_FLOW(ux_idle_flow,
+    &ux_idle_flow_1_step,
+    &ux_idle_flow_2_step,
+    &ux_idle_flow_3_step
+);
+#else
 UX_STEP_NOCB(
     ux_idle_flow_1_step,
     bn,
@@ -83,7 +125,7 @@ UX_FLOW(ux_idle_flow,
     &ux_idle_flow_1_step,
     &ux_idle_flow_2_step
 );
-
+#endif
 
 
 // prompt
@@ -148,7 +190,7 @@ _Static_assert(NUM_ELEMENTS(ux_prompts_flow) - 3 /*reject + accept + end*/ == MA
 
 void ui_initial_screen(void) {
 #   ifdef BAKING_APP
-        update_baking_idle_screens();
+        calculate_baking_idle_screens_data();
 #   endif
 
     // reserve a display stack slot if none yet

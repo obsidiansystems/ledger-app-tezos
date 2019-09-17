@@ -9,13 +9,18 @@
 #include <stdint.h>
 #include <string.h>
 
+// Wire format that gets parsed into `signature_type`.
+typedef struct {
+    uint8_t v;
+} __attribute__((packed)) raw_tezos_header_signature_type_t;
+
 struct operation_group_header {
     uint8_t magic_byte;
     uint8_t hash[32];
 } __attribute__((packed));
 
 struct implicit_contract {
-    uint8_t curve_code;
+    raw_tezos_header_signature_type_t signature_type;
     uint8_t pkh[HASH_SIZE];
 } __attribute__((packed));
 
@@ -31,7 +36,7 @@ struct contract {
 } __attribute__((packed));
 
 struct delegation_contents {
-    uint8_t curve_code;
+    raw_tezos_header_signature_type_t signature_type;
     uint8_t hash[HASH_SIZE];
 } __attribute__((packed));
 
@@ -105,41 +110,55 @@ static inline uint64_t parse_z(const void *data, size_t *ix, size_t length, uint
     val; \
 })
 
+static inline signature_type_t parse_raw_tezos_header_signature_type(
+    raw_tezos_header_signature_type_t const *const raw_signature_type
+) {
+    check_null(raw_signature_type);
+    switch (READ_UNALIGNED_BIG_ENDIAN(uint8_t, &raw_signature_type->v)) {
+        case 0: return SIGNATURE_TYPE_ED25519;
+        case 1: return SIGNATURE_TYPE_SECP256K1;
+        case 2: return SIGNATURE_TYPE_SECP256R1;
+        default: PARSE_ERROR();
+    }
+}
+
 static inline void compute_pkh(
     cx_ecfp_public_key_t *const compressed_pubkey_out,
-    struct parsed_contract *const contract_out,
-    cx_curve_t const curve,
+    parsed_contract_t *const contract_out,
+    derivation_type_t const derivation_type,
     bip32_path_t const *const bip32_path
 ) {
     check_null(bip32_path);
     check_null(compressed_pubkey_out);
     check_null(contract_out);
-    cx_ecfp_public_key_t const *const pubkey = generate_public_key_return_global(curve, bip32_path);
+    cx_ecfp_public_key_t const *const pubkey = generate_public_key_return_global(derivation_type, bip32_path);
     public_key_hash(
         contract_out->hash, sizeof(contract_out->hash),
         compressed_pubkey_out,
-        curve, pubkey);
-    contract_out->curve_code = curve_to_curve_code(curve);
-    if (contract_out->curve_code == TEZOS_NO_CURVE) THROW(EXC_MEMORY_ERROR);
+        derivation_type, pubkey);
+    contract_out->signature_type = derivation_type_to_signature_type(derivation_type);
+    if (contract_out->signature_type == SIGNATURE_TYPE_UNSET) THROW(EXC_MEMORY_ERROR);
     contract_out->originated = 0;
 }
 
 static inline void parse_implicit(
-    struct parsed_contract *out, uint8_t curve_code,
-    const uint8_t hash[HASH_SIZE]
+    parsed_contract_t *const out,
+    raw_tezos_header_signature_type_t const *const raw_signature_type,
+    uint8_t const hash[HASH_SIZE]
 ) {
+    check_null(raw_signature_type);
     out->originated = 0;
-    out->curve_code = curve_code;
+    out->signature_type = parse_raw_tezos_header_signature_type(raw_signature_type);
     memcpy(out->hash, hash, sizeof(out->hash));
 }
 
-static inline void parse_contract(struct parsed_contract *out, const struct contract *in) {
+static inline void parse_contract(parsed_contract_t *const out, struct contract const *const in) {
     out->originated = in->originated;
     if (out->originated == 0) { // implicit
-        out->curve_code = in->u.implicit.curve_code;
+        out->signature_type = parse_raw_tezos_header_signature_type(&in->u.implicit.signature_type);
         memcpy(out->hash, in->u.implicit.pkh, sizeof(out->hash));
     } else { // originated
-        out->curve_code = TEZOS_NO_CURVE;
+        out->signature_type = SIGNATURE_TYPE_UNSET;
         memcpy(out->hash, in->u.originated.pkh, sizeof(out->hash));
     }
 }
@@ -148,9 +167,9 @@ static void parse_operations_throws_parse_error(
     struct parsed_operation_group *const out,
     void const *const data,
     size_t length,
-    cx_curve_t curve,
+    derivation_type_t derivation_type,
     bip32_path_t const *const bip32_path,
-    allowed_operation_set ops
+    is_operation_allowed_t is_operation_allowed
 ) {
     check_null(out);
     check_null(data);
@@ -159,7 +178,7 @@ static void parse_operations_throws_parse_error(
 
     out->operation.tag = OPERATION_TAG_NONE;
 
-    compute_pkh(&out->public_key, &out->signing, curve, bip32_path);
+    compute_pkh(&out->public_key, &out->signing, derivation_type, bip32_path);
 
     size_t ix = 0;
 
@@ -174,32 +193,53 @@ static void parse_operations_throws_parse_error(
     while (ix < length) {
         const enum operation_tag tag = NEXT_BYTE(data, &ix, length);  // 1 byte is always aligned
 
-        if (!is_operation_allowed(ops, tag)) PARSE_ERROR();
+        if (!is_operation_allowed(tag)) PARSE_ERROR();
 
-        if (tag == OPERATION_TAG_PROPOSAL || tag == OPERATION_TAG_BALLOT) {
-            // These tags don't have the "originated" byte so we have to parse PKH differently.
-            const struct implicit_contract *implicit_source = NEXT_TYPE(struct implicit_contract);
-            out->operation.source.originated = 0;
-            out->operation.source.curve_code = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &implicit_source->curve_code);
-            memcpy(out->operation.source.hash, implicit_source->pkh, sizeof(out->operation.source.hash));
-        } else {
-            const struct contract *source = NEXT_TYPE(struct contract);
-            parse_contract(&out->operation.source, source);
+        // Parse 'source'
+        switch (tag) {
+            // Tags that don't have "originated" byte only support tz accounts, not KT or tz.
+            case OPERATION_TAG_PROPOSAL:
+            case OPERATION_TAG_BALLOT:
+            case OPERATION_TAG_BABYLON_DELEGATION:
+            case OPERATION_TAG_BABYLON_ORIGINATION:
+            case OPERATION_TAG_BABYLON_REVEAL:
+            case OPERATION_TAG_BABYLON_TRANSACTION: {
+                struct implicit_contract const *const implicit_source = NEXT_TYPE(struct implicit_contract);
+                out->operation.source.originated = 0;
+                out->operation.source.signature_type = parse_raw_tezos_header_signature_type(&implicit_source->signature_type);
+                memcpy(out->operation.source.hash, implicit_source->pkh, sizeof(out->operation.source.hash));
+                break;
+            }
 
+            case OPERATION_TAG_ATHENS_DELEGATION:
+            case OPERATION_TAG_ATHENS_ORIGINATION:
+            case OPERATION_TAG_ATHENS_REVEAL:
+            case OPERATION_TAG_ATHENS_TRANSACTION: {
+                struct contract const *const source = NEXT_TYPE(struct contract);
+                parse_contract(&out->operation.source, source);
+                break;
+            }
+
+            default: PARSE_ERROR();
+        }
+
+        // out->operation.source IS NORMALIZED AT THIS POINT
+
+        // Parse common fields for non-governance related operations.
+        if (tag != OPERATION_TAG_PROPOSAL && tag != OPERATION_TAG_BALLOT) {
             out->total_fee += PARSE_Z(data, &ix, length); // fee
             PARSE_Z(data, &ix, length); // counter
             PARSE_Z(data, &ix, length); // gas limit
             out->total_storage_limit += PARSE_Z(data, &ix, length); // storage limit
         }
 
-        // out->operation.source IS NORMALIZED AT THIS POINT
-
-        if (tag == OPERATION_TAG_REVEAL) {
+        if (tag == OPERATION_TAG_ATHENS_REVEAL || tag == OPERATION_TAG_BABYLON_REVEAL) {
             // Public key up next! Ensure it matches signing key.
             // Ignore source :-) and do not parse it from hdr.
             // We don't much care about reveals, they have very little in the way of bad security
             // implications and any fees have already been accounted for
-            if (NEXT_BYTE(data, &ix, length) != out->signing.curve_code) PARSE_ERROR();
+            raw_tezos_header_signature_type_t const *const sig_type = NEXT_TYPE(raw_tezos_header_signature_type_t);
+            if (parse_raw_tezos_header_signature_type(sig_type) != out->signing.signature_type) PARSE_ERROR();
 
             size_t klen = out->public_key.W_len;
             advance_ix(&ix, length, klen);
@@ -226,7 +266,7 @@ static void parse_operations_throws_parse_error(
         // OK, it passes muster.
 
         // This should by default be blanked out
-        out->operation.delegate.curve_code = TEZOS_NO_CURVE;
+        out->operation.delegate.signature_type = SIGNATURE_TYPE_UNSET;
         out->operation.delegate.originated = 0;
 
         switch (tag) {
@@ -266,28 +306,30 @@ static void parse_operations_throws_parse_error(
                     }
                 }
                 break;
-            case OPERATION_TAG_DELEGATION:
+            case OPERATION_TAG_ATHENS_DELEGATION:
+            case OPERATION_TAG_BABYLON_DELEGATION:
                 {
                     uint8_t delegate_present = NEXT_BYTE(data, &ix, length);
                     if (delegate_present) {
                         const struct delegation_contents *dlg = NEXT_TYPE(struct delegation_contents);
-                        parse_implicit(&out->operation.destination, dlg->curve_code, dlg->hash);
+                        parse_implicit(&out->operation.destination, &dlg->signature_type, dlg->hash);
                     } else {
                         // Encode "not present"
                         out->operation.destination.originated = 0;
-                        out->operation.destination.curve_code = TEZOS_NO_CURVE;
+                        out->operation.destination.signature_type = SIGNATURE_TYPE_UNSET;
                     }
                 }
                 break;
-            case OPERATION_TAG_ORIGINATION:
+            case OPERATION_TAG_ATHENS_ORIGINATION:
+            case OPERATION_TAG_BABYLON_ORIGINATION:
                 {
                     struct origination_header {
-                        uint8_t curve_code;
+                        raw_tezos_header_signature_type_t signature_type;
                         uint8_t hash[HASH_SIZE];
                     } __attribute__((packed));
-                    const struct origination_header *hdr = NEXT_TYPE(struct origination_header);
+                    struct origination_header const *const hdr = NEXT_TYPE(struct origination_header);
 
-                    parse_implicit(&out->operation.destination, hdr->curve_code, hdr->hash);
+                    parse_implicit(&out->operation.destination, &hdr->signature_type, hdr->hash);
                     out->operation.amount = PARSE_Z(data, &ix, length);
                     if (NEXT_BYTE(data, &ix, length) != 0) {
                         out->operation.flags |= ORIGINATION_FLAG_SPENDABLE;
@@ -298,12 +340,13 @@ static void parse_operations_throws_parse_error(
                     if (NEXT_BYTE(data, &ix, length) != 0) {
                         // Has delegate
                         const struct delegation_contents *dlg = NEXT_TYPE(struct delegation_contents);
-                        parse_implicit(&out->operation.delegate, dlg->curve_code, dlg->hash);
+                        parse_implicit(&out->operation.delegate, &dlg->signature_type, dlg->hash);
                     }
                     if (NEXT_BYTE(data, &ix, length) != 0) PARSE_ERROR(); // Has script
                 }
                 break;
-            case OPERATION_TAG_TRANSACTION:
+            case OPERATION_TAG_ATHENS_TRANSACTION:
+            case OPERATION_TAG_BABYLON_TRANSACTION:
                 {
                     out->operation.amount = PARSE_Z(data, &ix, length);
 
@@ -328,13 +371,13 @@ bool parse_operations(
     struct parsed_operation_group *const out,
     uint8_t const *const data,
     size_t length,
-    cx_curve_t curve,
+    derivation_type_t derivation_type,
     bip32_path_t const *const bip32_path,
-    allowed_operation_set ops
+    is_operation_allowed_t is_operation_allowed
 ) {
     BEGIN_TRY {
         TRY {
-            parse_operations_throws_parse_error(out, data, length, curve, bip32_path, ops);
+            parse_operations_throws_parse_error(out, data, length, derivation_type, bip32_path, is_operation_allowed);
         }
         CATCH(EXC_PARSE_ERROR) {
             return false;
