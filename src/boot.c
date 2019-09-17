@@ -1,56 +1,56 @@
-/*******************************************************************************
-*   Ledger Blue
-*   (c) 2016 Ledger
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for * Linode?
-** Figure out how to stop hosting Bud Wolfe's stuff
-** Migrate e-mail/shareyourgifts.net webmail to thecodedmessage.com server
-** Be down to one server
-the specific language governing permissions and
-*  limitations under the License.
-********************************************************************************/
-
 #include "ui.h"
 
+// Order matters
 #include "os.h"
 #include "cx.h"
 
+#include "globals.h"
+
+__attribute__((noreturn))
 void app_main(void);
 
 __attribute__((section(".boot"))) int main(void) {
     // exit critical section
     __asm volatile("cpsie i");
 
-    ui_init();
-
     // ensure exception will work as planned
     os_boot();
 
-    BEGIN_TRY {
-        TRY {
-            io_seproxyhal_init();
+    uint8_t tag;
+    init_globals();
+    global.stack_root = &tag;
 
-            USB_power(1);
+    for (;;) {
+        BEGIN_TRY {
+            TRY {
+                ui_init();
 
-            ui_initial_screen();
+                io_seproxyhal_init();
 
-            app_main();
+                USB_power(0);
+                USB_power(1);
+
+                ui_initial_screen();
+
+                app_main();
+            }
+            CATCH(EXCEPTION_IO_RESET) {
+                // reset IO and UX
+                continue;
+            }
+            CATCH_OTHER(e) {
+                break;
+            }
+            FINALLY {
+            }
         }
-        CATCH_OTHER(e) {
-        }
-        FINALLY {
-        }
+        END_TRY;
     }
-    END_TRY;
 
+    // Only reached in case of uncaught exception
+#ifdef BAKING_APP
+    io_seproxyhal_power_off(); // Should not be allowed dashboard access
+#else
     exit_app();
+#endif
 }

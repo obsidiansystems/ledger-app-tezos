@@ -1,8 +1,11 @@
 #pragma once
 
+#include "exception.h"
+#include "keys.h"
+#include "types.h"
 #include "ui.h"
+
 #include "os.h"
-#include "paths.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -12,64 +15,60 @@
 #endif
 
 #define OFFSET_CLA 0
-#define OFFSET_INS 1
-#define OFFSET_P1 2
+#define OFFSET_INS 1    // instruction code
+#define OFFSET_P1 2     // user-defined 1-byte parameter
 #define OFFSET_CURVE 3
-#define OFFSET_LC 4
-#define OFFSET_CDATA 5
+#define OFFSET_LC 4     // length of CDATA
+#define OFFSET_CDATA 5  // payload
 
+// Instruction codes
 #define INS_VERSION 0x00
-#define INS_MAX 0x10
-#define INS_EXIT 0x0F
+#define INS_AUTHORIZE_BAKING 0x01
+#define INS_GET_PUBLIC_KEY 0x02
+#define INS_PROMPT_PUBLIC_KEY 0x03
+#define INS_SIGN 0x04
+#define INS_SIGN_UNSAFE 0x05 // Data that is already hashed.
+#define INS_RESET 0x06
+#define INS_QUERY_AUTH_KEY 0x07
+#define INS_QUERY_MAIN_HWM 0x08
+#define INS_GIT 0x09
+#define INS_SETUP 0x0A
+#define INS_QUERY_ALL_HWM 0x0B
+#define INS_DEAUTHORIZE 0x0C
+#define INS_QUERY_AUTH_KEY_WITH_CURVE 0x0D
+#define INS_HMAC 0x0E
+#define INS_SIGN_WITH_HASH 0x0F
 
-// Throw this to indicate prompting
-#define ASYNC_EXCEPTION 0x2000
+__attribute__((noreturn))
+void main_loop(apdu_handler const *const handlers, size_t const handlers_size);
 
-#define EXC_WRONG_PARAM 0x6B00
-#define EXC_WRONG_LENGTH 0x6C00
-#define EXC_INVALID_INS 0x6D00
-#define EXC_WRONG_LENGTH_FOR_INS 0x917E
-#define EXC_REJECT 0x6985
-#define EXC_PARSE_ERROR 0x9405
-#define EXC_WRONG_VALUES 0x6A80
-#define EXC_SECURITY 0x6982
-#define EXC_CLASS 0x6E00
-#define EXC_NO_ERROR 0x9000
-#define EXC_MEMORY_ERROR 0x9200
-
-// Crashes can be harder to debug than exceptions and latency isn't a big concern
-static inline void check_null(const void *ptr) {
-    if (ptr == NULL) {
-        THROW(EXC_MEMORY_ERROR);
-    }
-}
-
-#define ASYNC_PROMPT(screen, ok, cxl) \
-    UI_PROMPT(screen, ok, cxl); \
-    THROW(ASYNC_EXCEPTION)
-
-// Return number of bytes to transmit (tx)
-typedef uint32_t (*apdu_handler)(uint8_t instruction);
-
-void main_loop(apdu_handler handlers[INS_MAX]);
-
-static inline void return_ok(void) {
-    THROW(EXC_NO_ERROR);
+static inline size_t finalize_successful_send(size_t tx) {
+    G_io_apdu_buffer[tx++] = 0x90;
+    G_io_apdu_buffer[tx++] = 0x00;
+    return tx;
 }
 
 // Send back response; do not restart the event loop
-static inline void delayed_send(uint32_t tx) {
+static inline void delayed_send(size_t tx) {
     io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx);
 }
 
-static inline void delay_reject(void) {
-    G_io_apdu_buffer[0] = EXC_REJECT >> 8;
-    G_io_apdu_buffer[1] = EXC_REJECT & 0xFF;
-    delayed_send(2);
+static inline bool delay_reject(void) {
+    size_t tx = 0;
+    G_io_apdu_buffer[tx++] = EXC_REJECT >> 8;
+    G_io_apdu_buffer[tx++] = EXC_REJECT & 0xFF;
+    delayed_send(tx);
+    return true;
 }
 
-uint32_t handle_apdu_error(uint8_t instruction);
-uint32_t handle_apdu_version(uint8_t instruction);
-uint32_t handle_apdu_exit(uint8_t instruction);
+static inline void require_hid(void) {
+    if (G_io_apdu_media != IO_APDU_MEDIA_USB_HID) {
+       THROW(EXC_HID_REQUIRED);
+    }
+}
 
-uint32_t send_word_big_endian(uint32_t word);
+size_t provide_pubkey(uint8_t *const io_buffer, cx_ecfp_public_key_t const *const pubkey);
+
+size_t handle_apdu_error(uint8_t instruction);
+size_t handle_apdu_version(uint8_t instruction);
+size_t handle_apdu_git(uint8_t instruction);
