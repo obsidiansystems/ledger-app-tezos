@@ -1,4 +1,4 @@
-{ pkgs ? import nix/nixpkgs.nix {}, gitDescribe ? null, nanoXSdk ? null, ... }:
+{ pkgs ? import nix/nixpkgs.nix {}, gitDescribe ? "TEST-dirty", nanoXSdk ? null, ... }:
 let
   fetchThunk = p:
     if builtins.pathExists (p + /git.json)
@@ -6,8 +6,6 @@ let
     else if builtins.pathExists (p + /github.json)
       then pkgs.fetchFromGitHub { inherit (builtins.fromJSON (builtins.readFile (p + /github.json))) owner repo rev sha256; }
     else p;
-
-  devGitDescribe = "TEST-dirty";
 
   targets =
     let
@@ -49,7 +47,7 @@ let
 
   src = pkgs.lib.sources.sourceFilesBySuffices (pkgs.lib.sources.cleanSource ./.) [".c" ".h" ".gif" "Makefile"];
 
-  build = gitDescribe: bolos:
+  build = bolos:
     let
       app = bakingApp: pkgs.runCommand "ledger-app-tezos-nano-${bolos.name}-${if bakingApp then "baking" else "wallet"}" {} ''
         set -Eeuo pipefail
@@ -111,10 +109,6 @@ let
       };
     };
 
-  buildResult = if gitDescribe == null
-    then throw "Set 'gitDescribe' attribute to result of 'git describe' or use nix/build.sh instead"
-    else build gitDescribe;
-
   # The package clang-analyzer comes with a perl script `scan-build` that seems
   # to get quickly lost with the cross-compiler of the SDK if run by itself.
   # So this script reproduces what it does with fewer magic attempts:
@@ -169,7 +163,7 @@ let
         set -Eeuxo pipefail
         export BOLOS_SDK='${bolos.sdk}'
         export BOLOS_ENV='${bolos.env}'
-        export GIT_DESCRIBE='${if gitDescribe == null then devGitDescribe else gitDescribe}'
+        export GIT_DESCRIBE='${gitDescribe}'
         export CCC_ANALYZER_HTML="$out"
         export CCC_ANALYZER_OUTPUT_FORMAT=html
         export CCC_ANALYZER_ANALYSIS="${analysisOptions}"
@@ -208,7 +202,7 @@ let
     x = mk targets.x;
   };
 in rec {
-  nano = mkTargets buildResult;
+  nano = mkTargets build;
 
   wallet = {
     s = nano.s.wallet;
