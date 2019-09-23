@@ -88,27 +88,31 @@ static bool sign_reject(void) {
     return true; // Return to idle
 }
 
+static bool is_operation_allowed(enum operation_tag tag) {
+    switch (tag) {
+        case OPERATION_TAG_ATHENS_DELEGATION: return true;
+        case OPERATION_TAG_ATHENS_REVEAL: return true;
+        case OPERATION_TAG_BABYLON_DELEGATION: return true;
+        case OPERATION_TAG_BABYLON_REVEAL: return true;
+#       ifndef BAKING_APP
+            case OPERATION_TAG_PROPOSAL: return true;
+            case OPERATION_TAG_BALLOT: return true;
+            case OPERATION_TAG_ATHENS_ORIGINATION: return true;
+            case OPERATION_TAG_ATHENS_TRANSACTION: return true;
+            case OPERATION_TAG_BABYLON_ORIGINATION: return true;
+            case OPERATION_TAG_BABYLON_TRANSACTION: return true;
+#       endif
+        default: return false;
+    }
+}
+
 static bool parse_allowed_operations(
     struct parsed_operation_group *const out,
     uint8_t const *const in,
     size_t const in_size,
     bip32_path_with_curve_t const *const key
 ) {
-    // TODO: Simplify this to just switch on what we got.
-    allowed_operation_set allowed;
-    clear_operation_set(&allowed);
-
-    allow_operation(&allowed, OPERATION_TAG_DELEGATION);
-    allow_operation(&allowed, OPERATION_TAG_REVEAL);
-#   ifndef BAKING_APP
-        allow_operation(&allowed, OPERATION_TAG_PROPOSAL);
-        allow_operation(&allowed, OPERATION_TAG_BALLOT);
-        allow_operation(&allowed, OPERATION_TAG_ORIGINATION);
-        allow_operation(&allowed, OPERATION_TAG_TRANSACTION);
-        // TODO: Add still other operations
-#   endif
-
-    return parse_operations(out, in, in_size, key->derivation_type, &key->bip32_path, allowed);
+    return parse_operations(out, in, in_size, key->derivation_type, &key->bip32_path, &is_operation_allowed);
 }
 
 #ifdef BAKING_APP // ----------------------------------------------------------
@@ -250,7 +254,8 @@ bool prompt_transaction(
                 ui_prompt(ballot_prompts, ok, cxl);
             }
 
-        case OPERATION_TAG_ORIGINATION:
+        case OPERATION_TAG_ATHENS_ORIGINATION:
+        case OPERATION_TAG_BABYLON_ORIGINATION:
             {
                 static const uint32_t TYPE_INDEX = 0;
                 static const uint32_t AMOUNT_INDEX = 1;
@@ -324,7 +329,8 @@ bool prompt_transaction(
 
                 ui_prompt(prompts, ok, cxl);
             }
-        case OPERATION_TAG_DELEGATION:
+        case OPERATION_TAG_ATHENS_DELEGATION:
+        case OPERATION_TAG_BABYLON_DELEGATION:
             {
                 static const uint32_t TYPE_INDEX = 0;
                 static const uint32_t FEE_INDEX = 1;
@@ -365,7 +371,8 @@ bool prompt_transaction(
                 ui_prompt(withdrawal ? withdrawal_prompts : delegation_prompts, ok, cxl);
             }
 
-        case OPERATION_TAG_TRANSACTION:
+        case OPERATION_TAG_ATHENS_TRANSACTION:
+        case OPERATION_TAG_BABYLON_TRANSACTION:
             {
                 static const uint32_t TYPE_INDEX = 0;
                 static const uint32_t AMOUNT_INDEX = 1;
