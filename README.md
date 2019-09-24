@@ -134,11 +134,8 @@ $ wget https://raw.githubusercontent.com/LedgerHQ/udev-rules/master/add_udev_rul
 $ chmod +x add_udev_rules.sh
 ```
 
-At this point, please use your favorite editor to modify
-`add_udev_rules.sh` to your configuration, e.g., by replacing `plugdev` with an
-appropriate group for your system configuration. We recommend against
-running the next command without reviewing the script and modifying it
-to match your configuration.
+We recommend against running the next command without reviewing the
+script and modifying it to match your configuration.
 
 ```
 $ sudo ./add_udev_rules.sh
@@ -170,10 +167,6 @@ configuration file typically located at `/etc/nixos/configuration.nix`:
   '';
 }
 ```
-
-Depending on your system's settings, you may wish to replace `users` with
-another group. Everyone in that group will get permissions for accessing the
-Ledger device.
 
 Once you have added this, run `sudo nixos-rebuild switch` to activate the
 configuration, and unplug your Ledger device and plug it in again for the changes to
