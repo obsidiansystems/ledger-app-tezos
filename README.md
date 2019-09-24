@@ -186,11 +186,11 @@ If you are using the [Nix package manager](https://nixos.org/nix/), you can skip
 this section and the next one; go directly to
 [Tezos Baking Platform](https://gitlab.com/obsidian.systems/tezos-baking-platform)
 for simpler Nix-based installation, where documentation should be in `ledger/README.md`.
-Then return to this document and continue reading at *Using the Tezos Wallet application*.
+Then return to this document and continue reading at *[Using the Tezos Wallet application](#using-the-tezos-wallet-application)*.
 
 The second easiest way to obtain both applications (after Ledger Live) is to download `.hex` files
 from the [releases](https://github.com/obsidiansystems/ledger-app-tezos/releases)
-page of this repo. After doing so, skip ahead to *Installing the apps onto your Ledger device without Ledger Live*.
+page of this repo. After doing so, skip ahead to *[Installing the apps onto your Ledger device without Ledger Live](#installing-the-apps-onto-your-ledger-device-without-ledger-live)*.
 You will need to expand the releases tarball somewhere and copy the
 baking.hex and wallet.hex files into the ledger-app-tezos directory.
 If you want to compile the applications yourself, keep reading this section.
