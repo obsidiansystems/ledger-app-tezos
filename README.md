@@ -21,7 +21,7 @@ This repository contains two Ledger Nano applications:
 
 1. The "Tezos Baking" application is for baking: signing new blocks and
 endorsements. For more information about baking, see
-*[Benefits and Risks of Home Baking] (https://medium.com/@tezos_91823/benefits-and-risks-of-home-baking-a631c9ca745)*.
+*[Benefits and Risks of Home Baking](https://medium.com/@tezos_91823/benefits-and-risks-of-home-baking-a631c9ca745)*.
 2. The "Tezos Wallet" application is for making XTZ transactions, originating contracts, delegation, and voting. Basically everything you might want to use the Ledger Nano S/Xfor on Tezos besides baking.
 
 It is possible to do all of these things without a hardware wallet, but using a
