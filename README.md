@@ -346,7 +346,7 @@ If you have to use `sudo` or `pip3` here, that is an indication that you have
 not correctly set up `virtualenv`. It will still work in such a situation, but
 please research other material on troubleshooting `virtualenv` setup.
 
-### Load the applicaiton onto the Ledger device
+### Load the application onto the Ledger device
 
 Next you'll use the installation script to install the application on your Ledger device.
 
@@ -416,7 +416,7 @@ described in the last sections, run this command:
 $ python -m ledgerblue.deleteApp --targetId 0x31100004 --appName 'Tezos Wallet'
 ```
 
-Replace the `appName` parameter "Tezos" with whatever applicationname you used when you loaded the application onto the device.
+Replace the `appName` parameter "Tezos" with whatever application name you used when you loaded the application onto the device.
 
 Then follow the prompts on the Ledger device screen.
 
