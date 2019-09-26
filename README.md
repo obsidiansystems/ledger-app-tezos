@@ -60,6 +60,10 @@ configuration, most often the `udev` configuration. Using `sudo` for commands
 that should not require it can create security vulnerabilities and corrupt
 your configuration.
 
+##Hacking
+
+See [CONTRIBUTING.md](CONTRIBUTING.md)
+
 ## Set up your Ledger device
 
 Tezos recommends two hardware wallets: Ledger Nano S and Ledger Nano X. When you first get a device and set it up, part of the setup process is generating a keypair. The keypair
@@ -183,10 +187,10 @@ If you've used Ledger Live for application installation, you can skip ahead to [
 ## Obtaining the Applications without Ledger Live
 
 If you are using the [Nix package manager](https://nixos.org/nix/), you can skip
-this section and the next one; go directly to
-[Tezos Baking Platform](https://gitlab.com/obsidian.systems/tezos-baking-platform)
-for simpler Nix-based installation, where documentation should be in `ledger/README.md`.
-Then return to this document and continue reading at *[Using the Tezos Wallet application](#using-the-tezos-wallet-application)*.
+this section and the next one; go directly to the
+[nix directory](nix/)
+for simpler Nix-based installation, where documentation is in [CONTRIBUTING.md](CONTRIBUTING.md).
+Then return to this document and continue reading at *Registering the Ledger Nano S with the node*
 
 The second easiest way to obtain both applications (after Ledger Live) is to download `.hex` files
 from the [releases](https://github.com/obsidiansystems/ledger-app-tezos/releases)

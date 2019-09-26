@@ -4,6 +4,9 @@
 
 The `nix/` folder contains helper scripts for working with the ledger via Nix.
 
+### Installing
+Use `./nix/install.sh` to install the apps onto the ledger using Nix.
+
 ### Developing
 Use `nix/env.sh <s or x> to enter a shell where you can run `make` and it will just work. You can also pass a command instead, e.g. `nix/env.sh s make clean`.
 
@@ -26,3 +29,10 @@ To do a full Nix build run `nix/build.sh`. You can pass `nix-build` arguments to
 ### Releasing
 
 `nix/build.sh -A release.all`
+
+### Notes on testing
+
+Currently there are two types of tests: those that require the [Flextesa framework](https://gitlab.com/tezos/flextesa) and those that rely on the apdu script from LedgerLive.The apdu tests are inside of *test/apdu-tests/* while the flextesa tests are actually inside of the main tezos repo in /src/bin-flextesa/
+
+The flextesa tests can be run using the *test/run-flextesa.sh* script.
+The apdu tests can be run using *test/run-apdu-tests.sh* script.
