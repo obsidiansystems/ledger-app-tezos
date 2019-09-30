@@ -1,7 +1,7 @@
 # APDU
 
 An APDU is sent by a client to the ledger hardware. This message tells
-the ledger some operation to run. Each APDU message will be
+the ledger some operation to run. Most APDU messages will be
 accompanied by an Accept / Deny prompt on the Ledger. Once the user
 hits “Accept” the Ledger will issue a response to the Tezos client.
 The basic format of the APDU request follows.
@@ -44,21 +44,23 @@ A list of more instructions follows.
 
 ## APDU instructions in use by Tezos Ledger apps
 
-| Instruction                     | Code | App | Short description                                |
-|---------------------------------|------|-----|--------------------------------------------------|
-| `INS_VERSION`                   | 0x00 | WB  | Get version information for the ledger           |
-| `INS_AUTHORIZE_BAKING`          | 0x01 | B   | Authorize baking                                 |
-| `INS_GET_PUBLIC_KEY`            | 0x02 | WB  | Get the ledger’s internal public key             |
-| `INS_PROMPT_PUBLIC_KEY`         | 0x03 | WB  | Prompt for the ledger’s internal public key      |
-| `INS_SIGN`                      | 0x04 | WB  | Sign a message with the ledger’s key             |
-| `INS_SIGN_UNSAFE`               | 0x05 | W   | Sign a message with the ledger’s key (no hash)   |
-| `INS_RESET`                     | 0x06 | B   | Reset high water mark block level                |
-| `INS_QUERY_AUTH_KEY`            | 0x07 | B   | Get auth key                                     |
-| `INS_QUERY_MAIN_HWM`            | 0x08 | B   | Get current high water mark                      |
-| `INS_GIT`                       | 0x09 | WB  | Get the commit hash                              |
-| `INS_SETUP`                     | 0x0a | B   | Setup a baking address                           |
-| `INS_QUERY_ALL_HWM`             | 0x0b | B   | Get all high water mark information              |
-| `INS_DEAUTHORIZE`               | 0x0c | B   | Unauthorize baking                               |
-| `INS_QUERY_AUTH_KEY_WITH_CURVE` | 0x0d | B   | Get auth key and curve                           |
-| `INS_HMAC`                      | 0x0e | B   | Get the HMAC of a message                        |
-| `INS_SIGN_WITH_HASH`            | 0x0f | WB  | Sign a message with the ledger’s key (with hash) |
+| Instruction                     | Code | App | Prompt | Short description                                |
+|---------------------------------|------|-----|--------|--------------------------------------------------|
+| `INS_VERSION`                   | 0x00 | WB  | No     | Get version information for the ledger           |
+| `INS_AUTHORIZE_BAKING`          | 0x01 | B   | Yes    | Authorize baking                                 |
+| `INS_GET_PUBLIC_KEY`            | 0x02 | WB  | No     | Get the ledger’s internal public key             |
+| `INS_PROMPT_PUBLIC_KEY`         | 0x03 | WB  | Yes    | Prompt for the ledger’s internal public key      |
+| `INS_SIGN`                      | 0x04 | WB  | Yes    | Sign a message with the ledger’s key             |
+| `INS_SIGN_UNSAFE`               | 0x05 | W   | Yes    | Sign a message with the ledger’s key (no hash)   |
+| `INS_RESET`                     | 0x06 | B   | Yes    | Reset high water mark block level                |
+| `INS_QUERY_AUTH_KEY`            | 0x07 | B   | No     | Get auth key                                     |
+| `INS_QUERY_MAIN_HWM`            | 0x08 | B   | No     | Get current high water mark                      |
+| `INS_GIT`                       | 0x09 | WB  | No     | Get the commit hash                              |
+| `INS_SETUP`                     | 0x0a | B   | Yes    | Setup a baking address                           |
+| `INS_QUERY_ALL_HWM`             | 0x0b | B   | No     | Get all high water mark information              |
+| `INS_DEAUTHORIZE`               | 0x0c | B   | Yes    | Unauthorize baking                               |
+| `INS_QUERY_AUTH_KEY_WITH_CURVE` | 0x0d | B   | No     | Get auth key and curve                           |
+| `INS_HMAC`                      | 0x0e | B   | No     | Get the HMAC of a message                        |
+| `INS_SIGN_WITH_HASH`            | 0x0f | WB  | Yes    | Sign a message with the ledger’s key (with hash) |
+
+- B = Baking app, W = Wallet app
