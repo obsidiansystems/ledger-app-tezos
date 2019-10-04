@@ -23,7 +23,7 @@ void parsed_contract_to_string(char *const buff, size_t const buff_size, parsed_
 void chain_id_to_string(char *const buff, size_t const buff_size, chain_id_t const chain_id);
 void chain_id_to_string_with_aliases(char *const out, size_t const out_size, chain_id_t const *const chain_id);
 
-void contract_parameters_to_string(char *const buff, size_t const buff_size, uint8_t const params[MAX_PARAM_SIZE]);
+void contract_parameters_to_string(char *const buff, size_t const buff_size, operation_parameters_t const *const params);
 
 // dest must be at least MAX_INT_DIGITS
 size_t number_to_string(char *const dest, uint64_t number);
