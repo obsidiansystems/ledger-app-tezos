@@ -84,8 +84,10 @@ DEFINES   += IO_SEPROXYHAL_BUFFER_SIZE_B=128
 endif
 
 # Enabling debug PRINTF
-DEBUG = 0
+DEBUG ?= 0
 ifneq ($(DEBUG),0)
+
+        DEFINES += TEZOS_DEBUG
 
         ifeq ($(TARGET_NAME),TARGET_NANOX)
                 DEFINES   += HAVE_PRINTF PRINTF=mcu_usb_printf
