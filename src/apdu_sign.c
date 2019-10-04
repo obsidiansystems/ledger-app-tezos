@@ -380,6 +380,7 @@ bool prompt_transaction(
                 static const uint32_t SOURCE_INDEX = 3;
                 static const uint32_t DESTINATION_INDEX = 4;
                 static const uint32_t STORAGE_INDEX = 5;
+                static const uint32_t PARAMETERS_INDEX = 6;
 
                 static const char *const transaction_prompts[] = {
                     PROMPT("Confirm"),
@@ -388,6 +389,7 @@ bool prompt_transaction(
                     PROMPT("Source"),
                     PROMPT("Destination"),
                     PROMPT("Storage"),
+                    PROMPT("Parameters"),
                     NULL,
                 };
 
@@ -398,6 +400,7 @@ bool prompt_transaction(
                 register_ui_callback(STORAGE_INDEX, number_to_string_indirect64,
                                      &ops->total_storage_limit);
                 register_ui_callback(AMOUNT_INDEX, microtez_to_string_indirect, &ops->operation.amount);
+                register_ui_callback(PARAMETERS_INDEX, contract_parameters_to_string, &ops->operation.params);
 
                 REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Transaction");
 

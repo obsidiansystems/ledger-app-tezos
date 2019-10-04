@@ -8,6 +8,8 @@
 
 #define NO_CONTRACT_STRING "None"
 
+#define NO_PARAMETERS_STRING "None"
+
 #define TEZOS_HASH_CHECKSUM_SIZE 4
 
 void pkh_to_string(
@@ -35,6 +37,19 @@ void parsed_contract_to_string(
             ? SIGNATURE_TYPE_UNSET
             : contract->signature_type;
     pkh_to_string(buff, buff_size, signature_type, contract->hash);
+}
+
+void contract_parameters_to_string(
+    char *const buff,
+    size_t const buff_size,
+    uint8_t const params[MAX_PARAM_SIZE]
+) {
+    if (params[0] == '\0') {
+        if (buff_size < sizeof(NO_PARAMETERS_STRING)) THROW(EXC_WRONG_LENGTH);
+        strcpy(buff, NO_PARAMETERS_STRING);
+        return;
+    }
+    bin_to_hex(buff, buff_size, params, MAX_PARAM_SIZE);
 }
 
 void pubkey_to_pkh_string(
