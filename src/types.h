@@ -228,6 +228,8 @@ enum operation_tag {
 #define ORIGINATION_FLAG_SPENDABLE 1
 #define ORIGINATION_FLAG_DELEGATABLE 2
 
+#define MAX_PARAM_SIZE 10
+
 struct parsed_operation {
     enum operation_tag tag;
     struct parsed_contract source;
@@ -237,6 +239,7 @@ struct parsed_operation {
     struct parsed_ballot ballot; // For ballots only
     uint64_t amount; // 0 where inappropriate
     uint32_t flags;  // Interpretation depends on operation type
+    uint8_t params[MAX_PARAM_SIZE];
 };
 
 struct parsed_operation_group {
