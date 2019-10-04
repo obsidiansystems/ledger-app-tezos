@@ -246,6 +246,7 @@ struct parsed_operation_group {
     bool has_reveal;
     struct parsed_contract signing;
     struct parsed_operation operation;
+    bool has_params;
 };
 
 // Maximum number of APDU instructions
