@@ -177,7 +177,6 @@ static void parse_operations_throws_parse_error(
     memset(out, 0, sizeof(*out));
 
     out->operation.tag = OPERATION_TAG_NONE;
-    out->has_params = false;
 
     compute_pkh(&out->public_key, &out->signing, derivation_type, bip32_path);
 
@@ -355,10 +354,15 @@ static void parse_operations_throws_parse_error(
                     parse_contract(&out->operation.destination, destination);
 
                     uint8_t params = NEXT_BYTE(data, &ix, length);
+                    out->operation.params.length = 0;
                     if (params) {
-                        out->has_params = true;
+                        int i = 0;
+                        for (; ix < length && i < MAX_PARAM_SIZE; i++) {
+                            out->operation.params.bytes[i] = NEXT_BYTE(data, &ix, length);
+                        }
+                        out->operation.params.length = i;
                         ix = length;
-                    };
+                    }
                 }
                 break;
             default:

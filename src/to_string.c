@@ -42,14 +42,14 @@ void parsed_contract_to_string(
 void contract_parameters_to_string(
     char *const buff,
     size_t const buff_size,
-    uint8_t const params[MAX_PARAM_SIZE]
+    operation_parameters_t const *const params
 ) {
-    if (params[0] == '\0') {
+    if (params->length == 0) {
         if (buff_size < sizeof(NO_PARAMETERS_STRING)) THROW(EXC_WRONG_LENGTH);
         strcpy(buff, NO_PARAMETERS_STRING);
         return;
     }
-    bin_to_hex(buff, buff_size, params, MAX_PARAM_SIZE);
+    bin_to_hex(buff, buff_size, params->bytes, params->length);
 }
 
 void pubkey_to_pkh_string(
