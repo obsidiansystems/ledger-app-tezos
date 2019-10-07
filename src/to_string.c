@@ -39,19 +39,6 @@ void parsed_contract_to_string(
     pkh_to_string(buff, buff_size, signature_type, contract->hash);
 }
 
-void contract_parameters_to_string(
-    char *const buff,
-    size_t const buff_size,
-    operation_parameters_t const *const params
-) {
-    if (params->length == 0) {
-        if (buff_size < sizeof(NO_PARAMETERS_STRING)) THROW(EXC_WRONG_LENGTH);
-        strcpy(buff, NO_PARAMETERS_STRING);
-        return;
-    }
-    bin_to_hex(buff, buff_size, params->bytes, params->length);
-}
-
 void pubkey_to_pkh_string(
     char *const out,
     size_t const out_size,
