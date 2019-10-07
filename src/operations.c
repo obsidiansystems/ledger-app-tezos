@@ -353,14 +353,8 @@ static void parse_operations_throws_parse_error(
                     const struct contract *destination = NEXT_TYPE(struct contract);
                     parse_contract(&out->operation.destination, destination);
 
-                    uint8_t params = NEXT_BYTE(data, &ix, length);
-                    out->operation.params.length = 0;
-                    if (params) {
-                        int i = 0;
-                        for (; ix < length && i < MAX_PARAM_SIZE; i++) {
-                            out->operation.params.bytes[i] = NEXT_BYTE(data, &ix, length);
-                        }
-                        out->operation.params.length = i;
+                    if (NEXT_BYTE(data, &ix, length) == 0xff) {
+                        // UNSAFE!!!
                         ix = length;
                     }
                 }
