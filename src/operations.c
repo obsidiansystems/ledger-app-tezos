@@ -354,6 +354,25 @@ static void parse_operations_throws_parse_error(
                     parse_contract(&out->operation.destination, destination);
 
                     if (NEXT_BYTE(data, &ix, length) == 0xff) {
+                        uint8_t entrypoint = NEXT_BYTE(data, &ix, length);
+
+                        // skip named entrypoints
+                        if (entrypoint == ENTRYPOINT_NAMED) {
+                            uint8_t entrypoint_length = NEXT_BYTE(data, &ix, length);
+                            if (entrypoint_length > MAX_ENTRYPOINT_LENGTH) {
+                                PARSE_ERROR();
+                            }
+                            for (int n = 0; n < entrypoint_length; n++) {
+                                NEXT_BYTE(data, &ix, length);
+                            }
+                        }
+
+                        // anything that’s not “do” is not a
+                        // manager.tz contract.
+                        if (entrypoint != ENTRYPOINT_DO) {
+                            PARSE_ERROR();
+                        }
+
                         // UNSAFE!!!
                         ix = length;
                     }

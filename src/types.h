@@ -228,6 +228,16 @@ enum operation_tag {
 #define ORIGINATION_FLAG_SPENDABLE 1
 #define ORIGINATION_FLAG_DELEGATABLE 2
 
+#define MAX_ENTRYPOINT_LENGTH 31
+enum entrypoint_tag {
+    ENTRYPOINT_NONE = -1, // Sentinal value, as 0 is possibly used for something
+    ENTRYPOINT_DEFAULT = 0,
+    ENTRYPOINT_ROOT = 1,
+    ENTRYPOINT_DO = 2,
+    ENTRYPOINT_SET_DELEGATE = 3,
+    ENTRYPOINT_REMOVE_DELEGATE = 4,
+    ENTRYPOINT_NAMED = 255,
+};
 
 struct parsed_operation {
     enum operation_tag tag;
