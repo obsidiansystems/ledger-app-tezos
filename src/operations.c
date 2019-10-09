@@ -168,6 +168,24 @@ static inline void parse_contract(parsed_contract_t *const out, struct contract 
     }
 }
 
+static inline uint32_t michelson_read_length(const void *data, size_t *ix, size_t length, uint32_t lineno) {
+    if (*ix == length) parse_error(lineno);
+    const uint32_t res = READ_UNALIGNED_BIG_ENDIAN(uint32_t, &data[*ix]);
+    (*ix) += sizeof(uint32_t);
+    return res;
+}
+
+#define MICHELSON_READ_LENGTH(data, ix, length) michelson_read_length(data, ix, length, __LINE__)
+
+static inline uint16_t michelson_read_op(const void *data, size_t *ix, size_t length, uint32_t lineno) {
+    if (*ix == length) parse_error(lineno);
+    const uint16_t res = READ_UNALIGNED_BIG_ENDIAN(uint16_t, &data[*ix]);
+    (*ix) += sizeof(uint16_t);
+    return res;
+}
+
+#define MICHELSON_READ_OP(data, ix, length) michelson_read_op(data, ix, length, __LINE__)
+
 static void parse_operations_throws_parse_error(
     struct parsed_operation_group *const out,
     void const *const data,
@@ -359,20 +377,23 @@ static void parse_operations_throws_parse_error(
                     parse_contract(&out->operation.destination, destination);
 
                     // This byte designates that the transaction has
-                    // parameters to the contract. We cannot parse all
-                    // parameters, but a subset of manager.tz
-                    // operations is accepted.
-                    if (NEXT_BYTE(data, &ix, length) == 0xff) {
+                    // parameters to the contract.
+                    const uint8_t param_magic_byte = NEXT_BYTE(data, &ix, length);
+
+                    // We cannot parse all parameters, but a subset of
+                    // manager.tz operations is accepted.
+                    if (param_magic_byte == MICHELSON_PARAMS_SOME) {
+
                         // Operations cannot actually transfer any amount.
                         if (out->operation.amount > 0) {
                             PARSE_ERROR();
                         }
 
-                        uint8_t entrypoint = NEXT_BYTE(data, &ix, length);
+                        const uint8_t entrypoint = NEXT_BYTE(data, &ix, length);
 
                         // Named entrypoints have up to 31 bytes.
                         if (entrypoint == ENTRYPOINT_NAMED) {
-                            uint8_t entrypoint_length = NEXT_BYTE(data, &ix, length);
+                            const uint8_t entrypoint_length = NEXT_BYTE(data, &ix, length);
                             if (entrypoint_length > MAX_ENTRYPOINT_LENGTH) {
                                 PARSE_ERROR();
                             }
@@ -387,83 +408,88 @@ static void parse_operations_throws_parse_error(
                             PARSE_ERROR();
                         }
 
-                        const uint32_t arglen = *NEXT_TYPE(uint32_t);
+                        const uint32_t argument_length = MICHELSON_READ_LENGTH(data, &ix, length);
 
                         // Error on anything but michelson data.
-                        if (NEXT_BYTE(data, &ix, length) != 2) {
+                        if (NEXT_BYTE(data, &ix, length) != MICHELSON_DATA) {
                             PARSE_ERROR();
                         }
 
-                        const uint32_t seqlen = *NEXT_TYPE(uint32_t);
+                        const uint32_t sequence_length = MICHELSON_READ_LENGTH(data, &ix, length);
 
                         // Only allow single sequence (5 is needed in
-                        // arglen for above two bytes). Also bail out
-                        // on really big Michellson that we don’t
-                        // support.
-                        if (seqlen + 5 != arglen && seqlen > 100) {
+                        // argument length for above two bytes). Also
+                        // bail out on really big Michellson that we
+                        // don’t support.
+                        if (sequence_length + 5 != argument_length && argument_length > MAX_MICHELSON_SEQUENCE_LENGTH) {
                             PARSE_ERROR();
                         }
 
                         // All manager.tz operations should begin with
                         // this. Otherwise, bail out.
-                        if (   *NEXT_TYPE(uint32_t) != MICHELSON_DROP
-                            || *NEXT_TYPE(uint32_t) != MICHELSON_NIL
-                            || *NEXT_TYPE(uint32_t) != MICHELSON_OPERATION) {
+                        if (   MICHELSON_READ_OP(data, &ix, length) != MICHELSON_DROP
+                            || MICHELSON_READ_OP(data, &ix, length) != MICHELSON_NIL
+                            || MICHELSON_READ_OP(data, &ix, length) != MICHELSON_OPERATION) {
                             PARSE_ERROR();
                         }
 
                         // First real michelson op.
-                        uint32_t op1 = *NEXT_TYPE(uint32_t);
+                        const uint16_t op1 = MICHELSON_READ_OP(data, &ix, length);
                         if (op1 == MICHELSON_PUSH) {
-                            uint32_t arg1 = *NEXT_TYPE(uint32_t);
+                            const uint16_t arg1 = MICHELSON_READ_OP(data, &ix, length);
                             if (arg1 == MICHELSON_KEY_HASH) {
-                                if (NEXT_BYTE(data, &ix, length) != MICHELSON_BYTE_SEQUENCE) {
+                                if (MICHELSON_READ_OP(data, &ix, length) != MICHELSON_STRING) {
                                     PARSE_ERROR();
                                 }
-                                if (*NEXT_TYPE(uint32_t) != HASH_SIZE + 1) {
+
+                                if (MICHELSON_READ_OP(data, &ix, length) != HASH_SIZE + 1) {
                                     PARSE_ERROR();
                                 }
 
                                 const raw_tezos_header_signature_type_t* signature_type = NEXT_TYPE(const raw_tezos_header_signature_type_t);
                                 const hash_t *hash = NEXT_TYPE(const hash_t);
-                                uint32_t op2 = NEXT_BYTE(data, &ix, length);
-                                if (op2 == MICHELSON_SOME) {
+
+                                const uint16_t op2 = MICHELSON_READ_OP(data, &ix, length);
+                                if (op2 == MICHELSON_SOME) { // Set delegate
                                     // Matching: PUSH key_hash <dlgt> ; SOME ; SET_DELEGATE
-                                    if (*NEXT_TYPE(uint32_t) != MICHELSON_SET_DELEGATE) {
+                                    if (MICHELSON_READ_OP(data, &ix, length) != MICHELSON_SET_DELEGATE) {
                                         PARSE_ERROR();
                                     }
                                     parse_implicit(&out->operation.destination, signature_type, (const uint8_t *)hash);
-                                } else if (op2 == MICHELSON_IMPLICIT_ACCOUNT) {
+                                } else if (op2 == MICHELSON_IMPLICIT_ACCOUNT) { // transfer implicit
                                     // Matching: PUSH key_hash <adr> ; IMPLICIT_ACCOUNT ; PUSH mutez <val> ; UNIT ; TRANSFER_TOKENS
-                                    if (   *NEXT_TYPE(uint32_t) != MICHELSON_PUSH
-                                        || *NEXT_TYPE(uint32_t) != MICHELSON_MUTEZ) {
+                                    if (   MICHELSON_READ_OP(data, &ix, length) != MICHELSON_PUSH
+                                        || MICHELSON_READ_OP(data, &ix, length) != MICHELSON_MUTEZ) {
                                         PARSE_ERROR();
                                     }
                                     out->operation.amount = PARSE_Z(data, &ix, length);
-                                    if (   *NEXT_TYPE(uint32_t) != MICHELSON_UNIT
-                                        || *NEXT_TYPE(uint32_t) != MICHELSON_TRANSFER_TOKENS) {
+                                    if (   MICHELSON_READ_OP(data, &ix, length) != MICHELSON_UNIT
+                                        || MICHELSON_READ_OP(data, &ix, length) != MICHELSON_TRANSFER_TOKENS) {
                                         PARSE_ERROR();
                                     }
+                                    out->operation.tag = OPERATION_TAG_BABYLON_DELEGATION;
                                     parse_implicit(&out->operation.destination, signature_type, (const uint8_t *)hash);
                                 } else {
                                     PARSE_ERROR();
                                 }
-                            } else if (arg1 == MICHELSON_ADDRESS) {
+                            } else if (arg1 == MICHELSON_ADDRESS) { // transfer contract
                                 // Matching: PUSH address <adr> ; CONTRACT %<ent> <par> ; ASSERT_SOME ; PUSH mutez <val> ; <ppar> ; TRANSFER_TOKENS
                                 if (NEXT_BYTE(data, &ix, length) != MICHELSON_BYTE_SEQUENCE) {
                                     PARSE_ERROR();
                                 }
-                                if (*NEXT_TYPE(uint32_t) != HASH_SIZE + 1) {
+                                if (MICHELSON_READ_OP(data, &ix, length) != HASH_SIZE + 1) {
                                     PARSE_ERROR();
                                 }
                                 // raw_tezos_header_signature_type_t signature_type = NEXT_TYPE(raw_tezos_header_signature_type_t);
                                 // uint8_t address[HASH_SIZE] = NEXT_TYPE(uint8_t[HASH_SIZE]);
                                 PARSE_ERROR();
+                            } else {
+                                PARSE_ERROR();
                             }
                         } else if (op1 == MICHELSON_NONE) { // withdraw delegate
                             // Matching: NONE key_hash ; SET_DELEGATE
-                            if (   *NEXT_TYPE(uint32_t) != MICHELSON_KEY_HASH
-                                || *NEXT_TYPE(uint32_t) != MICHELSON_SET_DELEGATE) {
+                            if (   MICHELSON_READ_OP(data, &ix, length) != MICHELSON_KEY_HASH
+                                || MICHELSON_READ_OP(data, &ix, length) != MICHELSON_SET_DELEGATE) {
                                 PARSE_ERROR();
                             }
                             out->operation.tag = OPERATION_TAG_BABYLON_DELEGATION;
@@ -474,11 +500,15 @@ static void parse_operations_throws_parse_error(
                         }
 
                         // All michelson contracts end with a cons.
-                        if (*NEXT_TYPE(uint32_t) != MICHELSON_CONS) {
+                        if (MICHELSON_READ_OP(data, &ix, length) != MICHELSON_CONS) {
                             PARSE_ERROR();
                         }
 
                         // TODO: verify no more michelson data remains
+                    } else if (param_magic_byte == MICHELSON_PARAMS_NONE) {
+                        // No parameters
+                    } else {
+                        PARSE_ERROR();
                     }
                 }
                 break;
