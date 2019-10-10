@@ -380,7 +380,6 @@ bool prompt_transaction(
                 static const uint32_t SOURCE_INDEX = 3;
                 static const uint32_t DESTINATION_INDEX = 4;
                 static const uint32_t STORAGE_INDEX = 5;
-                static const uint32_t PARAMETERS_INDEX = 6;
 
                 static const char *const transaction_prompts[] = {
                     PROMPT("Confirm"),
