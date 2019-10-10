@@ -32,11 +32,18 @@ void parsed_contract_to_string(
         return;
     }
 
-    signature_type_t const signature_type =
-        contract->originated != 0
-            ? SIGNATURE_TYPE_UNSET
-            : contract->signature_type;
-    pkh_to_string(buff, buff_size, signature_type, contract->hash);
+    // If unpacked_hash exists, show it to now. Otherwise, we
+    // unpack the packed hash.
+    if (contract->is_unpacked) {
+        if (buff_size < 36) THROW(EXC_WRONG_LENGTH);
+        memcpy(buff, contract->hash_ptr, 36);
+    } else {
+        signature_type_t const signature_type =
+            contract->originated != 0
+                ? SIGNATURE_TYPE_UNSET
+                : contract->signature_type;
+        pkh_to_string(buff, buff_size, signature_type, contract->hash);
+    }
 }
 
 void pubkey_to_pkh_string(
