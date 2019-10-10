@@ -188,7 +188,11 @@ typedef struct parsed_contract {
     uint8_t originated;  // a lightweight bool
     signature_type_t signature_type; // 0 in originated case
                                      // An implicit contract with signature_type of 0 means not present
+
     uint8_t hash[HASH_SIZE];
+
+    bool is_unpacked; // is the hash in unpacked 36-byte format?
+    void *hash_ptr;
 } parsed_contract_t;
 
 struct parsed_proposal {

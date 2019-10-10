@@ -200,7 +200,13 @@ static inline void michelson_read_address(parsed_contract_t *const out, const vo
             break;
         }
         case MICHELSON_STRING: {
-            PARSE_ERROR();
+            if (MICHELSON_READ_LENGTH(data, ix, length) != 36) {
+                PARSE_ERROR();
+            }
+            out->hash_ptr = data + *ix;
+            out->is_unpacked = true;
+            out->originated = false;
+            out->signature_type = SIGNATURE_TYPE_UNSET;
             break;
         }
         default: PARSE_ERROR();
@@ -221,6 +227,11 @@ static void parse_operations_throws_parse_error(
     memset(out, 0, sizeof(*out));
 
     out->operation.tag = OPERATION_TAG_NONE;
+
+    // init some null values for contracts
+    out->operation.source.is_unpacked = false;
+    out->operation.destination.is_unpacked = false;
+    out->operation.delegate.is_unpacked = false;
 
     compute_pkh(&out->public_key, &out->signing, derivation_type, bip32_path);
 
