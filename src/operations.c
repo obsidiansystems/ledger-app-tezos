@@ -186,6 +186,27 @@ static inline uint16_t michelson_read_op(const void *data, size_t *ix, size_t le
 
 #define MICHELSON_READ_OP(data, ix, length) michelson_read_op(data, ix, length, __LINE__)
 
+static inline void michelson_read_address(parsed_contract_t *const out, const void *data, size_t *ix, size_t length) {
+    switch (NEXT_BYTE(data, ix, length)) {
+        case MICHELSON_BYTE_SEQUENCE: {
+            if (MICHELSON_READ_LENGTH(data, ix, length) != HASH_SIZE + 1) {
+                PARSE_ERROR();
+            }
+            const raw_tezos_header_signature_type_t* signature_type = data + *ix;
+            advance_ix(ix, length, sizeof(raw_tezos_header_signature_type_t));
+            const hash_t *key_hash = data + *ix;
+            advance_ix(ix, length, sizeof(hash_t));
+            parse_implicit(out, signature_type, (const uint8_t *)key_hash);
+            break;
+        }
+        case MICHELSON_STRING: {
+            PARSE_ERROR();
+            break;
+        }
+        default: PARSE_ERROR();
+    }
+}
+
 static void parse_operations_throws_parse_error(
     struct parsed_operation_group *const out,
     void const *const data,
@@ -438,16 +459,7 @@ static void parse_operations_throws_parse_error(
                         if (op1 == MICHELSON_PUSH) {
                             const uint16_t arg1 = MICHELSON_READ_OP(data, &ix, length);
                             if (arg1 == MICHELSON_KEY_HASH) {
-                                if (NEXT_BYTE(data, &ix, length) != MICHELSON_BYTE_SEQUENCE) {
-                                    PARSE_ERROR();
-                                }
-
-                                if (MICHELSON_READ_LENGTH(data, &ix, length) != HASH_SIZE + 1) {
-                                    PARSE_ERROR();
-                                }
-
-                                const raw_tezos_header_signature_type_t* signature_type = NEXT_TYPE(const raw_tezos_header_signature_type_t);
-                                const hash_t *hash = NEXT_TYPE(const hash_t);
+                                michelson_read_address(&out->operation.destination, data, &ix, length);
 
                                 const uint16_t op2 = MICHELSON_READ_OP(data, &ix, length);
                                 if (op2 == MICHELSON_SOME) { // Set delegate
@@ -455,7 +467,6 @@ static void parse_operations_throws_parse_error(
                                     if (MICHELSON_READ_OP(data, &ix, length) != MICHELSON_SET_DELEGATE) {
                                         PARSE_ERROR();
                                     }
-                                    parse_implicit(&out->operation.destination, signature_type, (const uint8_t *)hash);
                                 } else if (op2 == MICHELSON_IMPLICIT_ACCOUNT) { // transfer implicit to contract
                                     // Matching: PUSH key_hash <adr> ; IMPLICIT_ACCOUNT ; PUSH mutez <val> ; UNIT ; TRANSFER_TOKENS
                                     if (   MICHELSON_READ_OP(data, &ix, length) != MICHELSON_PUSH
@@ -468,7 +479,6 @@ static void parse_operations_throws_parse_error(
                                         PARSE_ERROR();
                                     }
                                     out->operation.tag = OPERATION_TAG_BABYLON_TRANSACTION;
-                                    parse_implicit(&out->operation.destination, signature_type, (const uint8_t *)hash);
                                 } else {
                                     PARSE_ERROR();
                                 }
