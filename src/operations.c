@@ -203,7 +203,8 @@ static inline void michelson_read_address(parsed_contract_t *const out, const vo
             if (MICHELSON_READ_LENGTH(data, ix, length) != 36) {
                 PARSE_ERROR();
             }
-            out->hash_ptr = data + *ix;
+            out->hash_ptr = (void*)data + *ix;
+            (*ix) += 36;
             out->is_unpacked = true;
             out->originated = false;
             out->signature_type = SIGNATURE_TYPE_UNSET;
