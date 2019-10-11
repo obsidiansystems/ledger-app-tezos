@@ -188,7 +188,7 @@ static inline uint16_t michelson_read_op(const void *data, size_t *ix, size_t le
 
 static inline void michelson_read_address(parsed_contract_t *const out, const void *data, size_t *ix, size_t length) {
     switch (NEXT_BYTE(data, ix, length)) {
-        case MICHELSON_BYTE_SEQUENCE: {
+        case MICHELSON_TYPE_BYTE_SEQUENCE: {
             if (MICHELSON_READ_LENGTH(data, ix, length) != HASH_SIZE + 1) {
                 PARSE_ERROR();
             }
@@ -199,7 +199,7 @@ static inline void michelson_read_address(parsed_contract_t *const out, const vo
             parse_implicit(out, signature_type, (const uint8_t *)key_hash);
             break;
         }
-        case MICHELSON_STRING: {
+        case MICHELSON_TYPE_STRING: {
             if (MICHELSON_READ_LENGTH(data, ix, length) != 36) {
                 PARSE_ERROR();
             }
@@ -443,8 +443,8 @@ static void parse_operations_throws_parse_error(
 
                         const uint32_t argument_length = MICHELSON_READ_LENGTH(data, &ix, length);
 
-                        // Error on anything but michelson data.
-                        if (NEXT_BYTE(data, &ix, length) != MICHELSON_DATA) {
+                        // Error on anything but a michelson sequence.
+                        if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
                             PARSE_ERROR();
                         }
 
@@ -496,14 +496,75 @@ static void parse_operations_throws_parse_error(
                                 }
                             } else if (arg1 == MICHELSON_ADDRESS) { // transfer contract to contract
                                 // Matching: PUSH address <adr> ; CONTRACT %<ent> <par> ; ASSERT_SOME ; PUSH mutez <val> ; <ppar> ; TRANSFER_TOKENS
-                                if (NEXT_BYTE(data, &ix, length) != MICHELSON_BYTE_SEQUENCE) {
+                                michelson_read_address(&out->operation.destination, data, &ix, length);
+                                uint8_t type;
+                                switch (MICHELSON_READ_OP(data, &ix, length)) {
+                                    case MICHELSON_CONTRACT_WITH_ENTRYPOINT: {
+                                        type = NEXT_BYTE(data, &ix, length);
+
+                                        // No way to display
+                                        // entrypoint now, so need to
+                                        // bail out on anything but
+                                        // default.
+                                        // TODO: display entrypoints
+                                        if (NEXT_BYTE(data, &ix, length) != ENTRYPOINT_DEFAULT) {
+                                            PARSE_ERROR();
+                                        }
+
+                                        break;
+                                    }
+                                    case MICHELSON_CONTRACT: {
+                                        type = NEXT_BYTE(data, &ix, length);
+                                        break;
+                                    }
+                                    default: PARSE_ERROR();
+                                }
+
+                                // Can’t display any parameters, need
+                                // to throw anything but unit out for now.
+                                // TODO: display michelson arguments
+                                if (type != MICHELSON_TYPE_UNIT) {
                                     PARSE_ERROR();
                                 }
-                                if (MICHELSON_READ_OP(data, &ix, length) != HASH_SIZE + 1) {
+
+                                // Matching: ASSERT_SOME (unfolded)
+                                if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
                                     PARSE_ERROR();
                                 }
-                                // TODO: add support
-                                PARSE_ERROR();
+                                if (MICHELSON_READ_LENGTH(data, &ix, length) != 0x15) {
+                                    PARSE_ERROR();
+                                }
+                                if (MICHELSON_READ_OP(data, &ix, length) != MICHELSON_IF_NONE) {
+                                    PARSE_ERROR();
+                                }
+                                if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
+                                    PARSE_ERROR();
+                                }
+                                if (MICHELSON_READ_LENGTH(data, &ix, length) != 9) {
+                                    PARSE_ERROR();
+                                }
+                                if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
+                                    PARSE_ERROR();
+                                }
+                                if (MICHELSON_READ_LENGTH(data, &ix, length) != 4) {
+                                    PARSE_ERROR();
+                                }
+                                if (MICHELSON_READ_OP(data, &ix, length) != MICHELSON_UNIT) {
+                                    PARSE_ERROR();
+                                }
+                                if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
+                                    PARSE_ERROR();
+                                }
+                                if (MICHELSON_READ_LENGTH(data, &ix, length) != 4) {
+                                    PARSE_ERROR();
+                                }
+
+                                if (   MICHELSON_READ_OP(data, &ix, length) != MICHELSON_PUSH
+                                    || MICHELSON_READ_OP(data, &ix, length) != MICHELSON_MUTEZ) {
+                                    PARSE_ERROR();
+                                }
+                                out->operation.amount = MICHELSON_READ_OP(data, &ix, length);
+                                out->operation.tag = OPERATION_TAG_BABYLON_TRANSACTION;
                             } else {
                                 PARSE_ERROR();
                             }
