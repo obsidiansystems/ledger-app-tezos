@@ -39,3 +39,14 @@ enum michelson_params_tag {
 };
 
 #define MAX_MICHELSON_SEQUENCE_LENGTH 100
+
+#define MAX_ENTRYPOINT_LENGTH 31
+enum entrypoint_tag {
+    ENTRYPOINT_NONE = -1, // Sentinal value, as 0 is possibly used for something
+    ENTRYPOINT_DEFAULT = 0,
+    ENTRYPOINT_ROOT = 1,
+    ENTRYPOINT_DO = 2,
+    ENTRYPOINT_SET_DELEGATE = 3,
+    ENTRYPOINT_REMOVE_DELEGATE = 4,
+    ENTRYPOINT_NAMED = 255,
+};

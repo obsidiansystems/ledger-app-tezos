@@ -411,7 +411,7 @@ static void parse_operations_throws_parse_error(
 
                     // This byte designates that the transaction has
                     // parameters to the contract.
-                    const uint8_t param_magic_byte = NEXT_BYTE(data, &ix, length);
+                    const enum michelson_params_tag param_magic_byte = NEXT_BYTE(data, &ix, length);
 
                     // We cannot parse all parameters, but a subset of
                     // manager.tz operations is accepted.
@@ -422,7 +422,7 @@ static void parse_operations_throws_parse_error(
                             PARSE_ERROR();
                         }
 
-                        const uint8_t entrypoint = NEXT_BYTE(data, &ix, length);
+                        const enum entrypoint_tag entrypoint = NEXT_BYTE(data, &ix, length);
 
                         // Named entrypoints have up to 31 bytes.
                         if (entrypoint == ENTRYPOINT_NAMED) {
@@ -467,13 +467,13 @@ static void parse_operations_throws_parse_error(
                         }
 
                         // First real michelson op.
-                        const uint16_t op1 = MICHELSON_READ_SHORT(data, &ix, length);
+                        const enum michelson_code op1 = MICHELSON_READ_SHORT(data, &ix, length);
                         if (op1 == MICHELSON_PUSH) {
-                            const uint16_t arg1 = MICHELSON_READ_SHORT(data, &ix, length);
+                            const enum michelson_code arg1 = MICHELSON_READ_SHORT(data, &ix, length);
                             if (arg1 == MICHELSON_KEY_HASH) {
                                 michelson_read_address(&out->operation.destination, data, &ix, length);
 
-                                const uint16_t op2 = MICHELSON_READ_SHORT(data, &ix, length);
+                                const enum michelson_code op2 = MICHELSON_READ_SHORT(data, &ix, length);
                                 if (op2 == MICHELSON_SOME) { // Set delegate
                                     // Matching: PUSH key_hash <dlgt> ; SOME ; SET_DELEGATE
                                     if (MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_SET_DELEGATE) {
@@ -497,11 +497,10 @@ static void parse_operations_throws_parse_error(
                             } else if (arg1 == MICHELSON_ADDRESS) { // transfer contract to contract
                                 // Matching: PUSH address <adr> ; CONTRACT %<ent> <par> ; ASSERT_SOME ; PUSH mutez <val> ; <ppar> ; TRANSFER_TOKENS
                                 michelson_read_address(&out->operation.destination, data, &ix, length);
-                                uint8_t type;
-                                switch (MICHELSON_READ_SHORT(data, &ix, length)) {
+                                const enum michelson_code contract_code = MICHELSON_READ_SHORT(data, &ix, length);
+                                const enum michelson_type type = NEXT_BYTE(data, &ix, length);
+                                switch (contract_code) {
                                     case MICHELSON_CONTRACT_WITH_ENTRYPOINT: {
-                                        type = NEXT_BYTE(data, &ix, length);
-
                                         // No way to display
                                         // entrypoint now, so need to
                                         // bail out on anything but
@@ -514,7 +513,6 @@ static void parse_operations_throws_parse_error(
                                         break;
                                     }
                                     case MICHELSON_CONTRACT: {
-                                        type = NEXT_BYTE(data, &ix, length);
                                         break;
                                     }
                                     default: PARSE_ERROR();
