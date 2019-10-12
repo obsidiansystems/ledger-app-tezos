@@ -498,7 +498,7 @@ static void parse_operations_throws_parse_error(
                                 // Matching: PUSH address <adr> ; CONTRACT %<ent> <par> ; ASSERT_SOME ; PUSH mutez <val> ; <ppar> ; TRANSFER_TOKENS
                                 michelson_read_address(&out->operation.destination, data, &ix, length);
                                 const enum michelson_code contract_code = MICHELSON_READ_SHORT(data, &ix, length);
-                                const enum michelson_type type = NEXT_BYTE(data, &ix, length);
+                                const enum michelson_code type = MICHELSON_READ_SHORT(data, &ix, length);
                                 switch (contract_code) {
                                     case MICHELSON_CONTRACT_WITH_ENTRYPOINT: {
                                         // No way to display
@@ -521,7 +521,7 @@ static void parse_operations_throws_parse_error(
                                 // Can’t display any parameters, need
                                 // to throw anything but unit out for now.
                                 // TODO: display michelson arguments
-                                if (type != MICHELSON_TYPE_UNIT) {
+                                if (type != MICHELSON_CONTRACT_UNIT) {
                                     PARSE_ERROR();
                                 }
 
@@ -550,10 +550,13 @@ static void parse_operations_throws_parse_error(
                                 if (MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_UNIT) {
                                     PARSE_ERROR();
                                 }
+                                if (MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_FAILWITH) {
+                                    PARSE_ERROR();
+                                }
                                 if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
                                     PARSE_ERROR();
                                 }
-                                if (MICHELSON_READ_LENGTH(data, &ix, length) != 4) {
+                                if (MICHELSON_READ_LENGTH(data, &ix, length) != 0) {
                                     PARSE_ERROR();
                                 }
 
@@ -562,6 +565,10 @@ static void parse_operations_throws_parse_error(
                                     PARSE_ERROR();
                                 }
                                 out->operation.amount = MICHELSON_READ_SHORT(data, &ix, length);
+                                if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_UNIT
+                                    || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_TRANSFER_TOKENS) {
+                                    PARSE_ERROR();
+                                }
                                 out->operation.tag = OPERATION_TAG_BABYLON_TRANSACTION;
                             } else {
                                 PARSE_ERROR();

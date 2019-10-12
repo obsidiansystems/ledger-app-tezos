@@ -24,13 +24,15 @@ enum michelson_code {
     MICHELSON_FAILWITH = 0x0327,
     MICHELSON_CONTRACT = 0x0555,
     MICHELSON_CONTRACT_WITH_ENTRYPOINT = 0x0655,
+
+    // TODO: does this only apply to contracts?
+    MICHELSON_CONTRACT_UNIT = 0x036c,
 };
 
 enum michelson_type {
     MICHELSON_TYPE_STRING = 0x01,
     MICHELSON_TYPE_SEQUENCE = 0x02,
     MICHELSON_TYPE_BYTE_SEQUENCE = 0x0a,
-    MICHELSON_TYPE_UNIT = 0x4f,
 };
 
 enum michelson_params_tag {
@@ -42,7 +44,6 @@ enum michelson_params_tag {
 
 #define MAX_ENTRYPOINT_LENGTH 31
 enum entrypoint_tag {
-    ENTRYPOINT_NONE = -1, // Sentinal value, as 0 is possibly used for something
     ENTRYPOINT_DEFAULT = 0,
     ENTRYPOINT_ROOT = 1,
     ENTRYPOINT_DO = 2,
