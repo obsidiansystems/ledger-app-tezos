@@ -8,8 +8,6 @@
 
 #define NO_CONTRACT_STRING "None"
 
-#define NO_PARAMETERS_STRING "None"
-
 #define TEZOS_HASH_CHECKSUM_SIZE 4
 
 void pkh_to_string(
