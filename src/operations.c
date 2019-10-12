@@ -205,7 +205,6 @@ static inline void michelson_read_address(parsed_contract_t *const out, const vo
             }
             out->hash_ptr = (void*)data + *ix;
             (*ix) += 36;
-            out->is_unpacked = true;
             out->originated = false;
             out->signature_type = SIGNATURE_TYPE_UNSET;
             break;
@@ -230,9 +229,9 @@ static void parse_operations_throws_parse_error(
     out->operation.tag = OPERATION_TAG_NONE;
 
     // init some null values for contracts
-    out->operation.source.is_unpacked = false;
-    out->operation.destination.is_unpacked = false;
-    out->operation.delegate.is_unpacked = false;
+    out->operation.source.hash_ptr = NULL;
+    out->operation.destination.hash_ptr = NULL;
+    out->operation.delegate.hash_ptr = NULL;
 
     compute_pkh(&out->public_key, &out->signing, derivation_type, bip32_path);
 

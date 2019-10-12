@@ -191,7 +191,6 @@ typedef struct parsed_contract {
 
     uint8_t hash[HASH_SIZE];
 
-    bool is_unpacked; // is the hash in unpacked 36-byte format?
     void *hash_ptr;
 } parsed_contract_t;
 
