@@ -32,9 +32,9 @@ void parsed_contract_to_string(
         return;
     }
 
-    // If unpacked_hash exists, show it to now. Otherwise, we
+    // If hash_ptr exists, show it to now. Otherwise, we
     // unpack the packed hash.
-    if (contract->is_unpacked) {
+    if (contract->hash_ptr != NULL) {
         if (buff_size < 36) THROW(EXC_WRONG_LENGTH);
         memcpy(buff, contract->hash_ptr, 36);
     } else {
