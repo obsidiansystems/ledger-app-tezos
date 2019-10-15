@@ -465,6 +465,9 @@ static void parse_operations_throws_parse_error(
                             PARSE_ERROR();
                         }
 
+                        // Destination is now source
+                        memcpy(&out->operation.source, &out->operation.destination, sizeof(parsed_contract_t));
+
                         // First real michelson op.
                         const enum michelson_code op1 = MICHELSON_READ_SHORT(data, &ix, length);
                         if (op1 == MICHELSON_PUSH) {
@@ -478,6 +481,7 @@ static void parse_operations_throws_parse_error(
                                     if (MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_SET_DELEGATE) {
                                         PARSE_ERROR();
                                     }
+                                    out->operation.tag = OPERATION_TAG_BABYLON_DELEGATION;
                                 } else if (op2 == MICHELSON_IMPLICIT_ACCOUNT) { // transfer implicit to contract
                                     // Matching: PUSH key_hash <adr> ; IMPLICIT_ACCOUNT ; PUSH mutez <val> ; UNIT ; TRANSFER_TOKENS
                                     if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_PUSH
