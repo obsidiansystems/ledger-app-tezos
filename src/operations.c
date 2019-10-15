@@ -466,6 +466,8 @@ static void parse_operations_throws_parse_error(
                         }
 
                         // Destination is now source
+                        struct parsed_contract implicit_account;
+                        memcpy(&implicit_account, &out->operation.source, sizeof(parsed_contract_t));
                         memcpy(&out->operation.source, &out->operation.destination, sizeof(parsed_contract_t));
 
                         // First real michelson op.
@@ -482,8 +484,9 @@ static void parse_operations_throws_parse_error(
                                         PARSE_ERROR();
                                     }
                                     out->operation.tag = OPERATION_TAG_BABYLON_DELEGATION;
-                                } else if (op2 == MICHELSON_IMPLICIT_ACCOUNT) { // transfer implicit to contract
+                                } else if (op2 == MICHELSON_IMPLICIT_ACCOUNT) { // transfer contract to implicit
                                     // Matching: PUSH key_hash <adr> ; IMPLICIT_ACCOUNT ; PUSH mutez <val> ; UNIT ; TRANSFER_TOKENS
+                                    memcpy(&out->operation.destination, &implicit_account, sizeof(parsed_contract_t));
                                     if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_PUSH
                                         || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_MUTEZ) {
                                         PARSE_ERROR();
