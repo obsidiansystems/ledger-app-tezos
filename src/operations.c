@@ -484,6 +484,7 @@ static void parse_operations_throws_parse_error(
                                         PARSE_ERROR();
                                     }
                                     out->operation.tag = OPERATION_TAG_BABYLON_DELEGATION;
+                                    out->operation.destination.originated = true;
                                 } else if (op2 == MICHELSON_IMPLICIT_ACCOUNT) { // transfer contract to implicit
                                     // Matching: PUSH key_hash <adr> ; IMPLICIT_ACCOUNT ; PUSH mutez <val> ; UNIT ; TRANSFER_TOKENS
                                     memcpy(&out->operation.destination, &implicit_account, sizeof(parsed_contract_t));
