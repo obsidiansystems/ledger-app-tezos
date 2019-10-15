@@ -494,7 +494,7 @@ static void parse_operations_throws_parse_error(
                                     PARSE_ERROR();
                                 }
                             } else if (arg1 == MICHELSON_ADDRESS) { // transfer contract to contract
-                                // Matching: PUSH address <adr> ; CONTRACT %<ent> <par> ; ASSERT_SOME ; PUSH mutez <val> ; <ppar> ; TRANSFER_TOKENS
+                                // Matching: PUSH address <adr> ; CONTRACT <par> ; ASSERT_SOME ; PUSH mutez <val> ; UNIT ; TRANSFER_TOKENS
                                 michelson_read_address(&out->operation.destination, data, &ix, length);
                                 const enum michelson_code contract_code = MICHELSON_READ_SHORT(data, &ix, length);
                                 const enum michelson_code type = MICHELSON_READ_SHORT(data, &ix, length);
