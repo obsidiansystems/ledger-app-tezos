@@ -467,7 +467,7 @@ static void parse_operations_throws_parse_error(
 
                         // Destination is now source
                         struct parsed_contract implicit_account;
-                        memcpy(&implicit_account, &out->operation.source, sizeof(parsed_contract_t));
+                        memcpy(&out->operation.source, &implicit_account, sizeof(parsed_contract_t));
                         memcpy(&out->operation.source, &out->operation.destination, sizeof(parsed_contract_t));
 
                         // First real michelson op.
