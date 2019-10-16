@@ -73,13 +73,13 @@ static void parse_error(
 
 #define PARSE_ERROR() parse_error(__LINE__)
 
-static void advance_ix(size_t *ix, size_t length, size_t amount) {
+static inline void advance_ix(size_t *ix, size_t length, size_t amount) {
     if (*ix + amount > length) PARSE_ERROR();
 
     *ix += amount;
 }
 
-static uint8_t next_byte(const void *data, size_t *ix, size_t length, uint32_t lineno) {
+static inline uint8_t next_byte(const void *data, size_t *ix, size_t length, uint32_t lineno) {
     if (*ix == length) parse_error(lineno);
     uint8_t res = ((const char *)data)[*ix];
     (*ix)++;
