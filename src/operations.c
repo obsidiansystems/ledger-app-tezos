@@ -488,7 +488,12 @@ static void parse_operations_throws_parse_error(
                                         || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_MUTEZ) {
                                         PARSE_ERROR();
                                     }
-                                    out->operation.amount = MICHELSON_READ_SHORT(data, &ix, length);
+
+                                    if (NEXT_BYTE(data, &ix, length) != 0) {
+                                        PARSE_ERROR();
+                                    };
+                                    out->operation.amount = PARSE_Z(data, &ix, length);
+
                                     if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_UNIT
                                         || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_TRANSFER_TOKENS) {
                                         PARSE_ERROR();
@@ -567,7 +572,12 @@ static void parse_operations_throws_parse_error(
                                     || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_MUTEZ) {
                                     PARSE_ERROR();
                                 }
-                                out->operation.amount = MICHELSON_READ_SHORT(data, &ix, length);
+
+                                if (NEXT_BYTE(data, &ix, length) != 0) {
+                                    PARSE_ERROR();
+                                };
+                                out->operation.amount = PARSE_Z(data, &ix, length);
+
                                 if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_UNIT
                                     || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_TRANSFER_TOKENS) {
                                     PARSE_ERROR();
