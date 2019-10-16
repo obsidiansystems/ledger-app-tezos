@@ -32,14 +32,13 @@ void parsed_contract_to_string(
     } else if (contract->originated == 0 && contract->signature_type == SIGNATURE_TYPE_UNSET) {
         if (buff_size < sizeof(NO_CONTRACT_STRING)) THROW(EXC_WRONG_LENGTH);
         strcpy(buff, NO_CONTRACT_STRING);
-        return;
+    } else {
+        signature_type_t const signature_type =
+            contract->originated != 0
+                ? SIGNATURE_TYPE_UNSET
+                : contract->signature_type;
+        pkh_to_string(buff, buff_size, signature_type, contract->hash);
     }
-
-    signature_type_t const signature_type =
-        contract->originated != 0
-            ? SIGNATURE_TYPE_UNSET
-            : contract->signature_type;
-    pkh_to_string(buff, buff_size, signature_type, contract->hash);
 }
 
 void pubkey_to_pkh_string(
