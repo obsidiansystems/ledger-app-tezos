@@ -415,6 +415,10 @@ static void parse_operations_throws_parse_error(
                     // We cannot parse all parameters, but a subset of
                     // manager.tz operations is accepted.
                     if (param_magic_byte == MICHELSON_PARAMS_SOME) {
+                        // Destination is now source
+                        out->operation.is_manager_tz_operation = true;
+                        memcpy(&out->operation.implicit_account, &out->operation.source, sizeof(parsed_contract_t));
+                        memcpy(&out->operation.source, &out->operation.destination, sizeof(parsed_contract_t));
 
                         // Operations cannot actually transfer any amount.
                         if (out->operation.amount > 0) {
@@ -464,10 +468,6 @@ static void parse_operations_throws_parse_error(
                             || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_OPERATION) {
                             PARSE_ERROR();
                         }
-
-                        // Destination is now source
-                        memcpy(&out->operation.implicit_account, &out->operation.source, sizeof(parsed_contract_t));
-                        memcpy(&out->operation.source, &out->operation.destination, sizeof(parsed_contract_t));
 
                         // First real michelson op.
                         const enum michelson_code op1 = MICHELSON_READ_SHORT(data, &ix, length);
@@ -600,6 +600,7 @@ static void parse_operations_throws_parse_error(
                         // TODO: verify no more michelson data remains
                     } else if (param_magic_byte == MICHELSON_PARAMS_NONE) {
                         // No parameters
+                        out->operation.is_manager_tz_operation = false;
                     } else {
                         PARSE_ERROR();
                     }

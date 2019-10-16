@@ -240,7 +240,10 @@ struct parsed_operation {
         struct parsed_proposal proposal; // For proposals only
         struct parsed_ballot ballot; // For ballots only
     };
+
+    bool is_manager_tz_operation;
     struct parsed_contract implicit_account; // For manager.tz transactions
+
     uint64_t amount; // 0 where inappropriate
     uint32_t flags;  // Interpretation depends on operation type
 };
