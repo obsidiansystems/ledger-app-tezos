@@ -90,11 +90,9 @@ static uint8_t next_byte(const void *data, size_t *ix, size_t length, uint32_t l
 
 static inline uint64_t parse_z(const void *data, size_t *ix, size_t length, uint32_t lineno) {
     uint64_t acc = 0;
-    uint64_t shift = 0;
-    while (true) {
-        uint64_t byte = next_byte(data, ix, length, lineno);
-        acc |= (byte & 0x7F) << shift;
-        shift += 7;
+    for (uint8_t shift = 0; ; shift += 7) {
+        const uint8_t byte = next_byte(data, ix, length, lineno);
+        acc |= ((uint64_t)byte & 0x7F) << shift;
         if (!(byte & 0x80)) {
             break;
         }
