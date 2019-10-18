@@ -424,212 +424,226 @@ static void parse_operations_throws_parse_error(
                     const struct contract *destination = NEXT_TYPE(struct contract);
                     parse_contract(&out->operation.destination, destination);
 
-                    // This byte designates that the transaction has
-                    // parameters to the contract.
-                    const enum michelson_params_tag param_magic_byte = NEXT_BYTE(data, &ix, length);
+                    switch (NEXT_BYTE(data, &ix, length)) {
+                        // We cannot parse all parameters, but a subset of
+                        // manager.tz operations is accepted.
+                        case MICHELSON_PARAMS_SOME: {
+                            // Destination is now source
+                            out->operation.is_manager_tz_operation = true;
+                            memcpy(&out->operation.implicit_account, &out->operation.source, sizeof(parsed_contract_t));
+                            memcpy(&out->operation.source, &out->operation.destination, sizeof(parsed_contract_t));
 
-                    // We cannot parse all parameters, but a subset of
-                    // manager.tz operations is accepted.
-                    if (param_magic_byte == MICHELSON_PARAMS_SOME) {
-                        // Destination is now source
-                        out->operation.is_manager_tz_operation = true;
-                        memcpy(&out->operation.implicit_account, &out->operation.source, sizeof(parsed_contract_t));
-                        memcpy(&out->operation.source, &out->operation.destination, sizeof(parsed_contract_t));
-
-                        // Operations cannot actually transfer any amount.
-                        if (out->operation.amount > 0) {
-                            PARSE_ERROR();
-                        }
-
-                        const enum entrypoint_tag entrypoint = NEXT_BYTE(data, &ix, length);
-
-                        // Named entrypoints have up to 31 bytes.
-                        if (entrypoint == ENTRYPOINT_NAMED) {
-                            const uint8_t entrypoint_length = NEXT_BYTE(data, &ix, length);
-                            if (entrypoint_length > MAX_ENTRYPOINT_LENGTH) {
+                            // Operations cannot actually transfer any amount.
+                            if (out->operation.amount > 0) {
                                 PARSE_ERROR();
                             }
-                            for (int n = 0; n < entrypoint_length; n++) {
-                                NEXT_BYTE(data, &ix, length);
+
+                            const enum entrypoint_tag entrypoint = NEXT_BYTE(data, &ix, length);
+
+                            // Named entrypoints have up to 31 bytes.
+                            if (entrypoint == ENTRYPOINT_NAMED) {
+                                const uint8_t entrypoint_length = NEXT_BYTE(data, &ix, length);
+                                if (entrypoint_length > MAX_ENTRYPOINT_LENGTH) {
+                                    PARSE_ERROR();
+                                }
+                                for (int n = 0; n < entrypoint_length; n++) {
+                                    NEXT_BYTE(data, &ix, length);
+                                }
                             }
-                        }
 
-                        // Anything that’s not “do” is not a
-                        // manager.tz contract.
-                        if (entrypoint != ENTRYPOINT_DO) {
-                            PARSE_ERROR();
-                        }
+                            // Anything that’s not “do” is not a
+                            // manager.tz contract.
+                            if (entrypoint != ENTRYPOINT_DO) {
+                                PARSE_ERROR();
+                            }
 
-                        const uint32_t argument_length = MICHELSON_READ_LENGTH(data, &ix, length);
+                            const uint32_t argument_length = MICHELSON_READ_LENGTH(data, &ix, length);
 
-                        // Error on anything but a michelson sequence.
-                        if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
-                            PARSE_ERROR();
-                        }
+                            // Error on anything but a michelson
+                            // sequence.
+                            if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
+                                PARSE_ERROR();
+                            }
 
-                        const uint32_t sequence_length = MICHELSON_READ_LENGTH(data, &ix, length);
+                            const uint32_t sequence_length = MICHELSON_READ_LENGTH(data, &ix, length);
 
-                        // Only allow single sequence (5 is needed in
-                        // argument length for above two bytes). Also
-                        // bail out on really big Michellson that we
-                        // don’t support.
-                        if (sequence_length + 5 != argument_length && argument_length > MAX_MICHELSON_SEQUENCE_LENGTH) {
-                            PARSE_ERROR();
-                        }
+                            // Only allow single sequence (5 is needed
+                            // in argument length for above two
+                            // bytes). Also bail out on really big
+                            // Michellson that we don’t support.
+                            if (   sequence_length + 5 != argument_length
+                                || argument_length > MAX_MICHELSON_SEQUENCE_LENGTH) {
+                                PARSE_ERROR();
+                            }
 
-                        // All manager.tz operations should begin with
-                        // this. Otherwise, bail out.
-                        if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_DROP
-                            || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_NIL
-                            || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_OPERATION) {
-                            PARSE_ERROR();
-                        }
+                            // All manager.tz operations should begin
+                            // with this. Otherwise, bail out.
+                            if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_DROP
+                                || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_NIL
+                                || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_OPERATION) {
+                                PARSE_ERROR();
+                            }
 
-                        // First real michelson op.
-                        const enum michelson_code op1 = MICHELSON_READ_SHORT(data, &ix, length);
-                        if (op1 == MICHELSON_PUSH) {
-                            const enum michelson_code arg1 = MICHELSON_READ_SHORT(data, &ix, length);
-                            if (arg1 == MICHELSON_KEY_HASH) {
-                                michelson_read_address(&out->operation.destination, data, &ix, length);
+                            // First real michelson op.
+                            switch (MICHELSON_READ_SHORT(data, &ix, length)) {
+                                case MICHELSON_PUSH: {
+                                    switch (MICHELSON_READ_SHORT(data, &ix, length)) {
+                                        case MICHELSON_KEY_HASH: {
+                                            michelson_read_address(&out->operation.destination, data, &ix, length);
 
-                                const enum michelson_code op2 = MICHELSON_READ_SHORT(data, &ix, length);
-                                if (op2 == MICHELSON_SOME) { // Set delegate
-                                    // Matching: PUSH key_hash <dlgt> ; SOME ; SET_DELEGATE
-                                    if (MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_SET_DELEGATE) {
+                                            switch (MICHELSON_READ_SHORT(data, &ix, length)) {
+                                                case MICHELSON_SOME: { // Set delegate
+                                                    // Matching: PUSH key_hash <dlgt> ; SOME ; SET_DELEGATE
+                                                    if (MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_SET_DELEGATE) {
+                                                        PARSE_ERROR();
+                                                    }
+                                                    out->operation.tag = OPERATION_TAG_BABYLON_DELEGATION;
+                                                    out->operation.destination.originated = true;
+                                                    break;
+                                                }
+                                                case MICHELSON_IMPLICIT_ACCOUNT: { // transfer contract to implicit
+                                                    // Matching: PUSH key_hash <adr> ; IMPLICIT_ACCOUNT ; PUSH mutez <val> ; UNIT ; TRANSFER_TOKENS
+                                                    if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_PUSH
+                                                        || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_MUTEZ) {
+                                                        PARSE_ERROR();
+                                                    }
+
+                                                    if (NEXT_BYTE(data, &ix, length) != 0) {
+                                                        PARSE_ERROR();
+                                                    };
+
+                                                    out->operation.amount = PARSE_Z_MICHELSON(data, &ix, length);
+
+                                                    if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_UNIT
+                                                        || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_TRANSFER_TOKENS) {
+                                                        PARSE_ERROR();
+                                                    }
+                                                    out->operation.tag = OPERATION_TAG_BABYLON_TRANSACTION;
+                                                    break;
+                                                }
+                                                default: PARSE_ERROR();
+                                            }
+                                            break;
+                                        }
+                                        case MICHELSON_ADDRESS: { // transfer contract to contract
+                                            // Matching: PUSH address <adr> ; CONTRACT <par> ; ASSERT_SOME ; PUSH mutez <val> ; UNIT ; TRANSFER_TOKENS
+                                            michelson_read_address(&out->operation.destination, data, &ix, length);
+                                            const enum michelson_code contract_code = MICHELSON_READ_SHORT(data, &ix, length);
+                                            const enum michelson_code type = MICHELSON_READ_SHORT(data, &ix, length);
+                                            switch (contract_code) {
+                                                case MICHELSON_CONTRACT_WITH_ENTRYPOINT: {
+                                                    // No way to display
+                                                    // entrypoint now, so need to
+                                                    // bail out on anything but
+                                                    // default.
+                                                    // TODO: display entrypoints
+                                                    if (NEXT_BYTE(data, &ix, length) != ENTRYPOINT_DEFAULT) {
+                                                        PARSE_ERROR();
+                                                    }
+
+                                                    break;
+                                                }
+                                                case MICHELSON_CONTRACT: {
+                                                    break;
+                                                }
+                                                default: PARSE_ERROR();
+                                            }
+
+                                            // Can’t display any parameters, need
+                                            // to throw anything but unit out for now.
+                                            // TODO: display michelson arguments
+                                            if (type != MICHELSON_CONTRACT_UNIT) {
+                                                PARSE_ERROR();
+                                            }
+
+                                            // Matching: ASSERT_SOME (unfolded)
+                                            if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
+                                                PARSE_ERROR();
+                                            }
+                                            if (MICHELSON_READ_LENGTH(data, &ix, length) != 0x15) {
+                                                PARSE_ERROR();
+                                            }
+                                            if (MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_IF_NONE) {
+                                                PARSE_ERROR();
+                                            }
+                                            if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
+                                                PARSE_ERROR();
+                                            }
+                                            if (MICHELSON_READ_LENGTH(data, &ix, length) != 9) {
+                                                PARSE_ERROR();
+                                            }
+                                            if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
+                                                PARSE_ERROR();
+                                            }
+                                            if (MICHELSON_READ_LENGTH(data, &ix, length) != 4) {
+                                                PARSE_ERROR();
+                                            }
+                                            if (MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_UNIT) {
+                                                PARSE_ERROR();
+                                            }
+                                            if (MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_FAILWITH) {
+                                                PARSE_ERROR();
+                                            }
+                                            if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
+                                                PARSE_ERROR();
+                                            }
+                                            if (MICHELSON_READ_LENGTH(data, &ix, length) != 0) {
+                                                PARSE_ERROR();
+                                            }
+
+                                            if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_PUSH
+                                                || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_MUTEZ) {
+                                                PARSE_ERROR();
+                                            }
+
+                                            if (NEXT_BYTE(data, &ix, length) != 0) {
+                                                PARSE_ERROR();
+                                            };
+
+                                            out->operation.amount = PARSE_Z_MICHELSON(data, &ix, length);
+
+                                            if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_UNIT
+                                                || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_TRANSFER_TOKENS) {
+                                                PARSE_ERROR();
+                                            }
+                                            out->operation.tag = OPERATION_TAG_BABYLON_TRANSACTION;
+                                            break;
+                                        }
+                                        default: PARSE_ERROR();
+                                    }
+                                    break;
+                                }
+                                case MICHELSON_NONE: { // withdraw delegate
+                                    // Matching: NONE key_hash ; SET_DELEGATE
+                                    if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_KEY_HASH
+                                        || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_SET_DELEGATE) {
                                         PARSE_ERROR();
                                     }
                                     out->operation.tag = OPERATION_TAG_BABYLON_DELEGATION;
-                                    out->operation.destination.originated = true;
-                                } else if (op2 == MICHELSON_IMPLICIT_ACCOUNT) { // transfer contract to implicit
-                                    // Matching: PUSH key_hash <adr> ; IMPLICIT_ACCOUNT ; PUSH mutez <val> ; UNIT ; TRANSFER_TOKENS
-                                    if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_PUSH
-                                        || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_MUTEZ) {
-                                        PARSE_ERROR();
-                                    }
+                                    out->operation.destination.originated = 0;
+                                    out->operation.destination.signature_type = SIGNATURE_TYPE_UNSET;
+                                    break;
+                                }
+                                default: PARSE_ERROR();
+                            }
 
-                                    if (NEXT_BYTE(data, &ix, length) != 0) {
-                                        PARSE_ERROR();
-                                    };
-
-                                    out->operation.amount = PARSE_Z_MICHELSON(data, &ix, length);
-
-                                    if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_UNIT
-                                        || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_TRANSFER_TOKENS) {
-                                        PARSE_ERROR();
-                                    }
-                                    out->operation.tag = OPERATION_TAG_BABYLON_TRANSACTION;
-                                } else {
-                                    PARSE_ERROR();
-                                }
-                            } else if (arg1 == MICHELSON_ADDRESS) { // transfer contract to contract
-                                // Matching: PUSH address <adr> ; CONTRACT <par> ; ASSERT_SOME ; PUSH mutez <val> ; UNIT ; TRANSFER_TOKENS
-                                michelson_read_address(&out->operation.destination, data, &ix, length);
-                                const enum michelson_code contract_code = MICHELSON_READ_SHORT(data, &ix, length);
-                                const enum michelson_code type = MICHELSON_READ_SHORT(data, &ix, length);
-                                switch (contract_code) {
-                                    case MICHELSON_CONTRACT_WITH_ENTRYPOINT: {
-                                        // No way to display
-                                        // entrypoint now, so need to
-                                        // bail out on anything but
-                                        // default.
-                                        // TODO: display entrypoints
-                                        if (NEXT_BYTE(data, &ix, length) != ENTRYPOINT_DEFAULT) {
-                                            PARSE_ERROR();
-                                        }
-
-                                        break;
-                                    }
-                                    case MICHELSON_CONTRACT: {
-                                        break;
-                                    }
-                                    default: PARSE_ERROR();
-                                }
-
-                                // Can’t display any parameters, need
-                                // to throw anything but unit out for now.
-                                // TODO: display michelson arguments
-                                if (type != MICHELSON_CONTRACT_UNIT) {
-                                    PARSE_ERROR();
-                                }
-
-                                // Matching: ASSERT_SOME (unfolded)
-                                if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
-                                    PARSE_ERROR();
-                                }
-                                if (MICHELSON_READ_LENGTH(data, &ix, length) != 0x15) {
-                                    PARSE_ERROR();
-                                }
-                                if (MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_IF_NONE) {
-                                    PARSE_ERROR();
-                                }
-                                if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
-                                    PARSE_ERROR();
-                                }
-                                if (MICHELSON_READ_LENGTH(data, &ix, length) != 9) {
-                                    PARSE_ERROR();
-                                }
-                                if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
-                                    PARSE_ERROR();
-                                }
-                                if (MICHELSON_READ_LENGTH(data, &ix, length) != 4) {
-                                    PARSE_ERROR();
-                                }
-                                if (MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_UNIT) {
-                                    PARSE_ERROR();
-                                }
-                                if (MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_FAILWITH) {
-                                    PARSE_ERROR();
-                                }
-                                if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
-                                    PARSE_ERROR();
-                                }
-                                if (MICHELSON_READ_LENGTH(data, &ix, length) != 0) {
-                                    PARSE_ERROR();
-                                }
-
-                                if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_PUSH
-                                    || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_MUTEZ) {
-                                    PARSE_ERROR();
-                                }
-
-                                if (NEXT_BYTE(data, &ix, length) != 0) {
-                                    PARSE_ERROR();
-                                };
-
-                                out->operation.amount = PARSE_Z_MICHELSON(data, &ix, length);
-
-                                if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_UNIT
-                                    || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_TRANSFER_TOKENS) {
-                                    PARSE_ERROR();
-                                }
-                                out->operation.tag = OPERATION_TAG_BABYLON_TRANSACTION;
-                            } else {
+                            // All michelson contracts end with a cons.
+                            if (MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_CONS) {
                                 PARSE_ERROR();
                             }
-                        } else if (op1 == MICHELSON_NONE) { // withdraw delegate
-                            // Matching: NONE key_hash ; SET_DELEGATE
-                            if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_KEY_HASH
-                                || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_SET_DELEGATE) {
+
+                            // This should be the exact end of the
+                            // APDU. Any more data can’t be parsed.
+                            if (ix != length) {
                                 PARSE_ERROR();
                             }
-                            out->operation.tag = OPERATION_TAG_BABYLON_DELEGATION;
-                            out->operation.destination.originated = 0;
-                            out->operation.destination.signature_type = SIGNATURE_TYPE_UNSET;
-                        } else {
-                            PARSE_ERROR();
-                        }
 
-                        // All michelson contracts end with a cons.
-                        if (MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_CONS) {
-                            PARSE_ERROR();
+                            break;
                         }
-
-                        // TODO: verify no more michelson data remains
-                    } else if (param_magic_byte == MICHELSON_PARAMS_NONE) {
-                        // No parameters
-                        out->operation.is_manager_tz_operation = false;
-                    } else {
-                        PARSE_ERROR();
+                        case MICHELSON_PARAMS_NONE: {
+                            break;
+                        }
+                        default: PARSE_ERROR();
                     }
                 }
                 break;
