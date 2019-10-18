@@ -178,6 +178,9 @@ typedef struct {
 // TODO: Rename to KEY_HASH_SIZE
 #define HASH_SIZE 20
 
+// HASH_SIZE encoded in base-58 ASCII
+#define HASH_SIZE_B58 36
+
 typedef struct {
     chain_id_t chain_id;
     bool is_endorsement;
@@ -191,7 +194,7 @@ typedef struct parsed_contract {
 
     uint8_t hash[HASH_SIZE];
 
-    void *hash_ptr;
+    char *hash_ptr;
 } parsed_contract_t;
 
 struct parsed_proposal {

@@ -36,9 +36,10 @@ This parses as:
 | CDATA | 0x048000002c800006c18000000080000000 |
 
 0x01 is the first instruction and is used for "authorize baking". This
-APDU asks the ledger to use its internal private keys to sign an
-authorization to bake. Note that this instruction is only recognized
-by the baking app, and not the wallet app.
+APDU tells the ledger to save the choice of curve and derivation path
+to memory so that future operations know which of these to use when
+baking. Note that this instruction is only recognized by the baking
+app, and not the wallet app.
 
 A list of more instructions follows.
 
