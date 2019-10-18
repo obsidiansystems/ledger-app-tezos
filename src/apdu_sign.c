@@ -279,7 +279,7 @@ bool prompt_transaction(
                     PROMPT("Source"),
                     PROMPT("Manager"),
                     PROMPT("Fixed Delegate"),
-                    PROMPT("Storage"),
+                    PROMPT("Storage Limit"),
                     NULL,
                 };
                 static const char *const origination_prompts_delegatable[] = {
@@ -289,7 +289,7 @@ bool prompt_transaction(
                     PROMPT("Source"),
                     PROMPT("Manager"),
                     PROMPT("Delegate"),
-                    PROMPT("Storage"),
+                    PROMPT("Storage Limit"),
                     NULL,
                 };
                 static const char *const origination_prompts_undelegatable[] = {
@@ -299,7 +299,7 @@ bool prompt_transaction(
                     PROMPT("Source"),
                     PROMPT("Manager"),
                     PROMPT("Delegation"),
-                    PROMPT("Storage"),
+                    PROMPT("Storage Limit"),
                     NULL,
                 };
 
@@ -351,7 +351,7 @@ bool prompt_transaction(
                     PROMPT("Fee"),
                     PROMPT("Source"),
                     PROMPT("Delegate"),
-                    PROMPT("Storage"),
+                    PROMPT("Storage Limit"),
                     NULL,
                 };
                 static const char *const delegation_prompts[] = {
@@ -359,7 +359,7 @@ bool prompt_transaction(
                     PROMPT("Fee"),
                     PROMPT("Source"),
                     PROMPT("Delegate"),
-                    PROMPT("Storage"),
+                    PROMPT("Storage Limit"),
                     NULL,
                 };
 
@@ -391,7 +391,7 @@ bool prompt_transaction(
                     PROMPT("Fee"),
                     PROMPT("Source"),
                     PROMPT("Destination"),
-                    PROMPT("Storage"),
+                    PROMPT("Storage Limit"),
                     NULL,
                 };
 
@@ -426,7 +426,7 @@ bool prompt_transaction(
                     PROMPT("Reveal Key"),
                     PROMPT("Key"),
                     PROMPT("Fee"),
-                    PROMPT("Storage"),
+                    PROMPT("Storage Limit"),
                     NULL,
                 };
 
