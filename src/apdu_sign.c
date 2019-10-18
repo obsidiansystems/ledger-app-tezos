@@ -364,7 +364,7 @@ bool prompt_transaction(
                 };
 
                 if (ops->operation.is_manager_tz_operation) {
-                    REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Manager.tz Delegation");
+                    REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Mgr.tz Delegation");
                 } else {
                     REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Delegation");
                 }
@@ -404,7 +404,7 @@ bool prompt_transaction(
                 register_ui_callback(AMOUNT_INDEX, microtez_to_string_indirect, &ops->operation.amount);
 
                 if (ops->operation.is_manager_tz_operation) {
-                    REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Manager.tz Transaction");
+                    REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Mgr.tz Transaction");
                 } else {
                     REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Transaction");
                 }
