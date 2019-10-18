@@ -88,7 +88,7 @@ static inline uint8_t next_byte(void const *data, size_t *ix, size_t length, uin
 
 #define NEXT_BYTE(data, ix, length) next_byte(data, ix, length, __LINE__)
 
-static inline uint64_t parse_z(void const *data, size_t *ix, size_t length, bool michelson_hack, uint32_t lineno) {
+static inline uint64_t parse_z(void const *data, size_t *ix, size_t length, uint32_t lineno) {
     uint64_t acc = 0;
     for (uint8_t shift = 0; ; ) {
         const uint8_t byte = next_byte(data, ix, length, lineno);
@@ -96,9 +96,24 @@ static inline uint64_t parse_z(void const *data, size_t *ix, size_t length, bool
         if (!(byte & 0x80)) {
             break;
         }
-        // For some reason PARSE_Z is giving us numbers shifted 1 bit
-        // to the left. TODO: figure out why this happens
-        if (michelson_hack && shift == 0) {
+        shift += 7;
+    }
+    return acc;
+}
+
+#define PARSE_Z(data, ix, length) parse_z(data, ix, length, __LINE__)
+
+static inline uint64_t parse_z_michelson(void const *data, size_t *ix, size_t length, uint32_t lineno) {
+    uint64_t acc = 0;
+    for (uint8_t shift = 0; ; ) {
+        const uint8_t byte = next_byte(data, ix, length, lineno);
+        acc |= ((uint64_t)byte & 0x7F) << shift;
+        if (!(byte & 0x80)) {
+            break;
+        }
+        // For some reason we are getting numbers shifted 1 bit to the
+        // left. TODO: figure out why this happens
+        if (shift == 0) {
             shift += 6;
         } else {
             shift += 7;
@@ -107,7 +122,7 @@ static inline uint64_t parse_z(void const *data, size_t *ix, size_t length, bool
     return acc;
 }
 
-#define PARSE_Z(data, ix, michelson_hack, length) parse_z(data, ix, length, michelson_hack, __LINE__)
+#define PARSE_Z_MICHELSON(data, ix, length) parse_z_michelson(data, ix, length, __LINE__)
 
 // This macro assumes:
 // * Beginning of data: const void *data
@@ -283,10 +298,10 @@ static void parse_operations_throws_parse_error(
 
         // Parse common fields for non-governance related operations.
         if (tag != OPERATION_TAG_PROPOSAL && tag != OPERATION_TAG_BALLOT) {
-            out->total_fee += PARSE_Z(data, &ix, length, false); // fee
-            PARSE_Z(data, &ix, length, false); // counter
-            PARSE_Z(data, &ix, length, false); // gas limit
-            out->total_storage_limit += PARSE_Z(data, &ix, length, false); // storage limit
+            out->total_fee += PARSE_Z(data, &ix, length); // fee
+            PARSE_Z(data, &ix, length); // counter
+            PARSE_Z(data, &ix, length); // gas limit
+            out->total_storage_limit += PARSE_Z(data, &ix, length); // storage limit
         }
 
         if (tag == OPERATION_TAG_ATHENS_REVEAL || tag == OPERATION_TAG_BABYLON_REVEAL) {
@@ -386,7 +401,7 @@ static void parse_operations_throws_parse_error(
                     struct origination_header const *const hdr = NEXT_TYPE(struct origination_header);
 
                     parse_implicit(&out->operation.destination, &hdr->signature_type, hdr->hash);
-                    out->operation.amount = PARSE_Z(data, &ix, length, false);
+                    out->operation.amount = PARSE_Z(data, &ix, length);
                     if (NEXT_BYTE(data, &ix, length) != 0) {
                         out->operation.flags |= ORIGINATION_FLAG_SPENDABLE;
                     }
@@ -404,7 +419,7 @@ static void parse_operations_throws_parse_error(
             case OPERATION_TAG_ATHENS_TRANSACTION:
             case OPERATION_TAG_BABYLON_TRANSACTION:
                 {
-                    out->operation.amount = PARSE_Z(data, &ix, length, false);
+                    out->operation.amount = PARSE_Z(data, &ix, length);
 
                     const struct contract *destination = NEXT_TYPE(struct contract);
                     parse_contract(&out->operation.destination, destination);
@@ -496,7 +511,7 @@ static void parse_operations_throws_parse_error(
                                         PARSE_ERROR();
                                     };
 
-                                    out->operation.amount = PARSE_Z(data, &ix, length, true);
+                                    out->operation.amount = PARSE_Z_MICHELSON(data, &ix, length);
 
                                     if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_UNIT
                                         || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_TRANSFER_TOKENS) {
@@ -581,7 +596,7 @@ static void parse_operations_throws_parse_error(
                                     PARSE_ERROR();
                                 };
 
-                                out->operation.amount = PARSE_Z(data, &ix, length, true);
+                                out->operation.amount = PARSE_Z_MICHELSON(data, &ix, length);
 
                                 if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_UNIT
                                     || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_TRANSFER_TOKENS) {
