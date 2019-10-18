@@ -167,7 +167,7 @@ typedef struct {
 })
 
 #define STATIC_UI_VALUE(str) ({ \
-    _Static_assert(sizeof(str) <= VALUE_WIDTH + 1/*null byte*/, str " won't fit in the UI.".); \
+    _Static_assert(sizeof(str) <= VALUE_WIDTH + 1/*null byte*/, str " won't fit in the UI."); \
     str; \
 })
 
@@ -177,6 +177,9 @@ typedef struct {
 
 // TODO: Rename to KEY_HASH_SIZE
 #define HASH_SIZE 20
+
+// HASH_SIZE encoded in base-58 ASCII
+#define HASH_SIZE_B58 36
 
 typedef struct {
     chain_id_t chain_id;
@@ -188,7 +191,10 @@ typedef struct parsed_contract {
     uint8_t originated;  // a lightweight bool
     signature_type_t signature_type; // 0 in originated case
                                      // An implicit contract with signature_type of 0 means not present
+
     uint8_t hash[HASH_SIZE];
+
+    char *hash_ptr;
 } parsed_contract_t;
 
 struct parsed_proposal {
@@ -232,9 +238,15 @@ struct parsed_operation {
     enum operation_tag tag;
     struct parsed_contract source;
     struct parsed_contract destination;
-    struct parsed_contract delegate; // For originations only
-    struct parsed_proposal proposal; // For proposals only
-    struct parsed_ballot ballot; // For ballots only
+    union {
+        struct parsed_contract delegate; // For originations only
+        struct parsed_proposal proposal; // For proposals only
+        struct parsed_ballot ballot; // For ballots only
+    };
+
+    bool is_manager_tz_operation;
+    struct parsed_contract implicit_account; // For manager.tz transactions
+
     uint64_t amount; // 0 where inappropriate
     uint32_t flags;  // Interpretation depends on operation type
 };

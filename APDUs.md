@@ -36,9 +36,10 @@ This parses as:
 | CDATA | 0x048000002c800006c18000000080000000 |
 
 0x01 is the first instruction and is used for "authorize baking". This
-APDU asks the ledger to use its internal private keys to sign an
-authorization to bake. Note that this instruction is only recognized
-by the baking app, and not the wallet app.
+APDU tells the ledger to save the choice of curve and derivation path
+to memory so that future operations know which of these to use when
+baking. Note that this instruction is only recognized by the baking
+app, and not the wallet app.
 
 A list of more instructions follows.
 
@@ -58,9 +59,78 @@ A list of more instructions follows.
 | `INS_GIT`                       | 0x09 | WB  | No     | Get the commit hash                              |
 | `INS_SETUP`                     | 0x0a | B   | Yes    | Setup a baking address                           |
 | `INS_QUERY_ALL_HWM`             | 0x0b | B   | No     | Get all high water mark information              |
-| `INS_DEAUTHORIZE`               | 0x0c | B   | Yes    | Unauthorize baking                               |
+| `INS_DEAUTHORIZE`               | 0x0c | B   | No     | Deauthorize baking                               |
 | `INS_QUERY_AUTH_KEY_WITH_CURVE` | 0x0d | B   | No     | Get auth key and curve                           |
 | `INS_HMAC`                      | 0x0e | B   | No     | Get the HMAC of a message                        |
 | `INS_SIGN_WITH_HASH`            | 0x0f | WB  | Yes    | Sign a message with the ledger’s key (with hash) |
 
 - B = Baking app, W = Wallet app
+
+## Signing operations
+
+There are 3 APDUs that deal with signing things. They use the Ledger’s
+private key to sign messages sent. They are:
+
+| Instruction          | Code | App | Parsing | Send hash |
+|----------------------|------|-----|---------|-----------|
+| `INS_SIGN`           | 0x04 | WB  | Yes     | No        |
+| `INS_SIGN_UNSAFE`    | 0x05 | W   | No      | No        |
+| `INS_SIGN_WITH_HASH` | 0x0f | WB  | Yes     | Yes       |
+
+The main difference between `INS_SIGN` and `INS_SIGN_UNSAFE` is that
+`INS_SIGN_UNSAFE` skips the parsing step which shows what operation is
+included in the APDU data. This is unsafe, because the user doesn’t
+see what operation they are actually signing. When this happens, we
+tell the user “Unrecognized: Sign Hash” so that they can make
+appropriate external steps to verify this hash.
+
+### Parsing operations
+
+Each Tezos block that is received through `INS_SIGN` is parsed and the
+results are shown on the Ledger’s display. At many points, this
+parsing may fail, and the Tezos app will fall back in this case to
+“Unrecognized: Sign Hash” mode.
+
+Parsing some Tezos blocks are particularly difficult. Contract
+“originations” contain Michelson data that could be too big to display
+and transactions can contain “parameters” which can be any valid
+Michelson data. Currently, only a small subset of parameters are
+parsed, and no contract originations can be parsed.
+
+There is not enough resources on the Ledger Nano S to parse any
+arbitrary operation, but we can match to a predefined template.
+Currently, the Tezos app matches to templates provided for specific
+Manager.tz operations, which are part of the migration to Babylon. In
+the Babylon migration, implicit contracts are converted to originated
+contracts. We support Babylon to make sure those contracts are still
+accessible via Ledger signing. More details on the migration are
+available at
+[migration_004_to_005.md](https://gitlab.com/cryptiumlabs/tezos/blob/master/specs/migration_004_to_005.md).
+
+There are four Michelson operations currently supported in the Ledger.
+They are:
+
+- set delegate
+- remove delegate
+- transfer implicit to contract
+- transfer contract to contract
+
+Each of these comes with its own Michelson sequence, each beginning
+with `DROP ; NIL operation` and ending with `CONS`. From there, we
+match like this:
+
+![Michelson manager.tz ops graph](michelson_ops.png)
+
+#### Manager.tz parsing limitations
+
+There are some limitations for Michelson parsing that should be noted.
+
+- Arguments passed to Manager.tz contract must match exactly those
+  described in the migration document. Any variations will be
+  rejected.
+- All endpoints other than “do” are rejected.
+- Amount transferred must be 0.
+- “contract-to-contract” requires that you use:
+  - the default endpoint for your destination contract
+  - the parameters must be of type unit
+

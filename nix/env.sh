@@ -5,13 +5,8 @@ shift
 
 root="$(git rev-parse --show-toplevel)"
 
-shell="$(nix-build "$root" -A "env.${target}.shell" --no-out-link ${NIX_BUILD_ARGS:-})/bin/env-shell"
-
 if [ $# -eq 0 ]; then
-  echo >&2 "Entering via $shell"
-  exec "$shell"
+  exec nix-shell "$root" -A "nano.${target}.wallet"
 else
-  exec "$shell" <<EOF
-    $@
-EOF
+  exec nix-shell "$root" -A "nano.${target}.wallet" --run "$(echo "$@")"
 fi

@@ -279,7 +279,7 @@ bool prompt_transaction(
                     PROMPT("Source"),
                     PROMPT("Manager"),
                     PROMPT("Fixed Delegate"),
-                    PROMPT("Storage"),
+                    PROMPT("Storage Limit"),
                     NULL,
                 };
                 static const char *const origination_prompts_delegatable[] = {
@@ -289,7 +289,7 @@ bool prompt_transaction(
                     PROMPT("Source"),
                     PROMPT("Manager"),
                     PROMPT("Delegate"),
-                    PROMPT("Storage"),
+                    PROMPT("Storage Limit"),
                     NULL,
                 };
                 static const char *const origination_prompts_undelegatable[] = {
@@ -299,7 +299,7 @@ bool prompt_transaction(
                     PROMPT("Source"),
                     PROMPT("Manager"),
                     PROMPT("Delegation"),
-                    PROMPT("Storage"),
+                    PROMPT("Storage Limit"),
                     NULL,
                 };
 
@@ -351,7 +351,7 @@ bool prompt_transaction(
                     PROMPT("Fee"),
                     PROMPT("Source"),
                     PROMPT("Delegate"),
-                    PROMPT("Storage"),
+                    PROMPT("Storage Limit"),
                     NULL,
                 };
                 static const char *const delegation_prompts[] = {
@@ -359,11 +359,15 @@ bool prompt_transaction(
                     PROMPT("Fee"),
                     PROMPT("Source"),
                     PROMPT("Delegate"),
-                    PROMPT("Storage"),
+                    PROMPT("Storage Limit"),
                     NULL,
                 };
 
-                REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Delegation");
+                if (ops->operation.is_manager_tz_operation) {
+                    REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Mgr.tz Delegation");
+                } else {
+                    REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Delegation");
+                }
 
                 bool const withdrawal = ops->operation.destination.originated == 0 &&
                     ops->operation.destination.signature_type == SIGNATURE_TYPE_UNSET;
@@ -387,7 +391,7 @@ bool prompt_transaction(
                     PROMPT("Fee"),
                     PROMPT("Source"),
                     PROMPT("Destination"),
-                    PROMPT("Storage"),
+                    PROMPT("Storage Limit"),
                     NULL,
                 };
 
@@ -399,7 +403,11 @@ bool prompt_transaction(
                                      &ops->total_storage_limit);
                 register_ui_callback(AMOUNT_INDEX, microtez_to_string_indirect, &ops->operation.amount);
 
-                REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Transaction");
+                if (ops->operation.is_manager_tz_operation) {
+                    REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Mgr.tz Transaction");
+                } else {
+                    REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Transaction");
+                }
 
                 ui_prompt(transaction_prompts, ok, cxl);
             }
@@ -418,7 +426,7 @@ bool prompt_transaction(
                     PROMPT("Reveal Key"),
                     PROMPT("Key"),
                     PROMPT("Fee"),
-                    PROMPT("Storage"),
+                    PROMPT("Storage Limit"),
                     NULL,
                 };
 

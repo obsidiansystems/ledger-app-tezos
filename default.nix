@@ -1,4 +1,4 @@
-{ pkgs ? import nix/nixpkgs.nix {}, gitDescribe ? null, nanoXSdk ? null, ... }:
+{ pkgs ? import nix/nixpkgs.nix {}, gitDescribe ? "TEST-dirty", nanoXSdk ? null, ... }:
 let
   fetchThunk = p:
     if builtins.pathExists (p + /git.json)
@@ -7,21 +7,18 @@ let
       then pkgs.fetchFromGitHub { inherit (builtins.fromJSON (builtins.readFile (p + /github.json))) owner repo rev sha256; }
     else p;
 
-  devGitDescribe = "TEST-dirty";
-
   targets =
-    let
-      fhs = extraPkgs: runScript: pkgs.callPackage nix/fhs.nix { inherit runScript extraPkgs; };
-    in {
+    {
       s = rec {
         name = "s";
-        sdk = fetchThunk nix/dep/nanos-secure-sdk;
-        env = pkgs.callPackage nix/bolos-env.nix { clangVersion = 4; };
+        sdk = fetchThunk ./nix/dep/nanos-secure-sdk;
+        env = pkgs.callPackage ./nix/bolos-env.nix { clangVersion = 4; };
         target = "TARGET_NANOS";
         targetId = "0x31100004";
-        fhsWith = fhs (_: [env.clang]);
-        iconHex = pkgs.runCommand "nano-s-icon-hex" {} ''
-          '${fhsWith "python"}' ${sdk + /icon.py} '${icons/nano-s-tezos.gif}' hexbitmaponly > "$out"
+        iconHex = pkgs.runCommand "nano-s-icon-hex" {
+          nativeBuildInputs = [ (pkgs.python.withPackages (ps: [ps.pillow])) ];
+        } ''
+          python ${sdk + /icon.py} '${icons/nano-s-tezos.gif}' hexbitmaponly > "$out"
         '';
         nvramDataSize = appDir: pkgs.runCommand "${name}-nvram-data-size" {} ''
           grep _nvram_data_size '${appDir + /debug/app.map}' | tr -s ' ' | cut -f2 -d' ' > "$out"
@@ -32,12 +29,13 @@ let
         sdk = if nanoXSdk == null
           then throw "No NanoX SDK"
           else assert builtins.typeOf nanoXSdk == "path"; nanoXSdk;
-        env = pkgs.callPackage nix/bolos-env.nix { clangVersion = 7; };
+        env = pkgs.callPackage ./nix/bolos-env.nix { clangVersion = 7; };
         target = "TARGET_NANOX";
         targetId = "0x33000004";
-        fhsWith = fhs (_: [env.clang]);
-        iconHex = pkgs.runCommand "${name}-icon-hex" {} ''
-          '${fhsWith "python3"}' '${sdk + /icon3.py}' --hexbitmaponly '${icons/nano-x-tezos.gif}' > "$out"
+        iconHex = pkgs.runCommand "${name}-icon-hex" {
+          nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ps.pillow])) ];
+        } ''
+          python '${sdk + /icon3.py}' --hexbitmaponly '${icons/nano-x-tezos.gif}' > "$out"
         '';
         nvramDataSize = appDir: pkgs.runCommand "${name}-nvram-data-size" {} ''
           envram_data="0x$(cat  | grep _envram_data '${appDir + /debug/app.map}' | cut -f1 -d' ')"
@@ -49,34 +47,34 @@ let
 
   src = pkgs.lib.sources.sourceFilesBySuffices (pkgs.lib.sources.cleanSource ./.) [".c" ".h" ".gif" "Makefile"];
 
-  build = gitDescribe: bolos:
+  build = bolos:
     let
-      app = bakingApp: pkgs.runCommand "ledger-app-tezos-nano-${bolos.name}-${if bakingApp then "baking" else "wallet"}" {} ''
-        set -Eeuo pipefail
+      app = bakingApp: pkgs.stdenv.mkDerivation {
+        name = "ledger-app-tezos-nano-${bolos.name}-${if bakingApp then "baking" else "wallet"}";
+        inherit src;
+        postConfigure = ''
+          PATH="$BOLOS_ENV/clang-arm-fropi/bin:$PATH"
+        '';
+        nativeBuildInputs = [
+          (pkgs.python3.withPackages (ps: [ps.pillow ps.ledgerblue]))
+        ];
+        TARGET = bolos.target;
+        GIT_DESCRIBE = gitDescribe;
+        BOLOS_SDK = bolos.sdk;
+        BOLOS_ENV = bolos.env;
+        makeFlags = [
+          "APP=${if bakingApp then "tezos_baking" else "tezos_wallet"}"
+        ];
+        installPhase = ''
+          mkdir -p $out
+          cp -R bin $out
+          cp -R debug $out
 
-        cp -a '${src}'/* .
-        chmod -R u+w .
-        '${bolos.fhsWith "bash"}' <<EOF
-        set -Eeuxo pipefail
-
-        export BOLOS_SDK='${bolos.sdk}'
-        export BOLOS_ENV='${bolos.env}'
-        export APP='${if bakingApp then "tezos_baking" else "tezos_wallet"}'
-        export GIT_DESCRIBE='${gitDescribe}'
-        export TARGET='${bolos.target}'
-        make clean
-        make all
-        EOF
-
-        mkdir -p "$out"
-        cp -R bin "$out"
-        cp -R debug "$out"
-
-        echo
-        echo ">>>> Application size: <<<<"
-        '${pkgs.binutils-unwrapped}/bin/size' "$out/bin/app.elf"
-      '';
-
+          echo
+          echo ">>>> Application size: <<<<"
+          size $out/bin/app.elf
+        '';
+      };
       mkRelease = short_name: name: appDir: pkgs.runCommand "${short_name}-nano-${bolos.name}-release-dir" {} ''
         mkdir -p "$out"
 
@@ -110,10 +108,6 @@ let
         '';
       };
     };
-
-  buildResult = if gitDescribe == null
-    then throw "Set 'gitDescribe' attribute to result of 'git describe' or use nix/build.sh instead"
-    else build gitDescribe;
 
   # The package clang-analyzer comes with a perl script `scan-build` that seems
   # to get quickly lost with the cross-compiler of the SDK if run by itself.
@@ -161,28 +155,18 @@ let
              " "
              (x: "-analyzer-checker " + x)
              interestingExtrasAnalyzers;
-     in bakingApp: bolos: pkgs.runCommand "static-analysis-html-${if bakingApp then "baking" else "wallet"}" {} ''
-        set -Eeuo pipefail
-        cp -a '${src}'/* .
-        chmod -R u+w .
-        '${bolos.fhsWith "bash"}' <<EOF
-        set -Eeuxo pipefail
-        export BOLOS_SDK='${bolos.sdk}'
-        export BOLOS_ENV='${bolos.env}'
-        export GIT_DESCRIBE='${if gitDescribe == null then devGitDescribe else gitDescribe}'
-        export CCC_ANALYZER_HTML="$out"
-        export CCC_ANALYZER_OUTPUT_FORMAT=html
-        export CCC_ANALYZER_ANALYSIS="${analysisOptions}"
-        export CCC_CC='${bolos.env}/clang-arm-fropi/bin/clang'
-        export CLANG='${bolos.env}/clang-arm-fropi/bin/clang'
-        export TARGET='${bolos.target}'
-        export APP='${if bakingApp then "tezos_baking" else "tezos_wallet"}'
-
-        mkdir -p "$out"
-        make clean
-        make all CC='${pkgs.clangAnalyzer}/libexec/scan-build/ccc-analyzer'
-        EOF
-
+     in bakingApp: bolos: ((build bolos).${if bakingApp then "baking" else "wallet"}).overrideAttrs (old: {
+       CCC_ANALYZER_HTML = "${placeholder "out"}";
+       CCC_ANALYZER_OUTPUT_FORMAT = "html";
+       CCC_ANALYZER_ANALYSIS = analysisOptions;
+       CCC_CC = "${bolos.env}/clang-arm-fropi/bin/clang";
+       CLANG = "${bolos.env}/clang-arm-fropi/bin/clang";
+       preBuild = ''
+         mkdir -p $out
+       '';
+       makeFlags = old.makeFlags or []
+         ++ [ "CC=${pkgs.clangAnalyzer}/libexec/scan-build/ccc-analyzer" ];
+       installPhase = ''
         {
           echo "<html><title>Analyzer Report</title><body><h1>Clang Static Analyzer Results</h1>"
           printf "<p>App: <code>${if bakingApp then "tezos_baking" else "tezos_wallet"}</code></p>"
@@ -202,13 +186,14 @@ let
           echo "</body></html>"
         } > "$out/index.html"
       '';
+     });
 
   mkTargets = mk: {
     s = mk targets.s;
     x = mk targets.x;
   };
 in rec {
-  nano = mkTargets buildResult;
+  nano = mkTargets build;
 
   wallet = {
     s = nano.s.wallet;
@@ -225,21 +210,12 @@ in rec {
   });
 
   env = mkTargets (bolos: {
-    # Script that places you in the environment to run `make`, etc.
-    shell = pkgs.writeScriptBin "env-shell" ''
-      #!${pkgs.stdenv.shell}
-      export BOLOS_SDK='${bolos.sdk}'
-      export BOLOS_ENV='${bolos.env}'
-      export TARGET='${bolos.target}'
-      exec '${bolos.fhsWith "bash"}'
-    '';
-
     ide = {
       config = {
         vscode = pkgs.writeText "vscode-nano-${bolos.name}.code-workspace" (builtins.toJSON {
           folders = [ { path = "."; } ];
           settings = {
-            "clangd.path" = bolos.fhsWith (pkgs.llvmPackages.clang-unwrapped + /bin/clangd);
+            "clangd.path" = pkgs.llvmPackages.clang-unwrapped + /bin/clangd;
           };
         });
       };
