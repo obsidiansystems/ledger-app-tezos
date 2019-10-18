@@ -234,11 +234,6 @@ static void parse_operations_throws_parse_error(
 
     out->operation.tag = OPERATION_TAG_NONE;
 
-    // init some null values for contracts
-    out->operation.source.hash_ptr = NULL;
-    out->operation.destination.hash_ptr = NULL;
-    out->operation.delegate.hash_ptr = NULL;
-
     compute_pkh(&out->public_key, &out->signing, derivation_type, bip32_path);
 
     size_t ix = 0;
