@@ -58,7 +58,7 @@ A list of more instructions follows.
 | `INS_GIT`                       | 0x09 | WB  | No     | Get the commit hash                              |
 | `INS_SETUP`                     | 0x0a | B   | Yes    | Setup a baking address                           |
 | `INS_QUERY_ALL_HWM`             | 0x0b | B   | No     | Get all high water mark information              |
-| `INS_DEAUTHORIZE`               | 0x0c | B   | Yes    | Unauthorize baking                               |
+| `INS_DEAUTHORIZE`               | 0x0c | B   | No     | Deauthorize baking                               |
 | `INS_QUERY_AUTH_KEY_WITH_CURVE` | 0x0d | B   | No     | Get auth key and curve                           |
 | `INS_HMAC`                      | 0x0e | B   | No     | Get the HMAC of a message                        |
 | `INS_SIGN_WITH_HASH`            | 0x0f | WB  | Yes    | Sign a message with the ledger’s key (with hash) |
@@ -92,17 +92,18 @@ parsing may fail, and the Tezos app will fall back in this case to
 
 Parsing some Tezos blocks are particularly difficult. Contract
 “originations” contain Michelson data that could be too big to display
-and transactions can contain “parameters” which can contain .
-Currently, only a small subset of parameters are parsed, and no
-contract originations can be parsed.
+and transactions can contain “parameters” which can be any valid
+Michelson data. Currently, only a small subset of parameters are
+parsed, and no contract originations can be parsed.
 
-There is not enough resources on the Ledger to parse any arbitrary
-operation, but we can match to a predefined template. Currently, the
-Tezos app matches to templates provided for specific Manager.tz
-operations, which are part of the migration to Babylon. In the Babylon
-migration, implicit contracts are converted to originated contracts.
-We support Babylon to make sure those contracts are still accessible
-via Ledger signing. More details on the migration are available at
+There is not enough resources on the Ledger Nano S to parse any
+arbitrary operation, but we can match to a predefined template.
+Currently, the Tezos app matches to templates provided for specific
+Manager.tz operations, which are part of the migration to Babylon. In
+the Babylon migration, implicit contracts are converted to originated
+contracts. We support Babylon to make sure those contracts are still
+accessible via Ledger signing. More details on the migration are
+available at
 [migration_004_to_005.md](https://gitlab.com/cryptiumlabs/tezos/blob/master/specs/migration_004_to_005.md).
 
 There are four Michelson operations currently supported in the Ledger.
