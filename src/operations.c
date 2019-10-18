@@ -470,8 +470,8 @@ static void parse_operations_throws_parse_error(
                             // Only allow single sequence (5 is needed
                             // in argument length for above two
                             // bytes). Also bail out on really big
-                            // Michellson that we don’t support.
-                            if (   sequence_length + 5 != argument_length
+                            // Michelson that we don’t support.
+                            if (   sequence_length + sizeof(uint8_t) + sizeof(uint32_t) != argument_length
                                 || argument_length > MAX_MICHELSON_SEQUENCE_LENGTH) {
                                 PARSE_ERROR();
                             }
