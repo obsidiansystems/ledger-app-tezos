@@ -194,6 +194,7 @@ static inline uint16_t michelson_read_short(void const *data, size_t *ix, size_t
 static inline void michelson_read_address(parsed_contract_t *const out, const void *data, size_t *ix, size_t length) {
     switch (NEXT_BYTE(data, ix, length)) {
         case MICHELSON_TYPE_BYTE_SEQUENCE: {
+            // Need 1 byte for signature, plus the rest of the hash.
             if (MICHELSON_READ_LENGTH(data, ix, length) != HASH_SIZE + 1) {
                 PARSE_ERROR();
             }
@@ -205,10 +206,10 @@ static inline void michelson_read_address(parsed_contract_t *const out, const vo
             break;
         }
         case MICHELSON_TYPE_STRING: {
-            if (MICHELSON_READ_LENGTH(data, ix, length) != 36) {
+            if (MICHELSON_READ_LENGTH(data, ix, length) != HASH_SIZE_B58) {
                 PARSE_ERROR();
             }
-            out->hash_ptr = (void*)data + *ix;
+            out->hash_ptr = (char*)data + *ix;
             (*ix) += 36;
             out->originated = false;
             out->signature_type = SIGNATURE_TYPE_UNSET;
