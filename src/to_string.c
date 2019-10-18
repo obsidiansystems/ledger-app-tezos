@@ -24,8 +24,8 @@ void parsed_contract_to_string(
     size_t const buff_size,
     parsed_contract_t const *const contract
 ) {
-    // If hash_ptr exists, show it to now. Otherwise, we
-    // unpack the packed hash.
+    // If hash_ptr exists, show it to us now. Otherwise, we unpack the
+    // packed hash.
     if (contract->hash_ptr != NULL) {
         if (buff_size < 36) THROW(EXC_WRONG_LENGTH);
         memcpy(buff, contract->hash_ptr, 36);

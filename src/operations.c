@@ -79,8 +79,8 @@ static inline void advance_ix(size_t *ix, size_t length, size_t amount) {
     *ix += amount;
 }
 
-static inline uint8_t next_byte(const void *data, size_t *ix, size_t length, uint32_t lineno) {
-    if (*ix == length) parse_error(lineno);
+static inline uint8_t next_byte(void const *data, size_t *ix, size_t length, uint32_t lineno) {
+    if (*ix >= length) parse_error(lineno);
     uint8_t res = ((const char *)data)[*ix];
     (*ix)++;
     return res;
@@ -88,7 +88,7 @@ static inline uint8_t next_byte(const void *data, size_t *ix, size_t length, uin
 
 #define NEXT_BYTE(data, ix, length) next_byte(data, ix, length, __LINE__)
 
-static inline uint64_t parse_z(const void *data, size_t *ix, size_t length, bool michelson_hack, uint32_t lineno) {
+static inline uint64_t parse_z(void const *data, size_t *ix, size_t length, bool michelson_hack, uint32_t lineno) {
     uint64_t acc = 0;
     for (uint8_t shift = 0; ; ) {
         const uint8_t byte = next_byte(data, ix, length, lineno);
@@ -173,8 +173,8 @@ static inline void parse_contract(parsed_contract_t *const out, struct contract 
     }
 }
 
-static inline uint32_t michelson_read_length(const void *data, size_t *ix, size_t length, uint32_t lineno) {
-    if (*ix == length) parse_error(lineno);
+static inline uint32_t michelson_read_length(void const *data, size_t *ix, size_t length, uint32_t lineno) {
+    if (*ix >= length) parse_error(lineno);
     const uint32_t res = READ_UNALIGNED_BIG_ENDIAN(uint32_t, &data[*ix]);
     (*ix) += sizeof(uint32_t);
     return res;
@@ -182,8 +182,8 @@ static inline uint32_t michelson_read_length(const void *data, size_t *ix, size_
 
 #define MICHELSON_READ_LENGTH(data, ix, length) michelson_read_length(data, ix, length, __LINE__)
 
-static inline uint16_t michelson_read_short(const void *data, size_t *ix, size_t length, uint32_t lineno) {
-    if (*ix == length) parse_error(lineno);
+static inline uint16_t michelson_read_short(void const *data, size_t *ix, size_t length, uint32_t lineno) {
+    if (*ix >= length) parse_error(lineno);
     const uint16_t res = READ_UNALIGNED_BIG_ENDIAN(uint16_t, &data[*ix]);
     (*ix) += sizeof(uint16_t);
     return res;
