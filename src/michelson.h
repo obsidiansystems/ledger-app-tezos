@@ -40,7 +40,7 @@ enum michelson_params_tag {
     MICHELSON_PARAMS_SOME = 0xff,
 };
 
-#define MAX_MICHELSON_SEQUENCE_LENGTH 100
+#define MAX_MICHELSON_SEQUENCE_LENGTH 200
 
 #define MAX_ENTRYPOINT_LENGTH 31
 enum entrypoint_tag {
