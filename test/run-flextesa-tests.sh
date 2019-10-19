@@ -22,8 +22,8 @@ case "$protocol" in
     branch="master"
     ;;
   Babylon)
-    branch="zeronet"
-    sandbox_args+=" --protocol-kind=Babylon --protocol-hash=PsBABY5HQTSkA4297zNHfsZNKtxULfL18y95qb3m53QJiXGmrbU"
+    branch="babylonnet"
+    sandbox_args+=" --protocol-kind=Babylon --protocol-hash=PsBabyM1eUXZseaJdmXFApDSBqj8YBfwELoxZHHW77EMcAbbwAS"
     ;;
   *)
     fail "Protocol not known, use either 'Athens' or 'Babylon'"
