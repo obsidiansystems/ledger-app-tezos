@@ -517,7 +517,10 @@ static uint8_t get_magic_byte_or_throw(uint8_t const *const buff, size_t const b
     }
 }
 
-static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, uint8_t const instruction) {
+static size_t handle_apdu(uint8_t const instruction) {
+    bool const enable_hashing = instruction != INS_SIGN_UNSAFE;
+    bool const enable_parsing = enable_hashing;
+
     uint8_t *const buff = &G_io_apdu_buffer[OFFSET_CDATA];
     uint8_t const p1 = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_P1]);
     uint8_t const buff_size = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]);
@@ -606,18 +609,6 @@ static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, 
     } else {
         return finalize_successful_send(0);
     }
-}
-
-size_t handle_apdu_sign(uint8_t instruction) {
-    bool const enable_hashing = instruction != INS_SIGN_UNSAFE;
-    bool const enable_parsing = enable_hashing;
-    return handle_apdu(enable_hashing, enable_parsing, instruction);
-}
-
-size_t handle_apdu_sign_with_hash(uint8_t instruction) {
-    bool const enable_hashing = true;
-    bool const enable_parsing = true;
-    return handle_apdu(enable_hashing, enable_parsing, instruction);
 }
 
 static int perform_signature(bool const on_hash, bool const send_hash) {
