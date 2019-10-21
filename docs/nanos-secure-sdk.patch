@@ -1,0 +1,38 @@
+diff --git a/src/os_io_seproxyhal.c b/src/os_io_seproxyhal.c
+index 36171b6..2f75f4e 100644
+--- a/src/os_io_seproxyhal.c
++++ b/src/os_io_seproxyhal.c
+@@ -917,15 +917,30 @@ unsigned int os_io_seproxyhal_get_app_name_and_version(void) {
+ }
+ 
+ 
+-unsigned short io_exchange(unsigned char channel, unsigned short tx_len) {
+-  unsigned short rx_len;
+-
++void bolos_check_canary()
++{
+ #ifdef HAVE_BOLOS_APP_STACK_CANARY
+   // behavior upon detected stack overflow is to reset the SE
+   if (app_stack_canary != APP_STACK_CANARY_MAGIC) {
+     io_seproxyhal_se_reset();
+   }
+ #endif // HAVE_BOLOS_APP_STACK_CANARY
++}
++
++
++int bolos_canary_diff()
++{ return (app_stack_canary - APP_STACK_CANARY_MAGIC); }
++
++int bolos_stack_size()
++{
++  char x;
++  return &x - (char*)(&app_stack_canary);
++}
++
++unsigned short io_exchange(unsigned char channel, unsigned short tx_len) {
++  unsigned short rx_len;
++
++  bolos_check_canary();
+ 
+ #ifdef DEBUG_APDU
+   if ((channel&~(IO_FLAGS)) == CHANNEL_APDU) {
