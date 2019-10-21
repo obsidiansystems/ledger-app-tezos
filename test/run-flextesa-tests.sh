@@ -6,7 +6,7 @@ set -xEeuo pipefail
 app="$1"
 shift
 
-: "${1:?Please specify a protocol to run. 'Athens' or 'Babylon'}"
+: "${1:?Please specify a protocol to run. 'Babylon'}"
 protocol="$1"
 shift
 
@@ -18,15 +18,12 @@ tezos="${root}/nix/dep/tezos-baking-platform"
 
 sandbox_args=""
 case "$protocol" in
-  Athens)
-    branch="master"
-    ;;
   Babylon)
     branch="babylonnet"
     sandbox_args+=" --protocol-kind=Babylon --protocol-hash=PsBabyM1eUXZseaJdmXFApDSBqj8YBfwELoxZHHW77EMcAbbwAS"
     ;;
   *)
-    fail "Protocol not known, use either 'Athens' or 'Babylon'"
+    fail "Protocol not known, use 'Babylon'"
     ;;
 esac
 
