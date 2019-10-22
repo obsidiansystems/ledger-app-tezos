@@ -125,7 +125,7 @@ typedef struct {
 })
 
 #define STATIC_UI_VALUE(str) ({ \
-    _Static_assert(sizeof(str) <= VALUE_WIDTH + 1/*null byte*/, str " won't fit in the UI.".); \
+    _Static_assert(sizeof(str) <= VALUE_WIDTH + 1/*null byte*/, str " won't fit in the UI."); \
     str; \
 })
 
