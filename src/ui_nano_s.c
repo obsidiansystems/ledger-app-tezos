@@ -231,10 +231,11 @@ void ui_display(const bagl_element_t *elems, size_t sz, ui_callback_t ok_c, ui_c
     if (!is_idling()) {
         switch_screen(0);
     }
-    ux.elements = elems;
-    ux.elements_count = sz;
-    ux.button_push_handler = button_handler;
-    ux.elements_preprocessor = prepro;
+    ux.stack[0].element_arrays[0].element_array = elems;
+    ux.stack[0].element_arrays[0].element_array_count = sz;
+    ux.stack[0].element_arrays_count=1;
+    ux.stack[0].button_push_callback = button_handler;
+    G_ux.stack[0].screen_before_element_display_callback = prepro;
     UX_WAKE_UP();
     UX_REDISPLAY();
 }
