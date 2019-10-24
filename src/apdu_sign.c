@@ -363,11 +363,7 @@ bool prompt_transaction(
                     NULL,
                 };
 
-                if (ops->operation.is_manager_tz_operation) {
-                    REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Mgr.tz Delegation");
-                } else {
-                    REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Delegation");
-                }
+                REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Delegation");
 
                 bool const withdrawal = ops->operation.destination.originated == 0 &&
                     ops->operation.destination.signature_type == SIGNATURE_TYPE_UNSET;
@@ -403,11 +399,7 @@ bool prompt_transaction(
                                      &ops->total_storage_limit);
                 register_ui_callback(AMOUNT_INDEX, microtez_to_string_indirect, &ops->operation.amount);
 
-                if (ops->operation.is_manager_tz_operation) {
-                    REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Mgr.tz Transaction");
-                } else {
-                    REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Transaction");
-                }
+                REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Transaction");
 
                 ui_prompt(transaction_prompts, ok, cxl);
             }
