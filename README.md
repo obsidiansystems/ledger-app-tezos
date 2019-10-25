@@ -19,10 +19,10 @@ blocks.
 
 This repository contains two Ledger Nano applications:
 
-1. The "Tezos Baking" application is for baking: signing new blocks and
+1. The "Tezos Baking" application (Nano S only) is for baking: signing new blocks and
 endorsements. For more information about baking, see
 *[Benefits and Risks of Home Baking](https://medium.com/@tezos_91823/benefits-and-risks-of-home-baking-a631c9ca745)*.
-2. The "Tezos Wallet" application is for making XTZ transactions, originating contracts, delegation, and voting. Basically everything you might want to use the Ledger Nano S/Xfor on Tezos besides baking.
+2. The "Tezos Wallet" application (Nano S and X) is for making XTZ transactions, originating contracts, delegation, and voting. Basically everything you might want to use the Ledger Nano S/X for on Tezos besides baking.
 
 It is possible to do all of these things without a hardware wallet, but using a
 hardware wallet provides you better security against key theft.
@@ -539,12 +539,13 @@ ledger_<...>_ed_0_0: tz1ccbGmKKwucwfCr846deZxGeDhiaTykGgK (ledger sk known)
 We recommend reading as much as possible about BIP32 to ensure you fully understand
 this.
 
-## Using the Tezos Wallet application
+## Using the Tezos Wallet application (Nano S and X)
 
 This application and the Tezos Baking Application constitute complementary apps
 for different use cases -- which could be on paired devices and therefore use
 the same key, or which could also be used in different scenarios for different
-accounts. Baking is rejected by this app.
+accounts. Baking is rejected by this app. The Tezos Wallet Application is available
+on the Nano S (all versions) and the Nano X (V2.0.1 and later)
 
 The "provide address" command on the Tezos Wallet application shows the address
 the first time the command is run for any given session. Subsequently, it
@@ -722,7 +723,7 @@ Here, the hash under `Blake 2B Hash (ledger-style, with operation watermark)` is
 
 To be truly confident in the correctness of this operation, run the same operation multiple times from different places. `tezos-client` has two options to help with this: `--dry-run` which skips the last step of injecting the operation into the chain, and `--block <block-hash>` to pin an operation to a specific block.
 
-## Using the Tezos Baking Application
+## Using the Tezos Baking Application (Nano S only)
 
 The Tezos Baking Application supports the following operations:
 
