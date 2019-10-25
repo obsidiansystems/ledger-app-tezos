@@ -509,12 +509,14 @@ The output of this command includes three Tezos addresses derived from the secre
 stored on the device, via different signing curves and BIP32 paths.
 
 ```
-Found a Tezos Wallet 1.4.0 (commit 764625b1) application running on Ledger Nano S at [0001:002a:00].
+Found a Tezos Baking 2.0.1 (git-description: "") application running on
+Ledger Nano S at [0001:0003:00].
 
-To use keys at BIP32 path m/44'/1729'/0'/0' (default Tezos key path), use one of
- tezos-client import secret key ledger_jhartzell "ledger://major-squirrel-thick-hedgehog/ed25519/0'/0'"
- tezos-client import secret key ledger_jhartzell "ledger://major-squirrel-thick-hedgehog/secp256k1/0'/0'"
- tezos-client import secret key ledger_jhartzell "ledger://major-squirrel-thick-hedgehog/P-256/0'/0'"
+To use keys at BIP32 path m/44'/1729'/0'/0' (default Tezos key path), use one
+of:
+  tezos-client import secret key ledger_kiln "ledger://major-squirrel-thick-hedgehog/ed25519/0h/0h"
+  tezos-client import secret key ledger_kiln "ledger://major-squirrel-thick-hedgehog/secp256k1/0h/0h"
+  tezos-client import secret key ledger_kiln "ledger://major-squirrel-thick-hedgehog/P-256/0h/0h"
 ```
 
 These show you how to import keys with a specific signing curve (e.g. `ed25519`) and derivation path (e.g. `/0'/0'`). The
@@ -579,11 +581,11 @@ eventually display more transaction details along with this. When block headers
 and endorsements are sent to the Ledger Nano S, they are rejected silently as if the
 user rejected them.
 
-### Faucet (zeronet only)
+### Faucet (alphanet and zeronet only)
 
-On zeronet, you will need to use the [Tezos Faucet](https://faucet.tzalpha.net/)
+On alphanet and zeronet, you will need to use the [Tezos Faucet](https://faucet.tzalpha.net/)
 to obtain some tez. Tell them you're not a robot, then click "Get alphanet tz."
-It works on zeronet (even though the URL says alphanet).
+It works on zeronet (even though the URL says "alpha").
 
 Run the following command, where `<your-name>` is some alias you want to use for
 this wallet, and `tz1<...>.json` is the name of the file you just downloaded
@@ -702,7 +704,7 @@ $ tezos-client submit proposals for <ACCOUNT> <PROTOCOL-HASH>
 
 The Wallet app will then ask you to confirm the various details of the proposal submission.
 
-**Note:** While `tezos-client` will let you submit multiple proposals at once with this command, submitting more than one will cause the Wallet app to show "Sign Unverified?" instead of showing each field of each proposal for your confirmation. Signing an operation that you can't confirm is not safe and it is highly recommended that you simply submit each proposal one at a time so you can properly confirm the fields on the ledger device.
+**Note:** While `tezos-client` will let you submit multiple proposals at once with this command, submitting more than one will cause the Wallet app to show "Sign Hash" instead of showing each field of each proposal for your confirmation. Signing an operation that you can't confirm is not safe and it is highly recommended that you simply submit each proposal one at a time so you can properly confirm the fields on the ledger device. To manually confirm the hash, refer to [Manually Confirming Operation Hashes](#Manually-Confirming-Operation-Hashes).
 
 Voting for a proposal during the Exploration or Promotion Vote Period also requires that you have the Wallet app open. You can then run
 
@@ -713,6 +715,36 @@ $ tezos-client submit ballot for <ACCOUNT> <PROTOCOL-HASH> <yea|nay|pass>
 The Wallet app will ask you to confirm the details of your vote.
 
 Keep in mind that only registered delegate accounts can submit proposals and vote. Each account can submit up to 20 proposals per proposal period and vote only once per voting period. For a more detailed post on participating during each phase of the amendment process, see this [Medium post](https://medium.com/@obsidian.systems/voting-on-tezos-with-your-ledger-nano-s-8d75f8c1f076). For a full description of how voting works, refer to the [Tezos documentation](https://gitlab.com/tezos/tezos/blob/master/docs/whitedoc/voting.rst).
+
+### Manually Confirming Operation Hashes
+
+Many operations are too large or complex for Tezos Wallet to show you enough detail on the device that you could safely confirm it. For example, it is possible to create an operation that includes hundreds of transactions. It is not feasible to confirm all of them on a tiny device screen. For any operation that Tezos Wallet can't easily confirm via screen prompts, it will instead show you the "Sign Hash" prompt. This shows you a *hash* of the entire operation that you should cross-check with another source. `tezos-client` will show you this hash if you ask it to run the operation with `--verbose-signing`. This will include additional output like the following:
+
+```
+Pre-signature information (verbose signing):
+  * Branch: BMRELbkCkHvCAr2vZfavjYUKXLbKrGvX6oN3qNEDKPjp8aJHqRm
+  * Watermark: `Generic-operation` (0x03)
+  * Operation bytes:
+    e0ac9e16f0005865f71bcf039d10ec2bb8d604210c9139968949f64ea5c9d1320500aed01
+    1841ffbb0bcc3b51c80f2b6c333a1be3df00000000000000040ab22e46e7872aa13e366e4
+    55bb4f5dbede856ab0864e1da7e122554579ee71f876cd995a324193bbe09ac2d5c53f69f
+    93778f8d608f1fea885f9b53e0abdb6e4
+  * Blake 2B Hash (raw): Hnw7wQsfv8fvMUejXNJ31NauapEtzLZg859JwqNUEDEE
+  * Blake 2B Hash (ledger-style, with operation watermark):
+    C5Qkk9tTwaUbhnrN29JpXSmsYCEi1uhM8rSsentBwmbN
+  * JSON encoding:
+    { "branch": "BMRELbkCkHvCAr2vZfavjYUKXLbKrGvX6oN3qNEDKPjp8aJHqRm",
+      "contents":
+        [ { "kind": "proposals",
+            "source": "tz1baMXLyDZ7nx7v96P2mEwM9U5Rhj5xJUnJ", "period": 0,
+            "proposals":
+              [ "Pt24m4xiPbLDhVgVfABUjirbmda3yohdN82Sp9FeuAXJ4eV9otd",
+                "Psd1ynUBhMZAeajwcZJAeq5NrxorM6UCU4GJqxZ7Bx2e9vUWB6z" ] } ] }
+```
+
+Here, the hash under `Blake 2B Hash (ledger-style, with operation watermark)` is `C5Qkk9tTwaUbhnrN29JpXSmsYCEi1uhM8rSsentBwmbN` and should match the hash on the Ledger screen.
+
+To be truly confident in the correctness of this operation, run the same operation multiple times from different places. `tezos-client` has two options to help with this: `--dry-run` which skips the last step of injecting the operation into the chain, and `--block <block-hash>` to pin an operation to a specific block.
 
 ## Using the Tezos Baking Application
 

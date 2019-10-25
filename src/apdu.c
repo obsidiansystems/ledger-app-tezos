@@ -8,6 +8,8 @@
 #include <string.h>
 
 size_t provide_pubkey(uint8_t *const io_buffer, cx_ecfp_public_key_t const *const pubkey) {
+    check_null(io_buffer);
+    check_null(pubkey);
     size_t tx = 0;
     io_buffer[tx++] = pubkey->W_len;
     memmove(io_buffer + tx, pubkey->W, pubkey->W_len);
@@ -74,6 +76,8 @@ void main_loop(apdu_handler const *const handlers, size_t const handlers_size) {
                 THROW(EXCEPTION_IO_RESET);
             }
             CATCH_OTHER(e) {
+                clear_apdu_globals(); // IMPORTANT: Application state must not persist through errors
+
                 uint16_t sw = e;
                 switch (sw) {
                 default:

@@ -19,6 +19,10 @@
 
 #define G global.ui
 
+void ui_refresh(void) {
+    // DO NOTHING
+}
+
 // CALLED BY THE SDK
 unsigned char io_event(unsigned char channel);
 void io_seproxyhal_display(const bagl_element_t *element);
@@ -146,7 +150,8 @@ static bool do_nothing(void) {
 static void ui_idle(void) {
 #   ifdef BAKING_APP
         update_baking_idle_screens();
-        ui_display(ui_idle_screen, NUM_ELEMENTS(ui_idle_screen),
+        ui_display(
+            ui_idle_screen, NUM_ELEMENTS(ui_idle_screen),
                 do_nothing, exit_app, 3);
 #   else
         G.cxl_callback = exit_app;
@@ -231,11 +236,18 @@ void ui_display(const bagl_element_t *elems, size_t sz, ui_callback_t ok_c, ui_c
     if (!is_idling()) {
         switch_screen(0);
     }
+#if CX_APILEVEL < 10 
+    ux.elements = elems;
+    ux.elements_count = sz;
+    ux.button_push_handler = button_handler;
+    ux.elements_preprocessor = prepro;
+#else
     ux.stack[0].element_arrays[0].element_array = elems;
     ux.stack[0].element_arrays[0].element_array_count = sz;
     ux.stack[0].element_arrays_count=1;
     ux.stack[0].button_push_callback = button_handler;
     G_ux.stack[0].screen_before_element_display_callback = prepro;
+#endif
     UX_WAKE_UP();
     UX_REDISPLAY();
 }
@@ -257,6 +269,7 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
     case SEPROXYHAL_TAG_DISPLAY_PROCESSED_EVENT:
         UX_DISPLAYED_EVENT({});
         break;
+
     case SEPROXYHAL_TAG_TICKER_EVENT:
         if (ux.callback_interval_ms != 0) {
             ux.callback_interval_ms -= MIN(ux.callback_interval_ms, 100u);

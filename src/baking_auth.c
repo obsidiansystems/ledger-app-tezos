@@ -23,18 +23,18 @@ void write_high_water_mark(parsed_baking_data_t const *const in) {
     if (!is_valid_level(in->level)) THROW(EXC_WRONG_VALUES);
     UPDATE_NVRAM(ram, {
         // If the chain matches the main chain *or* the main chain is not set, then use 'main' HWM.
-        high_watermark_t *const dest = select_hwm_by_chain(in->chain_id, ram);
+        high_watermark_t volatile *const dest = select_hwm_by_chain(in->chain_id, ram);
         dest->highest_level = MAX(in->level, dest->highest_level);
         dest->had_endorsement = in->is_endorsement;
     });
 }
 
-void authorize_baking(cx_curve_t const curve, bip32_path_t const *const bip32_path) {
+void authorize_baking(derivation_type_t const derivation_type, bip32_path_t const *const bip32_path) {
     check_null(bip32_path);
     if (bip32_path->length > NUM_ELEMENTS(N_data.baking_key.bip32_path.components) || bip32_path->length == 0) return;
 
     UPDATE_NVRAM(ram, {
-        ram->baking_key.curve = curve;
+        ram->baking_key.derivation_type = derivation_type;
         copy_bip32_path(&ram->baking_key.bip32_path, bip32_path);
     });
 }
@@ -42,7 +42,7 @@ void authorize_baking(cx_curve_t const curve, bip32_path_t const *const bip32_pa
 static bool is_level_authorized(parsed_baking_data_t const *const baking_info) {
     check_null(baking_info);
     if (!is_valid_level(baking_info->level)) return false;
-    high_watermark_t const *const hwm = select_hwm_by_chain(baking_info->chain_id, &N_data);
+    high_watermark_t volatile const *const hwm = select_hwm_by_chain(baking_info->chain_id, &N_data);
     return baking_info->level > hwm->highest_level
 
         // Levels are tied. In order for this to be OK, this must be an endorsement, and we must not
@@ -51,18 +51,19 @@ static bool is_level_authorized(parsed_baking_data_t const *const baking_info) {
             && baking_info->is_endorsement && !hwm->had_endorsement);
 }
 
-bool is_path_authorized(cx_curve_t curve, bip32_path_t const *const bip32_path) {
+bool is_path_authorized(derivation_type_t const derivation_type, bip32_path_t const *const bip32_path) {
     check_null(bip32_path);
     return
-        curve == N_data.baking_key.curve &&
+        derivation_type != 0 &&
+        derivation_type == N_data.baking_key.derivation_type &&
         bip32_path->length > 0 &&
-        bip32_paths_eq(bip32_path, &N_data.baking_key.bip32_path);
+        bip32_paths_eq(bip32_path, (const bip32_path_t *)&N_data.baking_key.bip32_path);
 }
 
 void guard_baking_authorized(parsed_baking_data_t const *const baking_info, bip32_path_with_curve_t const *const key) {
     check_null(baking_info);
     check_null(key);
-    if (!is_path_authorized(key->curve, &key->bip32_path)) THROW(EXC_SECURITY);
+    if (!is_path_authorized(key->derivation_type, &key->bip32_path)) THROW(EXC_SECURITY);
     if (!is_level_authorized(baking_info)) THROW(EXC_WRONG_VALUES);
 }
 

@@ -10,7 +10,7 @@
 
 #include <string.h>
 
-#define G global.u.pubkey
+#define G global.apdu.u.pubkey
 
 static bool pubkey_ok(void) {
     delayed_send(provide_pubkey(G_io_apdu_buffer, &G.public_key));
@@ -19,7 +19,7 @@ static bool pubkey_ok(void) {
 
 #ifdef BAKING_APP
 static bool baking_ok(void) {
-    authorize_baking(G.key.curve, &G.key.bip32_path);
+    authorize_baking(G.key.derivation_type, &G.key.bip32_path);
     pubkey_ok();
     return true;
 }
@@ -76,8 +76,7 @@ size_t handle_apdu_get_public_key(uint8_t instruction) {
     // do not expose pks without prompt over U2F (browser support)
     if (instruction == INS_GET_PUBLIC_KEY) require_hid();
 
-    uint8_t const curve_code = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]);
-    G.key.curve = curve_code_to_curve(curve_code);
+    G.key.derivation_type = parse_derivation_type(READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
 
     size_t const cdata_size = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]);
 
@@ -91,7 +90,7 @@ size_t handle_apdu_get_public_key(uint8_t instruction) {
         if (G.key.bip32_path.length == 0) THROW(EXC_WRONG_LENGTH_FOR_INS);
     }
 #endif
-    generate_public_key(&G.public_key, G.key.curve, &G.key.bip32_path);
+    generate_public_key(&G.public_key, G.key.derivation_type, &G.key.bip32_path);
 
     if (instruction == INS_GET_PUBLIC_KEY) {
         return provide_pubkey(G_io_apdu_buffer, &G.public_key);

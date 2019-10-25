@@ -5,6 +5,7 @@
 #include "base58.h"
 #include "blake2.h"
 #include "globals.h"
+#include "key_macros.h"
 #include "keys.h"
 #include "memory.h"
 #include "protocol.h"
@@ -15,7 +16,9 @@
 
 #include <string.h>
 
-#define G global.u.sign
+#define G global.apdu.u.sign
+
+#define PARSE_ERROR() THROW(EXC_PARSE_ERROR)
 
 #define B2B_BLOCKBYTES 128
 
@@ -87,27 +90,31 @@ static bool sign_reject(void) {
     return true; // Return to idle
 }
 
+static bool is_operation_allowed(enum operation_tag tag) {
+    switch (tag) {
+        case OPERATION_TAG_ATHENS_DELEGATION: return true;
+        case OPERATION_TAG_ATHENS_REVEAL: return true;
+        case OPERATION_TAG_BABYLON_DELEGATION: return true;
+        case OPERATION_TAG_BABYLON_REVEAL: return true;
+#       ifndef BAKING_APP
+            case OPERATION_TAG_PROPOSAL: return true;
+            case OPERATION_TAG_BALLOT: return true;
+            case OPERATION_TAG_ATHENS_ORIGINATION: return true;
+            case OPERATION_TAG_ATHENS_TRANSACTION: return true;
+            case OPERATION_TAG_BABYLON_ORIGINATION: return true;
+            case OPERATION_TAG_BABYLON_TRANSACTION: return true;
+#       endif
+        default: return false;
+    }
+}
+
 static bool parse_allowed_operations(
     struct parsed_operation_group *const out,
     uint8_t const *const in,
     size_t const in_size,
     bip32_path_with_curve_t const *const key
 ) {
-    // TODO: Simplify this to just switch on what we got.
-    allowed_operation_set allowed;
-    clear_operation_set(&allowed);
-
-    allow_operation(&allowed, OPERATION_TAG_DELEGATION);
-    allow_operation(&allowed, OPERATION_TAG_REVEAL);
-#   ifndef BAKING_APP
-        allow_operation(&allowed, OPERATION_TAG_PROPOSAL);
-        allow_operation(&allowed, OPERATION_TAG_BALLOT);
-        allow_operation(&allowed, OPERATION_TAG_ORIGINATION);
-        allow_operation(&allowed, OPERATION_TAG_TRANSACTION);
-        // TODO: Add still other operations
-#   endif
-
-    return parse_operations(out, in, in_size, key->curve, &key->bip32_path, allowed);
+    return parse_operations(out, in, in_size, key->derivation_type, &key->bip32_path, &is_operation_allowed);
 }
 
 #ifdef BAKING_APP // ----------------------------------------------------------
@@ -137,22 +144,19 @@ __attribute__((noreturn)) static void prompt_register_delegate(
 }
 
 size_t baking_sign_complete(bool const send_hash) {
-    switch (G.magic_number) {
+    switch (G.magic_byte) {
         case MAGIC_BYTE_BLOCK:
         case MAGIC_BYTE_BAKING_OP:
-            if (G.maybe_parsed_baking_data.is_valid) {
-                guard_baking_authorized(&G.maybe_parsed_baking_data.v, &G.key);
-                return perform_signature(true, send_hash);
-            } else {
-                THROW(EXC_PARSE_ERROR);
-            }
+            guard_baking_authorized(&G.parsed_baking_data, &G.key);
+            return perform_signature(true, send_hash);
             break;
 
         case MAGIC_BYTE_UNSAFE_OP:
             {
+                if (!G.maybe_ops.is_valid) PARSE_ERROR();
+
                 // Must be self-delegation signed by the *authorized* baking key
-                if (G.maybe_ops.is_valid &&
-                    bip32_path_with_curve_eq(&G.key, &N_data.baking_key) &&
+                if (bip32_path_with_curve_eq(&G.key, &N_data.baking_key) &&
 
                     // ops->signing is generated from G.bip32_path and G.curve
                     COMPARE(&G.maybe_ops.v.operation.source, &G.maybe_ops.v.signing) == 0 &&
@@ -162,11 +166,12 @@ size_t baking_sign_complete(bool const send_hash) {
                     prompt_register_delegate(ok_c, sign_reject);
                 }
                 THROW(EXC_SECURITY);
+                break;
             }
         case MAGIC_BYTE_UNSAFE_OP2:
         case MAGIC_BYTE_UNSAFE_OP3:
         default:
-            THROW(EXC_PARSE_ERROR);
+            PARSE_ERROR();
     }
 }
 
@@ -189,7 +194,7 @@ bool prompt_transaction(
 
     switch (ops->operation.tag) {
         default:
-            THROW(EXC_PARSE_ERROR);
+            PARSE_ERROR();
 
         case OPERATION_TAG_PROPOSAL:
             {
@@ -249,7 +254,8 @@ bool prompt_transaction(
                 ui_prompt(ballot_prompts, ok, cxl);
             }
 
-        case OPERATION_TAG_ORIGINATION:
+        case OPERATION_TAG_ATHENS_ORIGINATION:
+        case OPERATION_TAG_BABYLON_ORIGINATION:
             {
                 static const uint32_t TYPE_INDEX = 0;
                 static const uint32_t AMOUNT_INDEX = 1;
@@ -304,7 +310,7 @@ bool prompt_transaction(
 
                 char const *const *prompts;
                 bool const delegatable = ops->operation.flags & ORIGINATION_FLAG_DELEGATABLE;
-                bool const has_delegate = ops->operation.delegate.curve_code != TEZOS_NO_CURVE;
+                bool const has_delegate = ops->operation.delegate.signature_type != SIGNATURE_TYPE_UNSET;
                 if (delegatable && has_delegate) {
                     prompts = origination_prompts_delegatable;
                     register_ui_callback(DELEGATE_INDEX, parsed_contract_to_string,
@@ -323,7 +329,8 @@ bool prompt_transaction(
 
                 ui_prompt(prompts, ok, cxl);
             }
-        case OPERATION_TAG_DELEGATION:
+        case OPERATION_TAG_ATHENS_DELEGATION:
+        case OPERATION_TAG_BABYLON_DELEGATION:
             {
                 static const uint32_t TYPE_INDEX = 0;
                 static const uint32_t FEE_INDEX = 1;
@@ -358,13 +365,14 @@ bool prompt_transaction(
 
                 REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Delegation");
 
-                bool withdrawal = ops->operation.destination.originated == 0 &&
-                    ops->operation.destination.curve_code == TEZOS_NO_CURVE;
+                bool const withdrawal = ops->operation.destination.originated == 0 &&
+                    ops->operation.destination.signature_type == SIGNATURE_TYPE_UNSET;
 
                 ui_prompt(withdrawal ? withdrawal_prompts : delegation_prompts, ok, cxl);
             }
 
-        case OPERATION_TAG_TRANSACTION:
+        case OPERATION_TAG_ATHENS_TRANSACTION:
+        case OPERATION_TAG_BABYLON_TRANSACTION:
             {
                 static const uint32_t TYPE_INDEX = 0;
                 static const uint32_t AMOUNT_INDEX = 1;
@@ -452,11 +460,11 @@ static size_t wallet_sign_complete(uint8_t instruction) {
     } else {
         ui_callback_t const ok_c = instruction == INS_SIGN_WITH_HASH ? sign_with_hash_ok : sign_without_hash_ok;
 
-        switch (G.magic_number) {
+        switch (G.magic_byte) {
             case MAGIC_BYTE_BLOCK:
             case MAGIC_BYTE_BAKING_OP:
             default:
-                THROW(EXC_PARSE_ERROR);
+                PARSE_ERROR();
             case MAGIC_BYTE_UNSAFE_OP:
                 if (!G.maybe_ops.is_valid || !prompt_transaction(&G.maybe_ops.v, &G.key, ok_c, sign_reject)) {
                     goto unsafe;
@@ -483,6 +491,24 @@ unsafe:
 #define P1_HASH_ONLY_NEXT 0x03 // You only need it once
 #define P1_LAST_MARKER 0x80
 
+static uint8_t get_magic_byte_or_throw(uint8_t const *const buff, size_t const buff_size) {
+    uint8_t const magic_byte = get_magic_byte(buff, buff_size);
+    switch (magic_byte) {
+#       ifdef BAKING_APP
+        case MAGIC_BYTE_BLOCK:
+        case MAGIC_BYTE_BAKING_OP:
+        case MAGIC_BYTE_UNSAFE_OP: // Only for self-delegations
+#       else
+        case MAGIC_BYTE_UNSAFE_OP:
+#       endif
+            return magic_byte;
+
+        case MAGIC_BYTE_UNSAFE_OP2:
+        case MAGIC_BYTE_UNSAFE_OP3:
+        default: PARSE_ERROR();
+    }
+}
+
 static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, uint8_t const instruction) {
     uint8_t *const buff = &G_io_apdu_buffer[OFFSET_CDATA];
     uint8_t const p1 = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_P1]);
@@ -494,7 +520,7 @@ static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, 
     case P1_FIRST:
         clear_data();
         read_bip32_path(&G.key.bip32_path, buff, buff_size);
-        G.key.curve = curve_code_to_curve(READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
+        G.key.derivation_type = parse_derivation_type(READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
         return finalize_successful_send(0);
 #ifndef BAKING_APP
     case P1_HASH_ONLY_NEXT:
@@ -503,30 +529,37 @@ static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, 
         // FALL THROUGH
 #endif
     case P1_NEXT:
-        if (G.key.bip32_path.length == 0) {
-            THROW(EXC_WRONG_LENGTH_FOR_INS);
-        }
+        if (G.key.bip32_path.length == 0) THROW(EXC_WRONG_LENGTH_FOR_INS);
+
+        // Guard against overflow
+        if (G.packet_index >= 0xFF) PARSE_ERROR();
+        G.packet_index++;
+
         break;
     default:
         THROW(EXC_WRONG_PARAM);
     }
 
     if (enable_parsing) {
-        if (G.magic_number == MAGIC_BYTE_INVALID) {
-            G.magic_number = get_magic_byte(buff, buff_size);
-        }
-
 #       ifdef BAKING_APP
-            // Keep trying to parse baking data unless we already did so successfully.
-            G.maybe_parsed_baking_data.is_valid =
-                G.maybe_parsed_baking_data.is_valid
-                || parse_baking_data(&G.maybe_parsed_baking_data.v, buff, buff_size);
-#       endif
+            if (G.packet_index != 1) PARSE_ERROR(); // Only parse a single packet when baking
 
-        // Keep trying to parse operations.
-        G.maybe_ops.is_valid =
-            G.maybe_ops.is_valid
-            || parse_allowed_operations(&G.maybe_ops.v, buff, buff_size, &G.key);
+            G.magic_byte = get_magic_byte_or_throw(buff, buff_size);
+            if (G.magic_byte == MAGIC_BYTE_UNSAFE_OP) {
+                // Parse the operation. It will be verified in `baking_sign_complete`.
+                G.maybe_ops.is_valid = parse_allowed_operations(&G.maybe_ops.v, buff, buff_size, &G.key);
+            } else {
+                // This should be a baking operation so parse it.
+                if (!parse_baking_data(&G.parsed_baking_data, buff, buff_size)) PARSE_ERROR();
+            }
+#       else
+            if (G.packet_index == 1) {
+                G.magic_byte = get_magic_byte_or_throw(buff, buff_size);
+                G.maybe_ops.is_valid = parse_allowed_operations(&G.maybe_ops.v, buff, buff_size, &G.key);
+            } else {
+                G.maybe_ops.is_valid = false; // Force multiple packets to be treated as unparsed
+            }
+#       endif
     }
 
     if (enable_hashing) {
@@ -537,9 +570,7 @@ static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, 
             &G.hash_state);
     }
 
-    if (G.message_data_length + buff_size > sizeof(G.message_data)) {
-        THROW(EXC_PARSE_ERROR);
-    }
+    if (G.message_data_length + buff_size > sizeof(G.message_data)) PARSE_ERROR();
 
     memmove(G.message_data + G.message_data_length, buff, buff_size);
     G.message_data_length += buff_size;
@@ -583,9 +614,7 @@ size_t handle_apdu_sign_with_hash(uint8_t instruction) {
 
 static int perform_signature(bool const on_hash, bool const send_hash) {
 #   ifdef BAKING_APP
-        if (G.maybe_parsed_baking_data.is_valid) {
-            write_high_water_mark(&G.maybe_parsed_baking_data.v);
-        }
+        write_high_water_mark(&G.parsed_baking_data);
 #   else
         if (on_hash && G.hash_only) {
             memcpy(G_io_apdu_buffer, G.final_hash, sizeof(G.final_hash));
@@ -602,7 +631,9 @@ static int perform_signature(bool const on_hash, bool const send_hash) {
 
     uint8_t const *const data = on_hash ? G.final_hash : G.message_data;
     size_t const data_length = on_hash ? sizeof(G.final_hash) : G.message_data_length;
-    tx += sign(&G_io_apdu_buffer[tx], MAX_SIGNATURE_SIZE, &G.key, data, data_length);
+    tx += WITH_KEY_PAIR(G.key, key_pair, size_t, ({
+        sign(&G_io_apdu_buffer[tx], MAX_SIGNATURE_SIZE, G.key.derivation_type, key_pair, data, data_length);
+    }));
 
     clear_data();
     return finalize_successful_send(tx);

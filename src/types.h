@@ -13,6 +13,32 @@
 #undef false
 #define false ((bool)0)
 
+// NOTE: There are *two* ways that "key type" or "curve code" are represented in
+// this code base:
+//   1. `derivation_type` represents how a key will be derived from the seed. It
+//      is almost the same as `signature_type` but allows for multiple derivation
+//      strategies for ed25519. This type is often parsed from the APDU
+//      instruction. See `parse_derivation_type` for the mapping.
+//   2. `signature_type` represents how a key will be used for signing.
+//      The mapping from `derivation_type` to `signature_type` is injective.
+//      See `derivation_type_to_signature_type`.
+//      This type is parsed from Tezos data headers. See the relevant parsing
+//      code for the mapping.
+typedef enum {
+    DERIVATION_TYPE_SECP256K1 = 1,
+    DERIVATION_TYPE_SECP256R1 = 2,
+    DERIVATION_TYPE_ED25519 = 3,
+    DERIVATION_TYPE_BIP32_ED25519 = 4
+} derivation_type_t;
+
+typedef enum {
+    SIGNATURE_TYPE_UNSET = 0,
+    SIGNATURE_TYPE_SECP256K1 = 1,
+    SIGNATURE_TYPE_SECP256R1 = 2,
+    SIGNATURE_TYPE_ED25519 = 3
+} signature_type_t;
+
+
 // Return number of bytes to transmit (tx)
 typedef size_t (*apdu_handler)(uint8_t instruction);
 
@@ -43,10 +69,10 @@ typedef bool (*ui_callback_t)(void); // return true to go back to idle screen
 typedef void (*string_generation_callback)(/* char *buffer, size_t buffer_size, const void *data */);
 
 // Keys
-struct key_pair {
+typedef struct {
     cx_ecfp_public_key_t public_key;
     cx_ecfp_private_key_t private_key;
-};
+} key_pair_t;
 
 // Baking Auth
 #define MAX_BIP32_PATH 10
@@ -56,41 +82,57 @@ typedef struct {
     uint32_t components[MAX_BIP32_PATH];
 } bip32_path_t;
 
-static inline void copy_bip32_path(bip32_path_t *const out, bip32_path_t const *const in) {
+static inline void copy_bip32_path(
+    bip32_path_t *const out,
+    bip32_path_t volatile const *const in
+) {
     check_null(out);
     check_null(in);
-    memcpy(out->components, in->components, in->length * sizeof(*in->components));
+    memcpy(out->components, (void *)in->components, in->length * sizeof(*in->components));
     out->length = in->length;
 }
 
-static inline bool bip32_paths_eq(bip32_path_t const *const a, bip32_path_t const *const b) {
+static inline bool bip32_paths_eq(
+    bip32_path_t volatile const *const a,
+    bip32_path_t volatile const *const b
+) {
     return a == b || (
         a != NULL &&
         b != NULL &&
         a->length == b->length &&
-        memcmp(a->components, b->components, a->length * sizeof(*a->components)) == 0
+        memcmp(
+            (void const *)a->components,
+            (void const *)b->components,
+            a->length * sizeof(*a->components)
+        ) == 0
     );
 }
 
 
 typedef struct {
     bip32_path_t bip32_path;
-    cx_curve_t curve;
+    derivation_type_t derivation_type;
 } bip32_path_with_curve_t;
 
-static inline void copy_bip32_path_with_curve(bip32_path_with_curve_t *const out, bip32_path_with_curve_t const *const in) {
+static inline void copy_bip32_path_with_curve(
+    bip32_path_with_curve_t *const out,
+    bip32_path_with_curve_t volatile const *const in
+) {
     check_null(out);
     check_null(in);
     copy_bip32_path(&out->bip32_path, &in->bip32_path);
-    out->curve = in->curve;
+    out->derivation_type = in->derivation_type;
 }
 
-static inline bool bip32_path_with_curve_eq(bip32_path_with_curve_t const *const a, bip32_path_with_curve_t const *const b) {
+static inline bool bip32_path_with_curve_eq(
+    bip32_path_with_curve_t volatile const *const a,
+    bip32_path_with_curve_t volatile const *const b
+) {
     return a == b || (
         a != NULL &&
         b != NULL &&
         bip32_paths_eq(&a->bip32_path, &b->bip32_path) &&
-        a->curve == b->curve
+        a->derivation_type == b->derivation_type
     );
 }
 
@@ -142,12 +184,12 @@ typedef struct {
     level_t level;
 } parsed_baking_data_t;
 
-struct parsed_contract {
-    uint8_t originated; // a lightweight bool
-    uint8_t curve_code; // TEZOS_NO_CURVE in originated case
-                        // An implicit contract with TEZOS_NO_CURVE means not present
+typedef struct parsed_contract {
+    uint8_t originated;  // a lightweight bool
+    signature_type_t signature_type; // 0 in originated case
+                                     // An implicit contract with signature_type of 0 means not present
     uint8_t hash[HASH_SIZE];
-};
+} parsed_contract_t;
 
 struct parsed_proposal {
     uint32_t voting_period;
@@ -171,10 +213,14 @@ enum operation_tag {
     OPERATION_TAG_NONE = -1, // Sentinal value, as 0 is possibly used for something
     OPERATION_TAG_PROPOSAL = 5,
     OPERATION_TAG_BALLOT = 6,
-    OPERATION_TAG_REVEAL = 7,
-    OPERATION_TAG_TRANSACTION = 8,
-    OPERATION_TAG_ORIGINATION = 9,
-    OPERATION_TAG_DELEGATION = 10,
+    OPERATION_TAG_ATHENS_REVEAL = 7,
+    OPERATION_TAG_ATHENS_TRANSACTION = 8,
+    OPERATION_TAG_ATHENS_ORIGINATION = 9,
+    OPERATION_TAG_ATHENS_DELEGATION = 10,
+    OPERATION_TAG_BABYLON_REVEAL = 107,
+    OPERATION_TAG_BABYLON_TRANSACTION = 108,
+    OPERATION_TAG_BABYLON_ORIGINATION = 109,
+    OPERATION_TAG_BABYLON_DELEGATION = 110,
 };
 
 // TODO: Make this an enum.
