@@ -475,45 +475,58 @@ encryption system, is indicated by a root key hash, the Tezos-specific base58
 encoding of the hash of the public key at `44'/1729'` on that Ledger device. Because
 all Tezos paths start with this, in `tezos-client` commands it is implied.
 
+Beginning in Tezos Wallet V2.2.0, there is also support for a `ed25519-bip32` derivation
+method, which was made available in V1.5.5 of the Nano firmware. The existing `ed25519`
+operation was purposefully not changed to preserve backwards compatibility. If you do
+nothing, expect no changes. However, it is recommended that all new accounts use the `bip25519`
+command instead of the legacy `ed25519`. After it is imported, the address can be treated
+the same as any other.
+
 ### Importing the key from the Ledger device
 
 This section must be done regardless of whether you're going to be baking or
 only using the Tezos Wallet application.
 
-Please run, with a Tezos application open on your device (either Tezos Baking or Tezos Wallet will do):
+Please run with a Tezos application open on your device (either Tezos Baking or Tezos Wallet will do):
 
 ```
 $ tezos-client list connected ledgers
 ```
 
-The output of this command includes three Tezos addresses derived from the secret
+The output of this command includes four Tezos addresses derived from the secret
 stored on the device, via different signing curves and BIP32 paths.
 
 ```
-Found a Tezos Baking 2.0.1 (git-description: "") application running on
-a Ledger device at [0001:0003:00].
+## Ledger `major-squirrel-thick-hedgehog`
+Found a Tezos Wallet 2.1.0 (git-description: "091e74e9") application running
+on Ledger Nano S at
+[IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/XHC1@14/XHC1@14000000/HS03@14300000/Nano
+S@14300000/Nano S@0/IOUSBHostHIDDevice@14300000,0].
 
 To use keys at BIP32 path m/44'/1729'/0'/0' (default Tezos key path), use one
 of:
-  tezos-client import secret key ledger_kiln "ledger://major-squirrel-thick-hedgehog/ed25519/0h/0h"
-  tezos-client import secret key ledger_kiln "ledger://major-squirrel-thick-hedgehog/secp256k1/0h/0h"
-  tezos-client import secret key ledger_kiln "ledger://major-squirrel-thick-hedgehog/P-256/0h/0h"
+
+tezos-client import secret key ledger_username "ledger://major-squirrel-thick-hedgehog/bip25519/0h/0h"
+tezos-client import secret key ledger_username "ledger://major-squirrel-thick-hedgehog/ed25519/0h/0h"
+tezos-client import secret key ledger_username "ledger://major-squirrel-thick-hedgehog/secp256k1/0h/0h"
+tezos-client import secret key ledger_username "ledger://major-squirrel-thick-hedgehog/P-256/0h/0h"
+
 ```
 
-These show you how to import keys with a specific signing curve (e.g. `ed25519`) and derivation path (e.g. `/0'/0'`). The
+These show you how to import keys with a specific signing curve (e.g. `bip25519`) and derivation path (e.g. `/0'/0'`). The
 animal-based name (e.g. `major-squirrel-thick-hedgehog`) is a unique identifier for your
 Ledger device enabling the client to distinguish different Ledger devices. This is combined with
-a derivation path (e.g. `/0'/0'`) to indicate one of the possible keys on the Ledger device. Your *root* key is the full identifier without the derivation path (e.g. `major-squirrel-thick-hedgehog/ed25519` by itself) but you should not use the root key directly\*.
+a derivation path (e.g. `/0'/0'`) to indicate one of the possible keys on the Ledger device. Your *root* key is the full identifier without the derivation path (e.g. `major-squirrel-thick-hedgehog/bip25519` by itself) but you should not use the root key directly\*.
 
-\* *NOTE:* If you have used your root key in the past and need to import it, you can do so by simply running one of the commands but without the last derivation portion. From the example above, you would import your root key by running `tezos-client import secret key ledger_jhartzell "ledger://major-squirrel-thick-hedgehog/ed25519"`. You should avoid using your root key.
+\* *NOTE:* If you have used your root key in the past and need to import it, you can do so by simply running one of the commands but without the last derivation portion. From the example above, you would import your root key by running `tezos-client import secret key ledger_user "ledger://major-squirrel-thick-hedgehog/bip25519"`. You should avoid using your root key.
 
 The Ledger device does not currently support non-hardened path components. All
 components of all paths must be hardened, which is indicated by following them
 with a `'` character. This character may need to be escaped from the shell
 through backslashes `\` or double-quotes `"`.
 
-You'll need to choose one of the three commands starting with
-`tezos-client import secret key ...` to run. `ed25519` is the standard recommended curve.
+You'll need to choose one of the four commands starting with
+`tezos-client import secret key ...` to run. `bip25519` is the standard recommended curve.
 
 The BIP32 path is the part that in the example commands read `0'/0'`. You
 can change it, but if you do (and even if you don't), be sure to write
