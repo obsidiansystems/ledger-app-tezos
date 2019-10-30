@@ -3,8 +3,8 @@
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && git rev-parse --show-toplevel)"
 
-nano_s_tarball=$("$root/nix/build.sh" -A "nano.s.release.all")
-nano_x_tarball=$("$root/nix/build.sh" -A "nano.x.release.all")
+nano_s_tarball=$("$root/nix/build.sh" -A "nano.s.release.all" "$@")
+nano_x_tarball=$("$root/nix/build.sh" -A "nano.x.release.all" "$@")
 
 cp -f $nano_s_tarball nano-s-release.tar.gz
 cp -f $nano_x_tarball nano-x-release.tar.gz
