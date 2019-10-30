@@ -562,11 +562,11 @@ eventually display more transaction details along with this. When block headers
 and endorsements are sent to the Ledger device, they are rejected silently as if the
 user rejected them.
 
-### Faucet (alphanet and zeronet only)
+### Faucet (test networks only)
 
-On alphanet and zeronet, you will need to use the [Tezos Faucet](https://faucet.tzalpha.net/)
+On the Tezos test networks, you will need to use the [Tezos Faucet](https://faucet.tzalpha.net/)
 to obtain some tez. Tell them you're not a robot, then click "Get alphanet tz."
-It works on zeronet (even though the URL says "alpha").
+It works on zeronet and babylonnet (even though the URL says "alpha").
 
 Run the following command, where `<your-name>` is some alias you want to use for
 this wallet, and `tz1<...>.json` is the name of the file you just downloaded
