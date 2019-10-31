@@ -60,7 +60,7 @@ configuration, most often the `udev` configuration. Using `sudo` for commands
 that should not require it can create security vulnerabilities and corrupt
 your configuration.
 
-##Hacking
+## Hacking
 
 See [CONTRIBUTING.md](CONTRIBUTING.md)
 

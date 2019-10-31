@@ -16,7 +16,9 @@ For development, use `nix/watch.sh s make APP=<tezos_baking|tezos_wallet>` to in
 To do a full Nix build run `nix/build.sh`. You can pass `nix-build` arguments to this to build specific attributes, e.g. `nix/build.sh -A nano.s.wallet`.
 
 ### Installing
-`nix/install.sh` will install both the wallet and baking apps. Use `nix/install.sh baking` to install just the baking app or `nix/install.sh wallet` to install just the wallet.
+`nix/install.sh` will install both the wallet and baking apps. Use
+`nix/install.sh s baking` to install just the baking app or
+`nix/install.sh s wallet` to install just the wallet.
 
 ### Editor Integration
 
@@ -28,7 +30,9 @@ To do a full Nix build run `nix/build.sh`. You can pass `nix-build` arguments to
 
 ### Releasing
 
-`nix/build.sh -A release.all`
+`nix/build.sh -A nano.s.release.all`
+
+`nix/build.sh -A nano.x.release.all`
 
 ### Notes on testing
 
