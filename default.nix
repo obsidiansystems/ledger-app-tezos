@@ -99,12 +99,18 @@ let
       release = rec {
         wallet = mkRelease "wallet" "Tezos Wallet" walletApp;
         baking = mkRelease "baking" "Tezos Baking" bakingApp;
-        all = pkgs.runCommand "${bolos.name}-release.tar.gz" {} ''
-          cp -r '${wallet}' wallet
-          cp -r '${baking}' baking
-          cp '${./release-installer.sh}' install.sh
-          chmod +x install.sh
-          tar czf "$out" install.sh wallet baking
+        all = pkgs.runCommand "ledger-app-tezos-${bolos.name}.tar.gz" {} ''
+          mkdir ledger-app-tezos-${bolos.name}
+
+          cp -r ${wallet} ledger-app-tezos-${bolos.name}/wallet
+          # No baking app for Nano X yet
+          ${pkgs.lib.optionalString (bolos.name == "s") ''
+            cp -r ${baking} ledger-app-tezos-${bolos.name}/baking
+          ''}
+
+          install -m a=rx ${./release-installer.sh} ledger-app-tezos-${bolos.name}/install.sh
+
+          tar czf $out ledger-app-tezos-${bolos.name}/*
         '';
       };
     };
