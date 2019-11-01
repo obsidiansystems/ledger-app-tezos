@@ -8,5 +8,5 @@ root="$(git rev-parse --show-toplevel)"
 if [ $# -eq 0 ]; then
   exec nix-shell "$root" -A "nano.${target}.wallet"
 else
-  exec nix-shell "$root" -A "nano.${target}.wallet" $@
+  exec nix-shell "$root" -A "nano.${target}.wallet" "$@"
 fi
