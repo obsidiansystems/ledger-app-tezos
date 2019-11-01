@@ -21,11 +21,9 @@ for arg in "$@"; do
 
   set -x
 
-  echo "$target"
+  appFlag="0x00"
   if [ $target == "nano_x" ]; then
     appFlag="0x240"
-  else
-    appFlag="0x00"
   fi
 
   python -m ledgerblue.loadApp \
