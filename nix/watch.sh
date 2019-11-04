@@ -15,9 +15,7 @@ watchdirs=("$root/default.nix" "$root/nix" "$root/Makefile" "$root/src" "$root/i
 
 inotifywait="$(nix-build "$root/nix/nixpkgs.nix" -A inotify-tools --no-out-link)/bin/inotifywait"
 while true; do
-  "$root/nix/env.sh" "$target" <<EOF
-    $@
-EOF
+  "$root/nix/env.sh" "$target" "--run" "$@"
   if ! "$inotifywait" -qre close_write "${watchdirs[@]}"; then
     fail "inotifywait failed"
   fi
