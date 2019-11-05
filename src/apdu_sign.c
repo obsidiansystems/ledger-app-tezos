@@ -517,7 +517,7 @@ static uint8_t get_magic_byte_or_throw(uint8_t const *const buff, size_t const b
     }
 }
 
-static size_t handle_apdu(uint8_t const instruction) {
+size_t handle_apdu_sign(uint8_t const instruction) {
     bool const enable_hashing = instruction != INS_SIGN_UNSAFE;
     bool const enable_parsing = enable_hashing;
 
