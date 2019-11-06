@@ -1003,7 +1003,7 @@ Then start a full rebuild of `tezos-client` with HIDAPI's `master` branch:
 
 ```shell
 $ brew unlink hidapi   # remove the current one
-$ brew install autoconf autmake libtool  # Just keep installing stuff until the following command succeeds:
+$ brew install autoconf automake libtool  # Just keep installing stuff until the following command succeeds:
 $ brew install hidapi --HEAD
 ```
 
