@@ -20,8 +20,14 @@ for arg in "$@"; do
   echo
 
   set -x
+
+  appFlag="0x00"
+  if [ $target == "nano_x" ]; then
+    appFlag="0x240"
+  fi
+
   python -m ledgerblue.loadApp \
-    --appFlags 0x00 \
+    --appFlags "$appFlag" \
     --dataSize "${nvram_size:?manifest file is missing field}" \
     --tlv \
     --curve ed25519 \
