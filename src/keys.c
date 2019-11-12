@@ -65,17 +65,23 @@ key_pair_t *generate_key_pair_return_global(
             priv->private_key_data, NULL);
     }
 
-    cx_ecfp_init_private_key(cx_curve, priv->private_key_data, sizeof(priv->private_key_data), &priv->res.private_key);
-    cx_ecfp_generate_pair(cx_curve, &priv->res.public_key, &priv->res.private_key, 1);
+    BEGIN_TRY {
+        TRY {
+            cx_ecfp_init_private_key(cx_curve, priv->private_key_data, sizeof(priv->private_key_data), &priv->res.private_key);
+            cx_ecfp_generate_pair(cx_curve, &priv->res.public_key, &priv->res.private_key, 1);
 
-    if (cx_curve == CX_CURVE_Ed25519) {
-        cx_edward_compress_point(
-            CX_CURVE_Ed25519,
-            priv->res.public_key.W,
-            priv->res.public_key.W_len);
-        priv->res.public_key.W_len = 33;
+            if (cx_curve == CX_CURVE_Ed25519) {
+                cx_edward_compress_point(CX_CURVE_Ed25519,
+                                         priv->res.public_key.W,
+                                         priv->res.public_key.W_len);
+                priv->res.public_key.W_len = 33;
+            }
+        } FINALLY {
+            explicit_bzero(priv->private_key_data, sizeof(priv->private_key_data));
+        }
     }
-    memset(priv->private_key_data, 0, sizeof(priv->private_key_data));
+    END_TRY;
+
     return &priv->res;
 }
 
@@ -85,7 +91,7 @@ cx_ecfp_public_key_t const *generate_public_key_return_global(
 ) {
     check_null(bip32_path);
     key_pair_t *const pair = generate_key_pair_return_global(curve, bip32_path);
-    memset(&pair->private_key, 0, sizeof(pair->private_key));
+    explicit_bzero(&pair->private_key, sizeof(pair->private_key));
     return &pair->public_key;
 }
 
