@@ -8,9 +8,9 @@
 typedef struct {
   uint8_t bakerAccount[HASH_SIZE_B58];
   char* bakerName;
-} named_baker;
+} named_delegate_t;
 
-static const named_baker bakers[] = {
+static const named_delegate_t named_delegates[] = {
   { .bakerAccount = "tz1TDSmoZXwVevLTEvKCTHWpomG76oC9S2fJ", .bakerName = "Tezos Capital Legacy" },
   { .bakerAccount = "tz1Tnjaxk6tbAeC2TmMApPh8UsrEVQvhHvx5", .bakerName = "Crypto Delegate" },
   { .bakerAccount = "tz1WCd2jm4uSt4vntk4vSuUWoZQGhLcDuR9q", .bakerName = "Happy Tezos" },

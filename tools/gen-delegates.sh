@@ -2,7 +2,19 @@
 #! nix-shell -i bash -p jq
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && git rev-parse --show-toplevel)"
-bakers="$(jq -r '.[] | .bakerName, .bakerAccount' < $root/tools/BakersRegistryCoreUnfilteredData.json | \
+
+registry_json=$root/tools/BakersRegistryCoreUnfilteredData.json
+if [ $# -eq 1 ]; then
+    registry_json="$1"
+    shift
+fi
+
+if [ $# -gt 0 ]; then
+    >&2 echo "Too many arguments"
+    exit 1
+fi
+
+delegates="$(jq -r '.[] | .bakerName, .bakerAccount' < $registry_json | \
   while read -r name; read -r account; do \
     echo "  { .bakerAccount = \"$account\", .bakerName = \"$name\" },"; \
   done)"
@@ -18,9 +30,9 @@ cat > "$root"/src/delegates.h <<EOF
 typedef struct {
   uint8_t bakerAccount[HASH_SIZE_B58];
   char* bakerName;
-} named_baker;
+} named_delegate_t;
 
-static const named_baker bakers[] = {
-$bakers
+static const named_delegate_t named_delegates[] = {
+$delegates
 };
 EOF
