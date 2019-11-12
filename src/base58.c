@@ -31,7 +31,7 @@ bool b58enc(/* out */ char *b58, /* in/out */ size_t *b58sz, const void *data, s
 
     for (i = zcount, high = size - 1; i < binsz; ++i, high = j)
     {
-        for (carry = bin[i], j = size - 1; (j > high) || carry; --j)
+        for (carry = bin[i], j = size - 1; ((int)j >= 0) && ((j > high) || carry); --j)
         {
             carry += 256 * buf[j];
             buf[j] = carry % 58;
