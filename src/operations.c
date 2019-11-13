@@ -206,6 +206,18 @@ static inline uint16_t michelson_read_short(void const *data, size_t *ix, size_t
 
 #define MICHELSON_READ_SHORT(data, ix, length) michelson_read_short(data, ix, length, __LINE__)
 
+static inline bool parse_bool(void const *data, size_t *ix, size_t length, uint32_t lineno) {
+    const uint8_t byte = next_byte(data, ix, length, lineno);
+    if (byte == 0xff) {
+        return true;
+    } else if (byte != 0x00) {
+        PARSE_ERROR();
+    }
+    return false;
+}
+
+#define PARSE_BOOL(data, ix, length) parse_bool(data, ix, length, __LINE__)
+
 static inline void michelson_read_address(parsed_contract_t *const out, const void *data, size_t *ix, size_t length) {
     switch (NEXT_BYTE(data, ix, length)) {
         case MICHELSON_TYPE_BYTE_SEQUENCE: {
@@ -380,8 +392,7 @@ static void parse_operations_throws_parse_error(
             case OPERATION_TAG_ATHENS_DELEGATION:
             case OPERATION_TAG_BABYLON_DELEGATION:
                 {
-                    uint8_t delegate_present = NEXT_BYTE(data, &ix, length);
-                    if (delegate_present) {
+                    if (PARSE_BOOL(data, &ix, length)) {
                         const struct delegation_contents *dlg = NEXT_TYPE(struct delegation_contents);
                         parse_implicit(&out->operation.destination, &dlg->signature_type, dlg->hash);
                     } else {
@@ -402,13 +413,13 @@ static void parse_operations_throws_parse_error(
 
                     parse_implicit(&out->operation.destination, &hdr->signature_type, hdr->hash);
                     out->operation.amount = PARSE_Z(data, &ix, length);
-                    if (NEXT_BYTE(data, &ix, length) != 0) {
+                    if (PARSE_BOOL(data, &ix, length)) {
                         out->operation.flags |= ORIGINATION_FLAG_SPENDABLE;
                     }
-                    if (NEXT_BYTE(data, &ix, length) != 0) {
+                    if (PARSE_BOOL(data, &ix, length)) {
                         out->operation.flags |= ORIGINATION_FLAG_DELEGATABLE;
                     }
-                    if (NEXT_BYTE(data, &ix, length) != 0) {
+                    if (PARSE_BOOL(data, &ix, length)) {
                         // Has delegate
                         const struct delegation_contents *dlg = NEXT_TYPE(struct delegation_contents);
                         parse_implicit(&out->operation.delegate, &dlg->signature_type, dlg->hash);
