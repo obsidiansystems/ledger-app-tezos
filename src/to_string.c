@@ -8,6 +8,7 @@
 #include <string.h>
 
 #define NO_CONTRACT_STRING "None"
+#define NO_CONTRACT_NAME_STRING "Custom Delegate: please verify the address"
 
 #define TEZOS_HASH_CHECKSUM_SIZE 4
 
@@ -40,6 +41,14 @@ void parsed_contract_to_string(
                 : contract->signature_type;
         pkh_to_string(buff, buff_size, signature_type, contract->hash);
     }
+}
+
+void lookup_parsed_contract_name(
+    char *const buff,
+    size_t const buff_size,
+    parsed_contract_t const *const contract
+) {
+    parsed_contract_to_string(buff, buff_size, contract);
 
     for (uint16_t i = 0; i < sizeof(named_delegates) / sizeof(named_delegate_t); i++) {
         if (memcmp(named_delegates[i].bakerAccount, buff, HASH_SIZE_B58) == 0) {
@@ -47,9 +56,12 @@ void parsed_contract_to_string(
             const char* name = (const char*)pic((unsigned int)named_delegates[i].bakerName);
             if (buff_size < strlen(name)) THROW(EXC_WRONG_LENGTH);
             strcpy(buff, name);
-            break;
+            return;
         }
     }
+
+    if (buff_size < strlen(NO_CONTRACT_NAME_STRING)) THROW(EXC_WRONG_LENGTH);
+    strcpy(buff, NO_CONTRACT_NAME_STRING);
 }
 
 void pubkey_to_pkh_string(
