@@ -44,8 +44,9 @@ void parsed_contract_to_string(
     for (uint16_t i = 0; i < sizeof(named_delegates) / sizeof(named_delegate_t); i++) {
         if (memcmp(named_delegates[i].bakerAccount, buff, HASH_SIZE_B58) == 0) {
             // Found a matching baker, display it.
-            if (buff_size < strlen(PIC(named_delegates[i].bakerName))) THROW(EXC_WRONG_LENGTH);
-            strcpy(buff, PIC(named_delegates[i].bakerName));
+            const char* name = (const char*)pic((unsigned int)named_delegates[i].bakerName);
+            if (buff_size < strlen(name)) THROW(EXC_WRONG_LENGTH);
+            strcpy(buff, name);
             break;
         }
     }
