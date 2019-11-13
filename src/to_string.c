@@ -3,6 +3,7 @@
 #include "apdu.h"
 #include "base58.h"
 #include "keys.h"
+#include "delegates.h"
 
 #include <string.h>
 
@@ -38,6 +39,15 @@ void parsed_contract_to_string(
                 ? SIGNATURE_TYPE_UNSET
                 : contract->signature_type;
         pkh_to_string(buff, buff_size, signature_type, contract->hash);
+    }
+
+    for (uint16_t i = 0; i < sizeof(named_delegates) / sizeof(named_delegate_t); i++) {
+        if (memcmp(named_delegates[i].bakerAccount, buff, 36) == 0) {
+            // Found a matching baker, display it.
+            if (buff_size < strlen(PIC(named_delegates[i].bakerName))) THROW(EXC_WRONG_LENGTH);
+            strcpy(buff, PIC(named_delegates[i].bakerName));
+            break;
+        }
     }
 }
 
