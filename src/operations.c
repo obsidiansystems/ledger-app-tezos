@@ -135,6 +135,8 @@ static inline uint64_t parse_z_michelson(void const *data, size_t *ix, size_t le
     val; \
 })
 
+#define ASSERT_EQ(a, b) if (a != b) { PARSE_ERROR(); }
+
 static inline signature_type_t parse_raw_tezos_header_signature_type(
     raw_tezos_header_signature_type_t const *const raw_signature_type
 ) {
@@ -210,9 +212,8 @@ static inline bool parse_bool(void const *data, size_t *ix, size_t length, uint3
     const uint8_t byte = next_byte(data, ix, length, lineno);
     if (byte == 0xff) {
         return true;
-    } else if (byte != 0x00) {
-        PARSE_ERROR();
     }
+    ASSERT_EQ(byte, 0);
     return false;
 }
 
@@ -222,9 +223,7 @@ static inline void michelson_read_address(parsed_contract_t *const out, const vo
     switch (NEXT_BYTE(data, ix, length)) {
         case MICHELSON_TYPE_BYTE_SEQUENCE: {
             // Need 1 byte for signature, plus the rest of the hash.
-            if (MICHELSON_READ_LENGTH(data, ix, length) != HASH_SIZE + 1) {
-                PARSE_ERROR();
-            }
+            ASSERT_EQ(MICHELSON_READ_LENGTH(data, ix, length), HASH_SIZE + 1);
             const raw_tezos_header_signature_type_t* signature_type = data + *ix;
             advance_ix(ix, length, sizeof(raw_tezos_header_signature_type_t));
             const hash_t *key_hash = data + *ix;
@@ -233,9 +232,7 @@ static inline void michelson_read_address(parsed_contract_t *const out, const vo
             break;
         }
         case MICHELSON_TYPE_STRING: {
-            if (MICHELSON_READ_LENGTH(data, ix, length) != HASH_SIZE_B58) {
-                PARSE_ERROR();
-            }
+            ASSERT_EQ(MICHELSON_READ_LENGTH(data, ix, length), HASH_SIZE_B58);
             out->hash_ptr = (char*)data + *ix;
             (*ix) += 36;
             out->originated = false;
@@ -267,7 +264,7 @@ static void parse_operations_throws_parse_error(
 
     // Verify magic byte, ignore block hash
     const struct operation_group_header *ogh = NEXT_TYPE(struct operation_group_header);
-    if (ogh->magic_byte != MAGIC_BYTE_UNSAFE_OP) PARSE_ERROR();
+    ASSERT_EQ(ogh->magic_byte, MAGIC_BYTE_UNSAFE_OP);
 
     // Start out with source = signing, for reveals
     // TODO: This is slightly hackish
@@ -322,20 +319,18 @@ static void parse_operations_throws_parse_error(
             // We don't much care about reveals, they have very little in the way of bad security
             // implications and any fees have already been accounted for
             raw_tezos_header_signature_type_t const *const sig_type = NEXT_TYPE(raw_tezos_header_signature_type_t);
-            if (parse_raw_tezos_header_signature_type(sig_type) != out->signing.signature_type) PARSE_ERROR();
+            ASSERT_EQ(parse_raw_tezos_header_signature_type(sig_type), out->signing.signature_type)
 
             size_t klen = out->public_key.W_len;
             advance_ix(&ix, length, klen);
-            if (memcmp(out->public_key.W, data + ix - klen, klen) != 0) PARSE_ERROR();
+            ASSERT_EQ(memcmp(out->public_key.W, data + ix - klen, klen), 0);
 
             out->has_reveal = true;
             continue;
         }
 
-        if (out->operation.tag != OPERATION_TAG_NONE) {
-            // We are only currently allowing one non-reveal operation
-            PARSE_ERROR();
-        }
+        // We are only currently allowing one non-reveal operation
+        ASSERT_EQ(out->operation.tag, OPERATION_TAG_NONE);
 
         // This is the one allowable non-reveal operation per set
 
@@ -344,7 +339,7 @@ static void parse_operations_throws_parse_error(
         // If the source is an implicit contract,...
         if (out->operation.source.originated == 0) {
             // ... it had better match our key, otherwise why are we signing it?
-            if (COMPARE(&out->operation.source, &out->signing) != 0) PARSE_ERROR();
+            ASSERT_EQ(COMPARE(&out->operation.source, &out->signing), 0);
         }
         // OK, it passes muster.
 
@@ -356,10 +351,10 @@ static void parse_operations_throws_parse_error(
             case OPERATION_TAG_PROPOSAL:
                 {
                     const struct proposal_contents *proposal_data = NEXT_TYPE(struct proposal_contents);
-                    if (ix != length) PARSE_ERROR();
+                    ASSERT_EQ(ix, length) PARSE_ERROR();
 
                     const size_t payload_size = READ_UNALIGNED_BIG_ENDIAN(int32_t, &proposal_data->num_bytes);
-                    if (payload_size != PROTOCOL_HASH_SIZE) PARSE_ERROR(); // We only accept exactly 1 proposal hash.
+                    ASSERT_EQ(payload_size, PROTOCOL_HASH_SIZE); // We only accept exactly 1 proposal hash.
 
                     out->operation.proposal.voting_period = READ_UNALIGNED_BIG_ENDIAN(int32_t, &proposal_data->period);
                     memcpy(out->operation.proposal.protocol_hash, proposal_data->hash, sizeof(out->operation.proposal.protocol_hash));
@@ -368,7 +363,7 @@ static void parse_operations_throws_parse_error(
             case OPERATION_TAG_BALLOT:
                 {
                     const struct ballot_contents *ballot_data = NEXT_TYPE(struct ballot_contents);
-                    if (ix != length) PARSE_ERROR();
+                    ASSERT_EQ(ix, length);
 
                     out->operation.ballot.voting_period = READ_UNALIGNED_BIG_ENDIAN(int32_t, &ballot_data->period);
                     memcpy(out->operation.ballot.protocol_hash, ballot_data->proposal, sizeof(out->operation.ballot.protocol_hash));
@@ -424,7 +419,7 @@ static void parse_operations_throws_parse_error(
                         const struct delegation_contents *dlg = NEXT_TYPE(struct delegation_contents);
                         parse_implicit(&out->operation.delegate, &dlg->signature_type, dlg->hash);
                     }
-                    if (NEXT_BYTE(data, &ix, length) != 0) PARSE_ERROR(); // Has script
+                    ASSERT_EQ(NEXT_BYTE(data, &ix, length), 0); // Has script
                 }
                 break;
             case OPERATION_TAG_ATHENS_TRANSACTION:
@@ -464,17 +459,13 @@ static void parse_operations_throws_parse_error(
 
                             // Anything that’s not “do” is not a
                             // manager.tz contract.
-                            if (entrypoint != ENTRYPOINT_DO) {
-                                PARSE_ERROR();
-                            }
+                            ASSERT_EQ(entrypoint, ENTRYPOINT_DO);
 
                             const uint32_t argument_length = MICHELSON_READ_LENGTH(data, &ix, length);
 
                             // Error on anything but a michelson
                             // sequence.
-                            if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
-                                PARSE_ERROR();
-                            }
+                            ASSERT_EQ(NEXT_BYTE(data, &ix, length), MICHELSON_TYPE_SEQUENCE);
 
                             const uint32_t sequence_length = MICHELSON_READ_LENGTH(data, &ix, length);
 
@@ -482,18 +473,16 @@ static void parse_operations_throws_parse_error(
                             // in argument length for above two
                             // bytes). Also bail out on really big
                             // Michelson that we don’t support.
-                            if (   sequence_length + sizeof(uint8_t) + sizeof(uint32_t) != argument_length
-                                || argument_length > MAX_MICHELSON_SEQUENCE_LENGTH) {
+                            ASSERT_EQ(sequence_length + sizeof(uint8_t) + sizeof(uint32_t), argument_length);
+                            if (argument_length > MAX_MICHELSON_SEQUENCE_LENGTH) {
                                 PARSE_ERROR();
                             }
 
                             // All manager.tz operations should begin
                             // with this. Otherwise, bail out.
-                            if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_DROP
-                                || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_NIL
-                                || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_OPERATION) {
-                                PARSE_ERROR();
-                            }
+                            ASSERT_EQ(MICHELSON_READ_SHORT(data, &ix, length), MICHELSON_DROP);
+                            ASSERT_EQ(MICHELSON_READ_SHORT(data, &ix, length), MICHELSON_NIL);
+                            ASSERT_EQ(MICHELSON_READ_SHORT(data, &ix, length), MICHELSON_OPERATION);
 
                             // First real michelson op.
                             switch (MICHELSON_READ_SHORT(data, &ix, length)) {
@@ -505,30 +494,22 @@ static void parse_operations_throws_parse_error(
                                             switch (MICHELSON_READ_SHORT(data, &ix, length)) {
                                                 case MICHELSON_SOME: { // Set delegate
                                                     // Matching: PUSH key_hash <dlgt> ; SOME ; SET_DELEGATE
-                                                    if (MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_SET_DELEGATE) {
-                                                        PARSE_ERROR();
-                                                    }
+                                                    ASSERT_EQ(MICHELSON_READ_SHORT(data, &ix, length), MICHELSON_SET_DELEGATE);
                                                     out->operation.tag = OPERATION_TAG_BABYLON_DELEGATION;
                                                     out->operation.destination.originated = true;
                                                     break;
                                                 }
                                                 case MICHELSON_IMPLICIT_ACCOUNT: { // transfer contract to implicit
                                                     // Matching: PUSH key_hash <adr> ; IMPLICIT_ACCOUNT ; PUSH mutez <val> ; UNIT ; TRANSFER_TOKENS
-                                                    if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_PUSH
-                                                        || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_MUTEZ) {
-                                                        PARSE_ERROR();
-                                                    }
+                                                    ASSERT_EQ(MICHELSON_READ_SHORT(data, &ix, length), MICHELSON_PUSH);
+                                                    ASSERT_EQ(MICHELSON_READ_SHORT(data, &ix, length), MICHELSON_MUTEZ);
 
-                                                    if (NEXT_BYTE(data, &ix, length) != 0) {
-                                                        PARSE_ERROR();
-                                                    };
+                                                    ASSERT_EQ(NEXT_BYTE(data, &ix, length), 0);
 
                                                     out->operation.amount = PARSE_Z_MICHELSON(data, &ix, length);
 
-                                                    if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_UNIT
-                                                        || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_TRANSFER_TOKENS) {
-                                                        PARSE_ERROR();
-                                                    }
+                                                    ASSERT_EQ(MICHELSON_READ_SHORT(data, &ix, length), MICHELSON_UNIT);
+                                                    ASSERT_EQ(MICHELSON_READ_SHORT(data, &ix, length), MICHELSON_TRANSFER_TOKENS);
                                                     out->operation.tag = OPERATION_TAG_BABYLON_TRANSACTION;
                                                     break;
                                                 }
@@ -548,10 +529,7 @@ static void parse_operations_throws_parse_error(
                                                     // bail out on anything but
                                                     // default.
                                                     // TODO: display entrypoints
-                                                    if (NEXT_BYTE(data, &ix, length) != ENTRYPOINT_DEFAULT) {
-                                                        PARSE_ERROR();
-                                                    }
-
+                                                    ASSERT_EQ(NEXT_BYTE(data, &ix, length), ENTRYPOINT_DEFAULT);
                                                     break;
                                                 }
                                                 case MICHELSON_CONTRACT: {
@@ -563,60 +541,30 @@ static void parse_operations_throws_parse_error(
                                             // Can’t display any parameters, need
                                             // to throw anything but unit out for now.
                                             // TODO: display michelson arguments
-                                            if (type != MICHELSON_CONTRACT_UNIT) {
-                                                PARSE_ERROR();
-                                            }
+                                            ASSERT_EQ(type, MICHELSON_CONTRACT_UNIT);
 
                                             // Matching: ASSERT_SOME (unfolded)
-                                            if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
-                                                PARSE_ERROR();
-                                            }
-                                            if (MICHELSON_READ_LENGTH(data, &ix, length) != 0x15) {
-                                                PARSE_ERROR();
-                                            }
-                                            if (MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_IF_NONE) {
-                                                PARSE_ERROR();
-                                            }
-                                            if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
-                                                PARSE_ERROR();
-                                            }
-                                            if (MICHELSON_READ_LENGTH(data, &ix, length) != 9) {
-                                                PARSE_ERROR();
-                                            }
-                                            if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
-                                                PARSE_ERROR();
-                                            }
-                                            if (MICHELSON_READ_LENGTH(data, &ix, length) != 4) {
-                                                PARSE_ERROR();
-                                            }
-                                            if (MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_UNIT) {
-                                                PARSE_ERROR();
-                                            }
-                                            if (MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_FAILWITH) {
-                                                PARSE_ERROR();
-                                            }
-                                            if (NEXT_BYTE(data, &ix, length) != MICHELSON_TYPE_SEQUENCE) {
-                                                PARSE_ERROR();
-                                            }
-                                            if (MICHELSON_READ_LENGTH(data, &ix, length) != 0) {
-                                                PARSE_ERROR();
-                                            }
+                                            ASSERT_EQ(NEXT_BYTE(data, &ix, length), MICHELSON_TYPE_SEQUENCE);
+                                            ASSERT_EQ(MICHELSON_READ_LENGTH(data, &ix, length), 0x15);
+                                            ASSERT_EQ(MICHELSON_READ_SHORT(data, &ix, length), MICHELSON_IF_NONE);
+                                            ASSERT_EQ(NEXT_BYTE(data, &ix, length), MICHELSON_TYPE_SEQUENCE);
+                                            ASSERT_EQ(MICHELSON_READ_LENGTH(data, &ix, length), 9);
+                                            ASSERT_EQ(NEXT_BYTE(data, &ix, length), MICHELSON_TYPE_SEQUENCE);
+                                            ASSERT_EQ(MICHELSON_READ_LENGTH(data, &ix, length), 4);
+                                            ASSERT_EQ(MICHELSON_READ_SHORT(data, &ix, length), MICHELSON_UNIT);
+                                            ASSERT_EQ(MICHELSON_READ_SHORT(data, &ix, length), MICHELSON_FAILWITH);
+                                            ASSERT_EQ(NEXT_BYTE(data, &ix, length), MICHELSON_TYPE_SEQUENCE);
+                                            ASSERT_EQ(MICHELSON_READ_LENGTH(data, &ix, length), 0);
 
-                                            if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_PUSH
-                                                || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_MUTEZ) {
-                                                PARSE_ERROR();
-                                            }
+                                            ASSERT_EQ(MICHELSON_READ_SHORT(data, &ix, length), MICHELSON_PUSH);
+                                            ASSERT_EQ(MICHELSON_READ_SHORT(data, &ix, length), MICHELSON_MUTEZ);
 
-                                            if (NEXT_BYTE(data, &ix, length) != 0) {
-                                                PARSE_ERROR();
-                                            };
+                                            ASSERT_EQ(NEXT_BYTE(data, &ix, length), 0);
 
                                             out->operation.amount = PARSE_Z_MICHELSON(data, &ix, length);
 
-                                            if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_UNIT
-                                                || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_TRANSFER_TOKENS) {
-                                                PARSE_ERROR();
-                                            }
+                                            ASSERT_EQ(MICHELSON_READ_SHORT(data, &ix, length), MICHELSON_UNIT);
+                                            ASSERT_EQ(MICHELSON_READ_SHORT(data, &ix, length), MICHELSON_TRANSFER_TOKENS);
                                             out->operation.tag = OPERATION_TAG_BABYLON_TRANSACTION;
                                             break;
                                         }
@@ -626,10 +574,8 @@ static void parse_operations_throws_parse_error(
                                 }
                                 case MICHELSON_NONE: { // withdraw delegate
                                     // Matching: NONE key_hash ; SET_DELEGATE
-                                    if (   MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_KEY_HASH
-                                        || MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_SET_DELEGATE) {
-                                        PARSE_ERROR();
-                                    }
+                                    ASSERT_EQ(MICHELSON_READ_SHORT(data, &ix, length), MICHELSON_KEY_HASH);
+                                    ASSERT_EQ(MICHELSON_READ_SHORT(data, &ix, length), MICHELSON_SET_DELEGATE);
                                     out->operation.tag = OPERATION_TAG_BABYLON_DELEGATION;
                                     out->operation.destination.originated = 0;
                                     out->operation.destination.signature_type = SIGNATURE_TYPE_UNSET;
@@ -639,16 +585,11 @@ static void parse_operations_throws_parse_error(
                             }
 
                             // All michelson contracts end with a cons.
-                            if (MICHELSON_READ_SHORT(data, &ix, length) != MICHELSON_CONS) {
-                                PARSE_ERROR();
-                            }
+                            ASSERT_EQ(MICHELSON_READ_SHORT(data, &ix, length), MICHELSON_CONS);
 
                             // This should be the exact end of the
                             // APDU. Any more data can’t be parsed.
-                            if (ix != length) {
-                                PARSE_ERROR();
-                            }
-
+                            ASSERT_EQ(ix, length);
                             break;
                         }
                         case MICHELSON_PARAMS_NONE: {
