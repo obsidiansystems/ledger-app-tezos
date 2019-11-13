@@ -28,8 +28,8 @@ void parsed_contract_to_string(
     // If hash_ptr exists, show it to us now. Otherwise, we unpack the
     // packed hash.
     if (contract->hash_ptr != NULL) {
-        if (buff_size < 36) THROW(EXC_WRONG_LENGTH);
-        memcpy(buff, contract->hash_ptr, 36);
+        if (buff_size < HASH_SIZE_B58) THROW(EXC_WRONG_LENGTH);
+        memcpy(buff, contract->hash_ptr, HASH_SIZE_B58);
     } else if (contract->originated == 0 && contract->signature_type == SIGNATURE_TYPE_UNSET) {
         if (buff_size < sizeof(NO_CONTRACT_STRING)) THROW(EXC_WRONG_LENGTH);
         strcpy(buff, NO_CONTRACT_STRING);
@@ -42,7 +42,7 @@ void parsed_contract_to_string(
     }
 
     for (uint16_t i = 0; i < sizeof(named_delegates) / sizeof(named_delegate_t); i++) {
-        if (memcmp(named_delegates[i].bakerAccount, buff, 36) == 0) {
+        if (memcmp(named_delegates[i].bakerAccount, buff, HASH_SIZE_B58) == 0) {
             // Found a matching baker, display it.
             if (buff_size < strlen(PIC(named_delegates[i].bakerName))) THROW(EXC_WRONG_LENGTH);
             strcpy(buff, PIC(named_delegates[i].bakerName));
