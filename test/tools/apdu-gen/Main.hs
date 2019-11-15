@@ -1,9 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
 import qualified Data.HexString as Hex
 
-import Ops
+import Tezos.V005.Types
 
+import Ops
 
 main :: IO ()
 main = do
