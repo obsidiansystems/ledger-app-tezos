@@ -110,9 +110,11 @@ makeTezosAPDU :: LedgerInstruction -> Maybe SignatureType -> BS.ByteString -> [B
 makeTezosAPDU instruction sigTypeM payload = 
   fmap (\bs -> toStrict $ BSB.toLazyByteString $ toAPDU (enumToByteB instruction) p2FinalB (enumToByteB sigType) bs) $ splitMsg payload
   where 
+    -- TODO: Get this to work
     -- setupKeyAPDU :: BS.ByteString
-    -- setupKeyAPDU = "8004000311048000002c800006c18000000080000000"   --this should be the same for all apdus
+    -- setupKeyAPDU = "8004000311048000002c800006c18000000080000000" --this should be the same for all apdus
     -- fullMsg =  setupKeyAPDU : (splitMsg payload)
+
     sigType = fromMaybe SignatureType_UNSET sigTypeM
     claByteB = BSB.int8 128 -- 0x80
     p2InitB = BSB.int8 1 -- 0x01
