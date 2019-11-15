@@ -18,6 +18,7 @@ in pkgs.haskell.packages.${compiler}.developPackage {
   root = ./.;
   source-overrides = {
     constraints-extras = "0.3.0.1";
+    /* dependent-sum = "0.4"; */
     dependent-sum = "0.6.2.0";
     tezos-bake-monitor-lib = (hackGet ../../../nix/dep/tezos-bake-monitor-lib) + /tezos-bake-monitor-lib;
   };

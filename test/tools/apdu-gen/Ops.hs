@@ -3,37 +3,75 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 
-module Main where
+module Ops
+(
+    transferSim
+  , delegationSim
+  , makeTezosAPDU
+  , LedgerInstruction(..)
+  , SignatureType(..)
+
+) where
+
+-- import qualified Data.ByteString.Base16 as BS16
+import qualified Data.ByteString as BS
+import qualified Data.ByteString.Builder as BSB
+import Data.ByteString.Lazy (toStrict)
+import Data.Dependent.Sum
+import qualified Data.HexString as Hex
+import Data.Int (Int8)
+import Data.Maybe (fromMaybe)
 
 import qualified Tezos.Common.Binary as B
-import qualified Data.ByteString.Base16 as BS16
-import qualified Data.HexString as Hex
-import Data.Dependent.Sum
 import Tezos.V005.Micheline
 import Tezos.V005.Operation
 import Tezos.V005.Types
 
-main :: IO ()
-main = print $ Hex.fromBytes $ B.encode $ tranKindTag :=> (transferSim src dst 5 0)
-  where 
-    src = "tz1h3QwQMhFhAbdWcKDsTWWmF7iMbo8py2MD"
-    dst = "tz1cCTB1S2UYtGVJyuTQ9ktnnkemuqaSwvZn"
-    tranKindTag = OpsKindTag_Single $ OpKindTag_Manager OpKindManagerTag_Transaction
+data SignatureType =
+     SignatureType_UNSET
+  |  SignatureType_SECP256K1
+  |  SignatureType_SECP256R1
+  |  SignatureType_ED25519EC
+  deriving (Eq, Show, Enum)
+ 
+-- Order of the instructions listed in the type matters so that derive enum corresponds with 
+-- the apdu instruction bytecodes
+-- TODO: Fix the above
+data LedgerInstruction = 
+    LedgerInstruction_Version
+  | LedgerInstruction_AuthorizeBaking
+  | LedgerInstruction_GetPublicKey
+  | LedgerInstruction_PromptPublicKey
+  | LedgerInstruction_Sign
+  | LedgerInstruction_SignUnsafe
+  | LedgerInstruction_Reset
+  | LedgerInstruction_QueryAuthKey
+  | LedgerInstruction_QueryMainHWM
+  | LedgerInstruction_Git
+  | LedgerInstruction_Setup
+  | LedgerInstruction_QueryAllHWM
+  | LedgerInstruction_Deauthorize
+  | LedgerInstruction_QueryAuthKeyWithCurve
+  | LedgerInstruction_HMAC
+  | LedgerInstruction_SignWithHash
+  deriving (Eq, Show, Enum)
 
-transferSim :: PublicKeyHash -> ContractId -> Tez -> TezosWord64 -> Op ('OpKind_Manager '[ 'OpKindManager_Transaction] :: OpKind)
-transferSim source destination amount storageLimit = Op 
-  { _op_branch = "BLM3c4UQi5ebKtfKyVZfN3g9xxbw1EKczvJvGhMDrBCP8DVcWmm"
-  , _op_contents = contents
-  , _op_signature = Nothing
-  }
+transferSim :: PublicKeyHash -> ContractId -> Tez -> TezosWord64 -> BS.ByteString
+transferSim source destination amount storageLimit = 
+  B.encode $ tag :=> Op 
+    { _op_branch = "BLM3c4UQi5ebKtfKyVZfN3g9xxbw1EKczvJvGhMDrBCP8DVcWmm" -- mock branch name
+    , _op_contents = contents
+    , _op_signature = Nothing
+    }
   where 
+    tag = OpsKindTag_Single $ OpKindTag_Manager OpKindManagerTag_Transaction
     contents = OpContentsList_Single $ OpContents_Transaction $ 
       OpContentsManager
         { _opContentsManager_source = source
         , _opContentsManager_fee = 1
         , _opContentsManager_counter = 2590
         , _opContentsManager_gasLimit = 800000
-        , _opContentsManager_storageLimit = 60000
+        , _opContentsManager_storageLimit = storageLimit
         , _opContentsManager_operation = transferOp
         }
     transferOp = OpContentsTransaction
@@ -42,13 +80,15 @@ transferSim source destination amount storageLimit = Op
       , _opContentsTransaction_parameters = Nothing
       }
 
-delegationSim :: PublicKeyHash -> PublicKeyHash -> TezosWord64 -> Op ('OpKind_Manager '[ 'OpKindManager_Delegation] :: OpKind)
-delegationSim source delegate storageLimit = Op 
+
+delegationSim :: PublicKeyHash -> PublicKeyHash -> TezosWord64 -> BS.ByteString
+delegationSim source delegate storageLimit = B.encode $ tag :=> Op 
   { _op_branch = "BLM3c4UQi5ebKtfKyVZfN3g9xxbw1EKczvJvGhMDrBCP8DVcWmm"
   , _op_contents = contents
   , _op_signature = Nothing
   }
   where 
+    tag = OpsKindTag_Single $ OpKindTag_Manager OpKindManagerTag_Delegation
     contents = OpContentsList_Single $ OpContents_Delegation $ 
       OpContentsManager
         { _opContentsManager_source = source
@@ -59,40 +99,39 @@ delegationSim source delegate storageLimit = Op
         , _opContentsManager_operation = delegateOp
         }
     delegateOp = OpContentsDelegation
-			{ _opContentsDelegation_delegate = delegate
-			}
+      { _opContentsDelegation_delegate = Just delegate
+      }
 
+ --TODO: Cover enums with over 128 elements
+enumToByteB :: Enum a => a -> BSB.Builder
+enumToByteB = BSB.int8 . (fromIntegral :: Int -> Int8) . fromEnum
 
+makeTezosAPDU :: LedgerInstruction -> Maybe SignatureType -> BS.ByteString -> [BS.ByteString]
+makeTezosAPDU instruction sigTypeM payload = 
+  fmap (\bs -> toStrict $ BSB.toLazyByteString $ toAPDU (enumToByteB instruction) p2FinalB (enumToByteB sigType) bs) $ splitMsg payload
+  where 
+    -- setupKeyAPDU :: BS.ByteString
+    -- setupKeyAPDU = "8004000311048000002c800006c18000000080000000"   --this should be the same for all apdus
+    -- fullMsg =  setupKeyAPDU : (splitMsg payload)
+    sigType = fromMaybe SignatureType_UNSET sigTypeM
+    claByteB = BSB.int8 128 -- 0x80
+    p2InitB = BSB.int8 1 -- 0x01
+    p2MiddleB = BSB.int8 0 -- 0x00
+    p2FinalB = BSB.int8 129 -- 0x81
+    magicByteB = BSB.int8 3 -- 0x03
+    maxRawMsgSize = 230
 
--- data SignatureType = SignatureType
---      SignatureType_UNSET
---   |  SignatureType_SECP256K1
---   |  SignatureType_SECP256R1
---   |  SignatureType_ED25519EC
+    -- splitMsg :: BS.ByteString -> [BS.ByteString]
+    -- splitMsg rawTxn = 
+    --   let txnWithMB = BSB.lazyByteString $ magicByteB <> byteString rawTxn in
+    --   if BS.length txnWithMB > maxRawMsgSize 
+    --     then (BS.take maxRawTxnSize txnWithMB) : (splitMsg $ BS.drop maxRawTxnSize txnWithMB)
+    --     else [txnWithMB]
 
--- data Instruction = 
---     Instruction_Version
---   | Instruction_AuthorizeBaking
---   | Instruction_GetPublicKey
---   | Instruction_PromptPublicKey
---   | Instruction_Sign
---   | Instruction_SignUnsafe
---   | Instruction_Reset
---   | Instruction_Git
---   | Instruction_SignWithHash
---   | Instruction_HMAC
-
--- data APDU = APDU
---   { _apdu_cla :: Int
---   , _apdu_instruction :: Instruction
---   , _apdu_p1_byte :: Int
---   , _apdu_signCurve :: SigningCurve
---   , _apdu_msgLength :: Int
---   , _apdu_msg :: String
---   }
-
--- This first one sets up the derivation path for the key.
--- How many different sets of transactions can be sent? Document
--- Does the src need to be a tz1 if the encryption is 
--- echo 8004000311048000002c800006c18000000080000000
--- echo 800481005d035379ba9122785f71ec283a3b6398c05edc8f8d77eef885d167d22c50e9f9c26c6c00cf49f66b9ea137e11818f2a78b4b6fc9895b4e50c0843d9e1480ea30e0d403c096b1020000b5a3c247300abfea1242d10f347c321f796c1b8800
+    splitMsg :: BS.ByteString -> [BS.ByteString]
+    splitMsg rawTxn = 
+    -- This is just a tmp implementation of the function, the above one has the real logic that should be used
+      [toStrict $ BSB.toLazyByteString $ magicByteB <> (BSB.byteString rawTxn) ]
+     
+    toAPDU insB p2B curveB msg = 
+      claByteB <> insB <> p2B <> curveB <> (enumToByteB $ BS.length msg) <> BSB.byteString msg
