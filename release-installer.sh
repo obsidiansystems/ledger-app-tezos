@@ -28,7 +28,6 @@ for arg in "$@"; do
 
   python -m ledgerblue.loadApp \
     --appFlags "$appFlag" \
-    --dataSize "${nvram_size:?manifest file is missing field}" \
     --tlv \
     --curve ed25519 \
     --curve secp256k1 \
