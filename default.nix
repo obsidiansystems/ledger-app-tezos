@@ -1,4 +1,4 @@
-{ pkgs ? import nix/nixpkgs.nix {}, gitDescribe ? "TEST-dirty", nanoXSdk ? null, ... }:
+{ pkgs ? import ./nix/dep/nixpkgs {}, gitDescribe ? "TEST-dirty", nanoXSdk ? null, ... }:
 let
   fetchThunk = p:
     if builtins.pathExists (p + /git.json)
