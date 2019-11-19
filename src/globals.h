@@ -1,6 +1,5 @@
 #pragma once
 
-#include "blake2.h"
 #include "types.h"
 
 #include "bolos_target.h"
@@ -36,7 +35,7 @@ typedef struct {
 #endif
 
 typedef struct {
-    b2b_state state;
+    cx_blake2b_t state;
     bool initialized;
 } blake2b_hash_state_t;
 
