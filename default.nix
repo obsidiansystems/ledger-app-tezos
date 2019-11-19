@@ -21,7 +21,9 @@ let
           python ${sdk + /icon.py} '${icons/nano-s-tezos.gif}' hexbitmaponly > "$out"
         '';
         nvramDataSize = appDir: pkgs.runCommand "${name}-nvram-data-size" {} ''
-          grep _nvram_data_size '${appDir + /debug/app.map}' | tr -s ' ' | cut -f2 -d' ' > "$out"
+          envram_data="0x$(cat  | grep _envram_data '${appDir + /debug/app.map}' | cut -f1 -d' ')"
+          nvram_data="0x$(grep _nvram_data '${appDir + /debug/app.map}' | cut -f1 -d' ')"
+          echo "$(($envram_data - $nvram_data))" > "$out"
         '';
       };
       x = rec {
