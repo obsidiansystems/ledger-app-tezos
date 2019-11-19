@@ -67,6 +67,11 @@ let
           size $out/bin/app.elf
         '';
       };
+      nvramDataSize = appDir: pkgs.runCommand "nvram-data-size" {} ''
+        envram_data="0x$(cat  | grep _envram_data '${appDir + /debug/app.map}' | cut -f1 -d' ')"
+        nvram_data="0x$(grep _nvram_data '${appDir + /debug/app.map}' | cut -f1 -d' ')"
+        echo "$(($envram_data - $nvram_data))" > "$out"
+      '';
       mkRelease = short_name: name: appDir: pkgs.runCommand "${short_name}-nano-${bolos.name}-release-dir" {} ''
         mkdir -p "$out"
 
@@ -74,6 +79,7 @@ let
 
         cat > "$out/app.manifest" <<EOF
         name='${name}'
+        nvram_size=$(cat '${nvramDataSize appDir}')
         target='nano_${bolos.name}'
         target_id=${bolos.targetId}
         version=$(echo '${gitDescribe}' | cut -f1 -d- | cut -f2 -dv)
