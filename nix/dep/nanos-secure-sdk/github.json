@@ -1,7 +1,7 @@
 {
   "owner": "LedgerHQ",
   "repo": "nanos-secure-sdk",
-  "branch": "master",
-  "rev": "f9e1c7b8904df2eee0ae7e603f552b876c169334",
-  "sha256": "1wzra32zkqw521a5cmvqsblpkbkfzgx2pbngqpymcgf8db20p50i"
+  "branch": "og-1.6.0-1",
+  "rev": "5844b50daaf70108ef5464b7004561be0442edd1",
+  "sha256": "0r5bnn46ay01imxzsg0iy30aa6yaa9rx7j54ifj3a4ahlfw51nkc"
 }
