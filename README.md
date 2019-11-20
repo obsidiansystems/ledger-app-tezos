@@ -426,7 +426,7 @@ Currently there are two other ways to do this:
 
   1. If you have the Nix package manager, use the
      [Tezos baking platform](https://gitlab.com/obsidian.systems/tezos-baking-platform).
-  2. Build tezos from the tezos repo with [these instructions](http://tezos.gitlab.io/mainnet/introduction/howtoget.html#build-from-sources).
+  2. Build tezos from the tezos repo with [these instructions](http://tezos.gitlab.io/introduction/howtoget.html#build-from-sources).
 
 Depending on how you build it, you might need to prefix `./` to your commands, and the names
 of some of the binaries might be different.
