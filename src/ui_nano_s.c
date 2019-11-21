@@ -229,7 +229,6 @@ void ui_display(const bagl_element_t *elems, size_t sz, ui_callback_t ok_c, ui_c
     if (!is_idling()) {
         switch_screen(0);
     }
-
 // TODO: Upgrade the nano-sdk to the master branch, and upgrade legacy ui functions
 /* #if CX_APILEVEL < 10 */
     ux.elements = elems;
