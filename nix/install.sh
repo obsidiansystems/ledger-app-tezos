@@ -1,26 +1,33 @@
-#!/usr/bin/env bash
-set -Eeuo pipefail
+#! /usr/bin/env nix-shell
+#! nix-shell -i bash ./ledgerblue.nix -A shell
 
-export target="${1:?Please specify target, either 's' for Nano S or 'x' for Nano X}"
-shift
+set -Eeuo pipefail
 
 root="$(git rev-parse --show-toplevel)"
-export root
+
+target="${1:?Please specify target, either 's' for Nano S or 'x' for Nano X}"
+shift
+
+case "$target" in
+  s) ;; x) ;;
+  *)
+    >&2 echo "Target must either be 's' for Nano S or 'x' for Nano X"
+    exit 1
+esac
 
 install() {
+  local app=$1
+  shift
   local release_file
-  release_file=$("$root/nix/build.sh" -A "nano.${target}.release.$1")
+  release_file=$("$root/nix/build.sh" -A "nano.$target.release.$app" "$@")
   bash "$root/release-installer.sh" "$release_file"
 }
-export -f install
 
-nix-shell "$root/nix/ledgerblue.nix" -A shell --run "$(cat <<EOF
-set -Eeuo pipefail
 if [ $# -eq 0 ]; then
-  install wallet
-  install baking
+  install wallet "$@"
+  install baking "$@"
 else
-  install "${1:-}"
+  app="$1"
+  shift
+  install "$app" "$@"
 fi
-EOF
-)"
