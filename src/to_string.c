@@ -54,13 +54,13 @@ void lookup_parsed_contract_name(
         if (memcmp(named_delegates[i].bakerAccount, buff, HASH_SIZE_B58) == 0) {
             // Found a matching baker, display it.
             const char* name = (const char*)pic((unsigned int)named_delegates[i].bakerName);
-            if (buff_size < strlen(name)) THROW(EXC_WRONG_LENGTH);
+            if (buff_size <= strlen(name)) THROW(EXC_WRONG_LENGTH);
             strcpy(buff, name);
             return;
         }
     }
 
-    if (buff_size < strlen(NO_CONTRACT_NAME_STRING)) THROW(EXC_WRONG_LENGTH);
+    if (buff_size <= strlen(NO_CONTRACT_NAME_STRING)) THROW(EXC_WRONG_LENGTH);
     strcpy(buff, NO_CONTRACT_NAME_STRING);
 }
 
