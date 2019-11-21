@@ -19,10 +19,10 @@ blocks.
 
 This repository contains two Ledger Nano applications:
 
-1. The "Tezos Baking" application is for baking: signing new blocks and
+1. The "Tezos Baking" application (Nano S only) is for baking: signing new blocks and
 endorsements. For more information about baking, see
 *[Benefits and Risks of Home Baking](https://medium.com/@tezos_91823/benefits-and-risks-of-home-baking-a631c9ca745)*.
-2. The "Tezos Wallet" application is for making XTZ transactions, originating contracts, delegation, and voting. Basically everything you might want to use the Ledger Nano S/Xfor on Tezos besides baking.
+2. The "Tezos Wallet" application (Nano S and X) is for making XTZ transactions, originating contracts, delegation, and voting. Basically everything you might want to use the Ledger Nano S/X for on Tezos besides baking.
 
 It is possible to do all of these things without a hardware wallet, but using a
 hardware wallet provides you better security against key theft.
@@ -426,7 +426,7 @@ Currently there are two other ways to do this:
 
   1. If you have the Nix package manager, use the
      [Tezos baking platform](https://gitlab.com/obsidian.systems/tezos-baking-platform).
-  2. Build tezos from the tezos repo with [these instructions](http://tezos.gitlab.io/mainnet/introduction/howtoget.html#build-from-sources).
+  2. Build tezos from the tezos repo with [these instructions](http://tezos.gitlab.io/introduction/howtoget.html#build-from-sources).
 
 Depending on how you build it, you might need to prefix `./` to your commands, and the names
 of some of the binaries might be different.
@@ -475,45 +475,58 @@ encryption system, is indicated by a root key hash, the Tezos-specific base58
 encoding of the hash of the public key at `44'/1729'` on that Ledger device. Because
 all Tezos paths start with this, in `tezos-client` commands it is implied.
 
+Beginning in Tezos Wallet V2.2.0, there is also support for a `ed25519-bip32` derivation
+method, which was made available in V1.5.5 of the Nano firmware. The existing `ed25519`
+operation was purposefully not changed to preserve backwards compatibility. If you do
+nothing, expect no changes. However, it is recommended that all new accounts use the `bip25519`
+command instead of the legacy `ed25519`. After it is imported, the address can be treated
+the same as any other.
+
 ### Importing the key from the Ledger device
 
 This section must be done regardless of whether you're going to be baking or
 only using the Tezos Wallet application.
 
-Please run, with a Tezos application open on your device (either Tezos Baking or Tezos Wallet will do):
+Please run with a Tezos application open on your device (either Tezos Baking or Tezos Wallet will do):
 
 ```
 $ tezos-client list connected ledgers
 ```
 
-The output of this command includes three Tezos addresses derived from the secret
+The output of this command includes four Tezos addresses derived from the secret
 stored on the device, via different signing curves and BIP32 paths.
 
 ```
-Found a Tezos Baking 2.0.1 (git-description: "") application running on
-a Ledger device at [0001:0003:00].
+## Ledger `major-squirrel-thick-hedgehog`
+Found a Tezos Wallet 2.1.0 (git-description: "091e74e9") application running
+on Ledger Nano S at
+[IOService:/AppleACPIPlatformExpert/PCI0@0/AppleACPIPCI/XHC1@14/XHC1@14000000/HS03@14300000/Nano
+S@14300000/Nano S@0/IOUSBHostHIDDevice@14300000,0].
 
 To use keys at BIP32 path m/44'/1729'/0'/0' (default Tezos key path), use one
 of:
-  tezos-client import secret key ledger_kiln "ledger://major-squirrel-thick-hedgehog/ed25519/0h/0h"
-  tezos-client import secret key ledger_kiln "ledger://major-squirrel-thick-hedgehog/secp256k1/0h/0h"
-  tezos-client import secret key ledger_kiln "ledger://major-squirrel-thick-hedgehog/P-256/0h/0h"
+
+tezos-client import secret key ledger_username "ledger://major-squirrel-thick-hedgehog/bip25519/0h/0h"
+tezos-client import secret key ledger_username "ledger://major-squirrel-thick-hedgehog/ed25519/0h/0h"
+tezos-client import secret key ledger_username "ledger://major-squirrel-thick-hedgehog/secp256k1/0h/0h"
+tezos-client import secret key ledger_username "ledger://major-squirrel-thick-hedgehog/P-256/0h/0h"
+
 ```
 
-These show you how to import keys with a specific signing curve (e.g. `ed25519`) and derivation path (e.g. `/0'/0'`). The
+These show you how to import keys with a specific signing curve (e.g. `bip25519`) and derivation path (e.g. `/0'/0'`). The
 animal-based name (e.g. `major-squirrel-thick-hedgehog`) is a unique identifier for your
 Ledger device enabling the client to distinguish different Ledger devices. This is combined with
-a derivation path (e.g. `/0'/0'`) to indicate one of the possible keys on the Ledger device. Your *root* key is the full identifier without the derivation path (e.g. `major-squirrel-thick-hedgehog/ed25519` by itself) but you should not use the root key directly\*.
+a derivation path (e.g. `/0'/0'`) to indicate one of the possible keys on the Ledger device. Your *root* key is the full identifier without the derivation path (e.g. `major-squirrel-thick-hedgehog/bip25519` by itself) but you should not use the root key directly\*.
 
-\* *NOTE:* If you have used your root key in the past and need to import it, you can do so by simply running one of the commands but without the last derivation portion. From the example above, you would import your root key by running `tezos-client import secret key ledger_jhartzell "ledger://major-squirrel-thick-hedgehog/ed25519"`. You should avoid using your root key.
+\* *NOTE:* If you have used your root key in the past and need to import it, you can do so by simply running one of the commands but without the last derivation portion. From the example above, you would import your root key by running `tezos-client import secret key ledger_user "ledger://major-squirrel-thick-hedgehog/bip25519"`. You should avoid using your root key.
 
 The Ledger device does not currently support non-hardened path components. All
 components of all paths must be hardened, which is indicated by following them
 with a `'` character. This character may need to be escaped from the shell
 through backslashes `\` or double-quotes `"`.
 
-You'll need to choose one of the three commands starting with
-`tezos-client import secret key ...` to run. `ed25519` is the standard recommended curve.
+You'll need to choose one of the four commands starting with
+`tezos-client import secret key ...` to run. `bip25519` is the standard recommended curve.
 
 The BIP32 path is the part that in the example commands read `0'/0'`. You
 can change it, but if you do (and even if you don't), be sure to write
@@ -543,12 +556,13 @@ ledger_<...>_ed_0_0: tz1ccbGmKKwucwfCr846deZxGeDhiaTykGgK (ledger sk known)
 We recommend reading as much as possible about BIP32 to ensure you fully understand
 this.
 
-## Using the Tezos Wallet application
+## Using the Tezos Wallet application (Nano S and X)
 
 This application and the Tezos Baking Application constitute complementary apps
 for different use cases -- which could be on paired devices and therefore use
 the same key, or which could also be used in different scenarios for different
-accounts. Baking is rejected by this app.
+accounts. Baking is rejected by this app. The Tezos Wallet Application is available
+on the Nano S (all versions) and the Nano X (V2.0.1 and later)
 
 The "provide address" command on the Tezos Wallet application shows the address
 the first time the command is run for any given session. Subsequently, it
@@ -562,11 +576,11 @@ eventually display more transaction details along with this. When block headers
 and endorsements are sent to the Ledger device, they are rejected silently as if the
 user rejected them.
 
-### Faucet (alphanet and zeronet only)
+### Faucet (test networks only)
 
-On alphanet and zeronet, you will need to use the [Tezos Faucet](https://faucet.tzalpha.net/)
+On the Tezos test networks, you will need to use the [Tezos Faucet](https://faucet.tzalpha.net/)
 to obtain some tez. Tell them you're not a robot, then click "Get alphanet tz."
-It works on zeronet (even though the URL says "alpha").
+It works on zeronet and babylonnet (even though the URL says "alpha").
 
 Run the following command, where `<your-name>` is some alias you want to use for
 this wallet, and `tz1<...>.json` is the name of the file you just downloaded
@@ -726,7 +740,7 @@ Here, the hash under `Blake 2B Hash (ledger-style, with operation watermark)` is
 
 To be truly confident in the correctness of this operation, run the same operation multiple times from different places. `tezos-client` has two options to help with this: `--dry-run` which skips the last step of injecting the operation into the chain, and `--block <block-hash>` to pin an operation to a specific block.
 
-## Using the Tezos Baking Application
+## Using the Tezos Baking Application (Nano S only)
 
 The Tezos Baking Application supports the following operations:
 
@@ -966,6 +980,42 @@ If the Ledger application crashes when you load it, there are two primary causes
     might have to restart the Ledger device.
   * Out of date firmware: If the Ledger application doesn't work at all, make sure you are running firmware
     version 1.5.5.
+
+### Error "Unexpected sequence number (expected 0, got 191)" on macOS
+
+If `tezos-client` on macOS intermittently fails with an error that looks like
+
+```
+client.signer.ledger: APDU level error: Unexpected sequence number (expected 0, got 191)
+```
+
+then your installation of `tezos-client` was built with an older version of HIDAPI that doesn't work well with macOS (see [#30](https://github.com/obsidiansystems/ledger-app-tezos/issues/30)).
+
+To fix this you need to get the yet-unreleased fixes from the [HIDAPI library](https://github.com/signal11/hidapi) and rebuild `tezos-client`.
+
+If you got HIDAPI from Homebrew, you can update to the `master` branch of HIDAPI like this:
+
+```shell
+$ brew install hidapi --HEAD
+```
+
+Then start a full rebuild of `tezos-client` with HIDAPI's `master` branch:
+
+```shell
+$ brew unlink hidapi   # remove the current one
+$ brew install autoconf automake libtool  # Just keep installing stuff until the following command succeeds:
+$ brew install hidapi --HEAD
+```
+
+Finally, rebuild `ocaml-hidapi` with Tezos. In the `tezos` repository:
+
+```shell
+$ opam reinstall hidapi
+$ make all build-test
+$ ./tezos-client list connected ledgers  # should now work consistently
+```
+
+Note that you may still see warnings similar to `Unexpected sequence number (expected 0, got 191)` even after this update. The reason is that there is a separate, more cosmetic, issue in `tezos-client` itself which has already been fixed but may not be in your branch yet (see the [merge request](https://gitlab.com/tezos/tezos/merge_requests/600)).
 
 ### Contact Us
  You can email us at tezos@obsidian.systems and request to join our Slack.
