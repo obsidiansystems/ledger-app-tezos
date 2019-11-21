@@ -229,7 +229,8 @@ void ui_display(const bagl_element_t *elems, size_t sz, ui_callback_t ok_c, ui_c
     if (!is_idling()) {
         switch_screen(0);
     }
-#if CX_APILEVEL < 10
+//#if CX_APILEVEL < 10
+#if 1
     ux.elements = elems;
     ux.elements_count = sz;
     ux.button_push_handler = button_handler;
