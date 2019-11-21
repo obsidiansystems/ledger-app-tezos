@@ -46,13 +46,6 @@ static unsigned button_handler(unsigned button_mask, unsigned button_mask_counte
 
 #define PROMPT_CYCLES 3
 
-void require_pin(void) {
-    bolos_ux_params_t params;
-    memset(&params, 0, sizeof(params));
-    params.ux_id = BOLOS_UX_VALIDATE_PIN;
-    os_ux_blocking(&params);
-}
-
 #ifdef BAKING_APP
 static const bagl_element_t ui_idle_screen[] = {
     // type                               userid    x    y   w    h  str rad
@@ -152,7 +145,7 @@ static void ui_idle(void) {
         update_baking_idle_screens();
         ui_display(
             ui_idle_screen, NUM_ELEMENTS(ui_idle_screen),
-                do_nothing, exit_app, 3);
+            do_nothing, exit_app, 3);
 #   else
         G.cxl_callback = exit_app;
         main_menu();
@@ -236,7 +229,7 @@ void ui_display(const bagl_element_t *elems, size_t sz, ui_callback_t ok_c, ui_c
     if (!is_idling()) {
         switch_screen(0);
     }
-#if CX_APILEVEL < 10 
+#if CX_APILEVEL < 10
     ux.elements = elems;
     ux.elements_count = sz;
     ux.button_push_handler = button_handler;

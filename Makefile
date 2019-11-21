@@ -12,14 +12,14 @@ APPNAME = "Tezos Baking"
 else ifeq ($(APP),tezos_wallet)
 APPNAME = "Tezos Wallet"
 endif
-APP_LOAD_PARAMS=--appFlags 0 --curve ed25519 --curve secp256k1 --curve prime256r1 --path "44'/1729'" $(COMMON_LOAD_PARAMS)
+APP_LOAD_PARAMS= --appFlags 0 --curve ed25519 --curve secp256k1 --curve prime256r1 --path "44'/1729'" $(COMMON_LOAD_PARAMS)
 
 GIT_DESCRIBE ?= $(shell git describe --tags --abbrev=8 --always --long --dirty 2>/dev/null)
 
 VERSION_TAG ?= $(shell echo "$(GIT_DESCRIBE)" | cut -f1 -d-)
 APPVERSION_M=2
 APPVERSION_N=2
-APPVERSION_P=0
+APPVERSION_P=1
 APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 
 # Only warn about version tags if specified/inferred
@@ -68,6 +68,7 @@ DEFINES   += COMMIT=\"$(COMMIT)\" APPVERSION_N=$(APPVERSION_N) APPVERSION_P=$(AP
 # DEFINES   += _Static_assert\(...\)=
 
 ifeq ($(TARGET_NAME),TARGET_NANOX)
+APP_LOAD_PARAMS += --appFlags 0x240 # with BLE support
 DEFINES   += IO_SEPROXYHAL_BUFFER_SIZE_B=300
 DEFINES   += HAVE_BLE BLE_COMMAND_TIMEOUT_MS=2000
 DEFINES   += HAVE_BLE_APDU # basic ledger apdu transport over BLE
@@ -86,8 +87,10 @@ DEFINES   += IO_SEPROXYHAL_BUFFER_SIZE_B=128
 endif
 
 # Enabling debug PRINTF
-DEBUG = 0
+DEBUG ?= 0
 ifneq ($(DEBUG),0)
+
+        DEFINES += TEZOS_DEBUG
 
         ifeq ($(TARGET_NAME),TARGET_NANOX)
                 DEFINES   += HAVE_PRINTF PRINTF=mcu_usb_printf
@@ -107,6 +110,7 @@ ifneq ($(BOLOS_ENV),)
 $(info BOLOS_ENV=$(BOLOS_ENV))
 CLANGPATH := $(BOLOS_ENV)/clang-arm-fropi/bin/
 GCCPATH := $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/bin/
+CFLAGS += -idirafter $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/arm-none-eabi/include
 else
 $(info BOLOS_ENV is not set: falling back to CLANGPATH and GCCPATH)
 endif
