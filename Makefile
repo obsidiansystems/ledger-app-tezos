@@ -170,3 +170,8 @@ dep/%.d: %.c Makefile
 
 listvariants:
 	@echo VARIANTS APP tezos_wallet tezos_baking
+
+# Generate delegates from baker list
+src/delegates.h: tools/gen-delegates.sh tools/BakersRegistryCoreUnfilteredData.json
+	./tools/gen-delegates.sh ./tools/BakersRegistryCoreUnfilteredData.json
+dep/to_string.d: src/delegates.h
