@@ -120,11 +120,6 @@
     "openForDelegation": "true"
   },
   {
-    "bakerName": "Tezos China",
-    "bakerAccount": "tz1WJpSCYdQE9merfftanA8eFsqUPTpwAt8a",
-    "openForDelegation": "true"
-  },
-  {
     "bakerName": "Bake Tz",
     "bakerAccount": "tz1ei4WtWEMEJekSv8qDnu9PExG6Q8HgRGr3",
     "openForDelegation": "true"
@@ -202,11 +197,6 @@
   {
     "bakerName": "TezosRUs",
     "bakerAccount": "tz1b9MYGrbN1NAxphLEsPPNT9JC7aNFc5nA4",
-    "openForDelegation": "true"
-  },
-  {
-    "bakerName": "Tezos Turtle",
-    "bakerAccount": "tz1YQCVjyfVwtiPCDPR8JP4TA9G9H5Y3dkup",
     "openForDelegation": "true"
   },
   {
@@ -530,8 +520,38 @@
     "openForDelegation": "true"
   },
   {
-    "bakerName": "Sanka Network",
-    "bakerAccount": "tz1PYF2Fcqk7YjZGquNy8bFznhCLhyi9PpVz",
+    "bakerName": "Stake Capital",
+    "bakerAccount": "tz1Z3KCf8CLGAYfvVWPEr562jDDyWkwNF7sT",
+    "openForDelegation": "true"
+  },
+  {
+    "bakerName": "Figment Networks",
+    "bakerAccount": "tz1Scdr2HsZiQjc7bHMeBbmDRXYVvdhjJbBh",
+    "openForDelegation": "true"
+  },
+  {
+    "bakerName": "TEZWHALE",
+    "bakerAccount": "tz1isXamBXpTUgbByQ6gXgZQg4GWNW7r6rKE",
+    "openForDelegation": "true"
+  },
+  {
+    "bakerName": "Money every 3 days",
+    "bakerAccount": "tz1egbN6RK2bM5vt4aAZw6r9j4nL8z49bPdS",
+    "openForDelegation": "true"
+  },
+  {
+    "bakerName": "mamabaker",
+    "bakerAccount": "tz1aEsrxrhTYNcg897HjSWnJ5yjR95pxVD1d",
+    "openForDelegation": "true"
+  },
+  {
+    "bakerName": "TezoShop",
+    "bakerAccount": "tz1V3yg82mcrPJbegqVCPn6bC8w1CSTRp3f8",
+    "openForDelegation": "true"
+  },
+  {
+    "bakerName": "Tezos Alliance",
+    "bakerAccount": "tz1RSWMYKGAykpizFteowByYMueCYv9TMn1L",
     "openForDelegation": "true"
   }
 ]
