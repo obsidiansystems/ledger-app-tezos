@@ -124,17 +124,6 @@ static inline uint64_t parse_z_michelson(void const *data, size_t *ix, size_t le
 
 #define PARSE_Z_MICHELSON(data, ix, length) parse_z_michelson(data, ix, length, __LINE__)
 
-// This macro assumes:
-// * Beginning of data: const void *data
-// * Total length of data: size_t length
-// * Current index of data: size_t ix
-// Any function that uses these macros should have these as local variables
-#define NEXT_TYPE(type) ({ \
-    const type *val = data + ix; \
-    advance_ix(&ix, length, sizeof(type)); \
-    val; \
-})
-
 static inline signature_type_t parse_raw_tezos_header_signature_type(
     raw_tezos_header_signature_type_t const *const raw_signature_type
 ) {
@@ -242,6 +231,18 @@ static void parse_operations_throws_parse_error(
     bip32_path_t const *const bip32_path,
     is_operation_allowed_t is_operation_allowed
 ) {
+
+// This macro assumes:
+// * Beginning of data: const void *data
+// * Total length of data: size_t length
+// * Current index of data: size_t ix
+// Any function that uses these macros should have these as local variables
+#define NEXT_TYPE(type) ({ \
+    const type *val = data + ix; \
+    advance_ix(&ix, length, sizeof(type)); \
+    val; \
+})
+
     check_null(out);
     check_null(data);
     check_null(bip32_path);
@@ -655,6 +656,7 @@ static void parse_operations_throws_parse_error(
     if (out->operation.tag == OPERATION_TAG_NONE && !out->has_reveal) {
         PARSE_ERROR(); // Must have at least one op
     }
+#undef NEXT_TYPE
 }
 
 bool parse_operations(
