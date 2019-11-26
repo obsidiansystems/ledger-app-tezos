@@ -24,7 +24,7 @@
 static inline void conditional_init_hash_state(blake2b_hash_state_t *const state) {
     check_null(state);
     if (!state->initialized) {
-        cx_blake2b_init(&state->state, SIGN_HASH_SIZE);
+        cx_blake2b_init(&state->state, SIGN_HASH_SIZE*8); // cx_blake2b_init takes size in bits.
         state->initialized = true;
     }
 }

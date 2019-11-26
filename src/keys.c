@@ -118,7 +118,7 @@ cx_ecfp_public_key_t const *public_key_hash_return_global(
     }
 
     cx_blake2b_t hash_state;
-    cx_blake2b_init(&hash_state, HASH_SIZE);
+    cx_blake2b_init(&hash_state, HASH_SIZE*8); // cx_blake2b_init takes size in bits.
     cx_hash((cx_hash_t *) &hash_state, CX_LAST, compressed->W, compressed->W_len, out, HASH_SIZE);
     return compressed;
 }
