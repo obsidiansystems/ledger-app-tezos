@@ -46,92 +46,58 @@ static unsigned button_handler(unsigned button_mask, unsigned button_mask_counte
 
 #define PROMPT_CYCLES 3
 
+#ifdef TARGET_BLUE
+  #define BLUE_BAGL_ELEMENT_T_FIELDS , 0, 0, 0, NULL, NULL, NULL
+#else
+  #define BLUE_BAGL_ELEMENT_T_FIELDS 
+#endif // TARGET_BLUE
+
 #ifdef BAKING_APP
 static const bagl_element_t ui_idle_screen[] = {
     // type                               userid    x    y   w    h  str rad
     // fill      fg        bg      fid iid  txt   touchparams...       ]
     {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
       0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     NULL
+     BLUE_BAGL_ELEMENT_T_FIELDS },
 
     {{BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
       BAGL_GLYPH_ICON_CROSS},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     NULL
+     BLUE_BAGL_ELEMENT_T_FIELDS },
 
     //{{BAGL_ICON                           , 0x01,  21,   9,  14,  14, 0, 0, 0
     //, 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_TRANSACTION_BADGE  }, NULL, 0, 0,
     //0, NULL, NULL, NULL },
     {{BAGL_LABELINE, 0x01, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Last Block Level",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     "Last Block Level"
+     BLUE_BAGL_ELEMENT_T_FIELDS },
 
     {{BAGL_LABELINE, 0x01, 0, 26, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     G.baking_idle_screens.hwm,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     G.baking_idle_screens.hwm
+     BLUE_BAGL_ELEMENT_T_FIELDS },
 
     {{BAGL_LABELINE, 0x02, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Baking Key",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     "Baking Key"
+     BLUE_BAGL_ELEMENT_T_FIELDS },
 
     {{BAGL_LABELINE, 0x02, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     G.baking_idle_screens.pkh,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     G.baking_idle_screens.pkh
+     BLUE_BAGL_ELEMENT_T_FIELDS },
 
     {{BAGL_LABELINE, 0x03, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Chain",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     "Chain"
+     BLUE_BAGL_ELEMENT_T_FIELDS },
 
     {{BAGL_LABELINE, 0x03, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     G.baking_idle_screens.chain,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     G.baking_idle_screens.chain
+     BLUE_BAGL_ELEMENT_T_FIELDS },
 
 };
 
@@ -308,53 +274,28 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
 static const bagl_element_t ui_multi_screen[] = {
     {{BAGL_RECTANGLE, BAGL_STATIC_ELEMENT, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
       0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     NULL
+     BLUE_BAGL_ELEMENT_T_FIELDS },
 
     {{BAGL_ICON, BAGL_STATIC_ELEMENT, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
       BAGL_GLYPH_ICON_CROSS},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     NULL
+     BLUE_BAGL_ELEMENT_T_FIELDS },
 
     {{BAGL_ICON, BAGL_STATIC_ELEMENT, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
       BAGL_GLYPH_ICON_CHECK},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     NULL
+     BLUE_BAGL_ELEMENT_T_FIELDS },
 
     {{BAGL_LABELINE, BAGL_STATIC_ELEMENT, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     global.ui.prompt.active_prompt,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     global.ui.prompt.active_prompt
+     BLUE_BAGL_ELEMENT_T_FIELDS },
 
     {{BAGL_LABELINE, BAGL_SCROLLING_ELEMENT, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     global.ui.prompt.active_value,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     global.ui.prompt.active_value
+     BLUE_BAGL_ELEMENT_T_FIELDS },
 };
 
 void switch_screen(uint32_t which) {
