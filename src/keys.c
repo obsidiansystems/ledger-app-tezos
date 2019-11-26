@@ -18,7 +18,6 @@
 #include "keys.h"
 
 #include "apdu.h"
-#include "blake2.h"
 #include "globals.h"
 #include "memory.h"
 #include "protocol.h"
@@ -118,10 +117,9 @@ cx_ecfp_public_key_t const *public_key_hash_return_global(
             THROW(EXC_WRONG_PARAM);
     }
 
-    b2b_state hash_state;
-    b2b_init(&hash_state, HASH_SIZE);
-    b2b_update(&hash_state, compressed->W, compressed->W_len);
-    b2b_final(&hash_state, out, HASH_SIZE);
+    cx_blake2b_t hash_state;
+    cx_blake2b_init(&hash_state, HASH_SIZE*8); // cx_blake2b_init takes size in bits.
+    cx_hash((cx_hash_t *) &hash_state, CX_LAST, compressed->W, compressed->W_len, out, HASH_SIZE);
     return compressed;
 }
 
