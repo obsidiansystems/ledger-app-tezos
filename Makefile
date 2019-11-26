@@ -12,14 +12,14 @@ APPNAME = "Tezos Baking"
 else ifeq ($(APP),tezos_wallet)
 APPNAME = "Tezos Wallet"
 endif
-APP_LOAD_PARAMS=--appFlags 0 --curve ed25519 --curve secp256k1 --curve prime256r1 --path "44'/1729'" $(COMMON_LOAD_PARAMS)
+APP_LOAD_PARAMS= --appFlags 0 --curve ed25519 --curve secp256k1 --curve prime256r1 --path "44'/1729'" $(COMMON_LOAD_PARAMS)
 
 GIT_DESCRIBE ?= $(shell git describe --tags --abbrev=8 --always --long --dirty 2>/dev/null)
 
 VERSION_TAG ?= $(shell echo "$(GIT_DESCRIBE)" | cut -f1 -d-)
 APPVERSION_M=2
 APPVERSION_N=2
-APPVERSION_P=1
+APPVERSION_P=3
 APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 
 # Only warn about version tags if specified/inferred
@@ -62,10 +62,13 @@ show-app:
 DEFINES   += OS_IO_SEPROXYHAL
 DEFINES   += HAVE_BAGL HAVE_SPRINTF
 DEFINES   += HAVE_IO_USB HAVE_L4_USBLIB IO_USB_MAX_ENDPOINTS=6 IO_HID_EP_LENGTH=64 HAVE_USB_APDU
+DEFINES   += HAVE_LEGACY_PID
 DEFINES   += VERSION=\"$(APPVERSION)\" APPVERSION_M=$(APPVERSION_M)
 DEFINES   += COMMIT=\"$(COMMIT)\" APPVERSION_N=$(APPVERSION_N) APPVERSION_P=$(APPVERSION_P)
+# DEFINES   += _Static_assert\(...\)=
 
 ifeq ($(TARGET_NAME),TARGET_NANOX)
+APP_LOAD_PARAMS += --appFlags 0x240 # with BLE support
 DEFINES   += IO_SEPROXYHAL_BUFFER_SIZE_B=300
 DEFINES   += HAVE_BLE BLE_COMMAND_TIMEOUT_MS=2000
 DEFINES   += HAVE_BLE_APDU # basic ledger apdu transport over BLE
@@ -167,3 +170,8 @@ dep/%.d: %.c Makefile
 
 listvariants:
 	@echo VARIANTS APP tezos_wallet tezos_baking
+
+# Generate delegates from baker list
+src/delegates.h: tools/gen-delegates.sh tools/BakersRegistryCoreUnfilteredData.json
+	./tools/gen-delegates.sh ./tools/BakersRegistryCoreUnfilteredData.json
+dep/to_string.d: src/delegates.h

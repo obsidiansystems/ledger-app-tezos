@@ -20,6 +20,7 @@ void bip32_path_with_curve_to_pkh_string(
 );
 void protocol_hash_to_string(char *const buff, size_t const buff_size, uint8_t const hash[PROTOCOL_HASH_SIZE]);
 void parsed_contract_to_string(char *const buff, size_t const buff_size, parsed_contract_t const *const contract);
+void lookup_parsed_contract_name(char *const buff, size_t const buff_size, parsed_contract_t const *const contract);
 void chain_id_to_string(char *const buff, size_t const buff_size, chain_id_t const chain_id);
 void chain_id_to_string_with_aliases(char *const out, size_t const out_size, chain_id_t const *const chain_id);
 

@@ -225,7 +225,7 @@ static inline void michelson_read_address(parsed_contract_t *const out, const vo
                 PARSE_ERROR();
             }
             out->hash_ptr = (char*)data + *ix;
-            (*ix) += 36;
+            (*ix) += HASH_SIZE_B58;
             out->originated = false;
             out->signature_type = SIGNATURE_TYPE_UNSET;
             break;

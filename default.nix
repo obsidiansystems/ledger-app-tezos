@@ -1,4 +1,4 @@
-{ pkgs ? import nix/nixpkgs.nix {}, gitDescribe ? "TEST-dirty", nanoXSdk ? null, ... }:
+{ pkgs ? import ./nix/dep/nixpkgs {}, gitDescribe ? "TEST-dirty", nanoXSdk ? null, ... }:
 let
   fetchThunk = p:
     if builtins.pathExists (p + /git.json)
@@ -20,9 +20,6 @@ let
         } ''
           python ${sdk + /icon.py} '${icons/nano-s-tezos.gif}' hexbitmaponly > "$out"
         '';
-        nvramDataSize = appDir: pkgs.runCommand "${name}-nvram-data-size" {} ''
-          grep _nvram_data_size '${appDir + /debug/app.map}' | tr -s ' ' | cut -f2 -d' ' > "$out"
-        '';
       };
       x = rec {
         name = "x";
@@ -37,15 +34,10 @@ let
         } ''
           python '${sdk + /icon3.py}' --hexbitmaponly '${icons/nano-x-tezos.gif}' > "$out"
         '';
-        nvramDataSize = appDir: pkgs.runCommand "${name}-nvram-data-size" {} ''
-          envram_data="0x$(cat  | grep _envram_data '${appDir + /debug/app.map}' | cut -f1 -d' ')"
-          nvram_data="0x$(grep _nvram_data '${appDir + /debug/app.map}' | cut -f1 -d' ')"
-          echo "$(($envram_data - $nvram_data))" > "$out"
-        '';
       };
     };
 
-  src = pkgs.lib.sources.sourceFilesBySuffices (pkgs.lib.sources.cleanSource ./.) [".c" ".h" ".gif" "Makefile"];
+  src = pkgs.lib.sources.sourceFilesBySuffices (pkgs.lib.sources.cleanSource ./.) [".c" ".h" ".gif" "Makefile" ".sh" ".json"];
 
   build = bolos:
     let
@@ -75,6 +67,11 @@ let
           size $out/bin/app.elf
         '';
       };
+      nvramDataSize = appDir: pkgs.runCommand "nvram-data-size" {} ''
+        envram_data="$(grep _envram_data '${appDir + /debug/app.map}' | tr -s ' ' | cut -f2 -d' ')"
+        nvram_data="$(grep _nvram_data '${appDir + /debug/app.map}' | tr -s ' ' | cut -f2 -d' ')"
+        echo "$(($envram_data - $nvram_data))" > "$out"
+      '';
       mkRelease = short_name: name: appDir: pkgs.runCommand "${short_name}-nano-${bolos.name}-release-dir" {} ''
         mkdir -p "$out"
 
@@ -82,7 +79,7 @@ let
 
         cat > "$out/app.manifest" <<EOF
         name='${name}'
-        nvram_size=$(cat '${bolos.nvramDataSize appDir}')
+        nvram_size=$(cat '${nvramDataSize appDir}')
         target='nano_${bolos.name}'
         target_id=${bolos.targetId}
         version=$(echo '${gitDescribe}' | cut -f1 -d- | cut -f2 -dv)
@@ -99,12 +96,18 @@ let
       release = rec {
         wallet = mkRelease "wallet" "Tezos Wallet" walletApp;
         baking = mkRelease "baking" "Tezos Baking" bakingApp;
-        all = pkgs.runCommand "${bolos.name}-release.tar.gz" {} ''
-          cp -r '${wallet}' wallet
-          cp -r '${baking}' baking
-          cp '${./release-installer.sh}' install.sh
-          chmod +x install.sh
-          tar czf "$out" install.sh wallet baking
+        all = pkgs.runCommand "ledger-app-tezos-${bolos.name}.tar.gz" {} ''
+          mkdir ledger-app-tezos-${bolos.name}
+
+          cp -r ${wallet} ledger-app-tezos-${bolos.name}/wallet
+          # No baking app for Nano X yet
+          ${pkgs.lib.optionalString (bolos.name == "s") ''
+            cp -r ${baking} ledger-app-tezos-${bolos.name}/baking
+          ''}
+
+          install -m a=rx ${./release-installer.sh} ledger-app-tezos-${bolos.name}/install.sh
+
+          tar czf $out ledger-app-tezos-${bolos.name}/*
         '';
       };
     };

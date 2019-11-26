@@ -334,11 +334,14 @@ bool prompt_transaction(
                 static const uint32_t FEE_INDEX = 1;
                 static const uint32_t SOURCE_INDEX = 2;
                 static const uint32_t DESTINATION_INDEX = 3;
-                static const uint32_t STORAGE_INDEX = 4;
+                static const uint32_t DESTINATION_NAME_INDEX = 4;
+                static const uint32_t STORAGE_INDEX = 5;
 
                 register_ui_callback(SOURCE_INDEX, parsed_contract_to_string,
                                      &ops->operation.source);
                 register_ui_callback(DESTINATION_INDEX, parsed_contract_to_string,
+                                     &ops->operation.destination);
+                register_ui_callback(DESTINATION_NAME_INDEX, lookup_parsed_contract_name,
                                      &ops->operation.destination);
                 register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &ops->total_fee);
                 register_ui_callback(STORAGE_INDEX, number_to_string_indirect64,
@@ -349,6 +352,7 @@ bool prompt_transaction(
                     PROMPT("Fee"),
                     PROMPT("Source"),
                     PROMPT("Delegate"),
+                    PROMPT("Delegate Name"),
                     PROMPT("Storage Limit"),
                     NULL,
                 };
@@ -357,6 +361,7 @@ bool prompt_transaction(
                     PROMPT("Fee"),
                     PROMPT("Source"),
                     PROMPT("Delegate"),
+                    PROMPT("Delegate Name"),
                     PROMPT("Storage Limit"),
                     NULL,
                 };
