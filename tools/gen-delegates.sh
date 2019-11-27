@@ -1,7 +1,6 @@
-#! /usr/bin/env nix-shell
-#! nix-shell -i bash -p jq
+#! /usr/bin/env sh
 
-root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && git rev-parse --show-toplevel)"
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 registry_json=$root/tools/BakersRegistryCoreUnfilteredData.json
 if [ $# -eq 1 ]; then

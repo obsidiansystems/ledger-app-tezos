@@ -44,11 +44,15 @@ let
       app = bakingApp: pkgs.stdenv.mkDerivation {
         name = "ledger-app-tezos-nano-${bolos.name}-${if bakingApp then "baking" else "wallet"}";
         inherit src;
+        prePatch = ''
+          patchShebangs tools/gen-delegates.sh
+        '';
         postConfigure = ''
           PATH="$BOLOS_ENV/clang-arm-fropi/bin:$PATH"
         '';
         nativeBuildInputs = [
           (pkgs.python3.withPackages (ps: [ps.pillow ps.ledgerblue]))
+          pkgs.jq
         ];
         TARGET = bolos.target;
         GIT_DESCRIBE = gitDescribe;
