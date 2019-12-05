@@ -79,12 +79,14 @@ void main_loop(apdu_handler const *const handlers, size_t const handlers_size) {
                 clear_apdu_globals(); // IMPORTANT: Application state must not persist through errors
 
                 uint16_t sw = e;
+		PRINTF("Error caught at top level, number: %x\n", sw);
                 switch (sw) {
                 default:
                     sw = 0x6800 | (e & 0x7FF);
                     // FALL THROUGH
                 case 0x6000 ... 0x6FFF:
                 case 0x9000 ... 0x9FFF: {
+                        PRINTF("Line number: %d", sw & 0x0FFF);
                         size_t tx = 0;
                         G_io_apdu_buffer[tx++] = sw >> 8;
                         G_io_apdu_buffer[tx++] = sw;

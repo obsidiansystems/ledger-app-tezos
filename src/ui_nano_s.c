@@ -38,9 +38,10 @@ static void switch_screen(uint32_t which);
 // This is called by internal UI code to prevent callbacks from sticking around
 static void clear_ui_callbacks(void);
 
+#ifndef BAKING_APP
 // ------------------------------- ui_meno
 static void main_menu(void);
-
+#endif
 
 static unsigned button_handler(unsigned button_mask, unsigned button_mask_counter);
 
@@ -329,7 +330,11 @@ void ui_prompt(const char *const *labels, ui_callback_t ok_c, ui_callback_t cxl_
 
     ui_display(ui_multi_screen, NUM_ELEMENTS(ui_multi_screen),
                ok_c, cxl_c, screen_count);
+#ifndef DEBUG
     THROW(ASYNC_EXCEPTION);
+#else // In debug mode, the THROW above produces a PRINTF statement in an invalid position and causes the screen to blank. In debug mode, we just directly call the equivalent longjmp.
+    longjmp(try_context_get()->jmp_buf, ASYNC_EXCEPTION);
+#endif
 }
 
 
