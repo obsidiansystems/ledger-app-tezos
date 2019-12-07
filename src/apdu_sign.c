@@ -106,6 +106,7 @@ static bool is_operation_allowed(enum operation_tag tag) {
     }
 }
 
+#ifdef BAKING_APP
 static bool parse_allowed_operations(
     struct parsed_operation_group *const out,
     uint8_t const *const in,
@@ -114,6 +115,7 @@ static bool parse_allowed_operations(
 ) {
     return parse_operations(out, in, in_size, key->derivation_type, &key->bip32_path, &is_operation_allowed);
 }
+#endif
 
 static bool parse_allowed_operation_packet(
     struct parsed_operation_group *const out,
@@ -602,7 +604,7 @@ static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, 
                 &G.hash_state);
         }
 
-	G.maybe_ops.is_valid = parse_operations_final(&G.parse_state);
+	G.maybe_ops.is_valid = parse_operations_final(&G.parse_state, &G.maybe_ops.v);
 
         return
 #           ifdef BAKING_APP

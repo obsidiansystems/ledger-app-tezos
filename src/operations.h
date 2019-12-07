@@ -88,6 +88,7 @@ struct nexttype_subparser_state {
 
     uint8_t raw[1];
     uint8_t key[64]; // FIXME: check key length for non-tz1.
+    uint8_t text_pkh[HASH_SIZE_B58];
   } body;
   uint32_t fill_idx;
 };
@@ -117,6 +118,10 @@ struct parse_state {
         uint32_t argument_length;
         uint16_t michelson_op;
         uint16_t contract_code;
+
+        // Places to stash textual base58-encoded PKHes.
+        char base58_pkh1[HASH_SIZE_B58];
+        char base58_pkh2[HASH_SIZE_B58];
 };
 
 // Allows arbitrarily many "REVEAL" operations but only one operation of any other type,
@@ -137,7 +142,7 @@ void parse_operations_init(
     struct parse_state *const state
     );
 
-bool parse_operations_final(struct parse_state *const state);
+bool parse_operations_final(struct parse_state *const state, struct parsed_operation_group *const out);
 
 bool parse_operations_packet(
     struct parsed_operation_group *const out,
