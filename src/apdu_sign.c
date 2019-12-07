@@ -115,7 +115,8 @@ static bool parse_allowed_operations(
 ) {
     return parse_operations(out, in, in_size, key->derivation_type, &key->bip32_path, &is_operation_allowed);
 }
-#endif
+
+#else
 
 static bool parse_allowed_operation_packet(
     struct parsed_operation_group *const out,
@@ -124,6 +125,8 @@ static bool parse_allowed_operation_packet(
 ) {
     return parse_operations_packet(out, in, in_size, &is_operation_allowed);
 }
+
+#endif
 
 #ifdef BAKING_APP // ----------------------------------------------------------
 
