@@ -4,6 +4,8 @@
 
 #include "bolos_target.h"
 
+#include "operations.h"
+
 // Zeros out all globals that can keep track of APDU instruction state.
 // Notably this does *not* include UI state.
 void clear_apdu_globals(void);
@@ -62,6 +64,7 @@ typedef struct {
 
     uint8_t magic_byte;
     bool hash_only;
+    struct parse_state parse_state;
 } apdu_sign_state_t;
 
 typedef struct {

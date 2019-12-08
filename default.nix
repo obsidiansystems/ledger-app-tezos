@@ -49,6 +49,7 @@ let
         '';
         nativeBuildInputs = [
           (pkgs.python3.withPackages (ps: [ps.pillow ps.ledgerblue]))
+          pkgs.jq
         ];
         TARGET = bolos.target;
         GIT_DESCRIBE = gitDescribe;
