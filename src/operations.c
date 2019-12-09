@@ -314,9 +314,9 @@ static inline bool parse_byte(
 #define OP_JMPIF(step, cond) if(cond) { state->op_step=step; return true; }
 
 // Shortcuts for defining literal-matching states; mostly used for contract-call boilerplate.
-#define OP_STEP_REQUIRE_SHORT(constant) { uint16_t val = MICHELSON_READ_SHORT; if(val != constant) PARSE_ERROR(); } OP_STEP
-#define OP_STEP_REQUIRE_BYTE(constant) { if(byte != constant) PARSE_ERROR(); } OP_STEP
-#define OP_STEP_REQUIRE_LENGTH(constant) { uint32_t val = MICHELSON_READ_LENGTH; if(val != constant) PARSE_ERROR(); } OP_STEP
+#define OP_STEP_REQUIRE_SHORT(constant) { uint16_t val = MICHELSON_READ_SHORT; if(val != constant) { PRINTF("Expected: %d, got: %d\n", constant, val); PARSE_ERROR(); } } OP_STEP
+#define OP_STEP_REQUIRE_BYTE(constant) { if(byte != constant) { PRINTF("Expected: %d, got: %d\n", constant, byte); PARSE_ERROR(); } } OP_STEP
+#define OP_STEP_REQUIRE_LENGTH(constant) { uint32_t val = MICHELSON_READ_LENGTH; if(val != constant) { PARSE_ERROR(); } } OP_STEP
 
     switch(state->op_step) {
 
@@ -560,10 +560,12 @@ static inline bool parse_byte(
                         state->argument_length = MICHELSON_READ_LENGTH;
                     }
 
+		    OP_STEP
+
                     // Error on anything but a michelson sequence.
                     OP_STEP_REQUIRE_BYTE(MICHELSON_TYPE_SEQUENCE);
 
-                    OP_STEP {
+                    {
                         const uint32_t sequence_length = MICHELSON_READ_LENGTH;
 
                         // Only allow single sequence (5 is needed
