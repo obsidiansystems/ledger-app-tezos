@@ -18,7 +18,6 @@
 #include "keys.h"
 
 #include "apdu.h"
-#include "blake2.h"
 #include "globals.h"
 #include "memory.h"
 #include "protocol.h"
@@ -65,17 +64,23 @@ key_pair_t *generate_key_pair_return_global(
             priv->private_key_data, NULL);
     }
 
-    cx_ecfp_init_private_key(cx_curve, priv->private_key_data, sizeof(priv->private_key_data), &priv->res.private_key);
-    cx_ecfp_generate_pair(cx_curve, &priv->res.public_key, &priv->res.private_key, 1);
+    BEGIN_TRY {
+        TRY {
+            cx_ecfp_init_private_key(cx_curve, priv->private_key_data, sizeof(priv->private_key_data), &priv->res.private_key);
+            cx_ecfp_generate_pair(cx_curve, &priv->res.public_key, &priv->res.private_key, 1);
 
-    if (cx_curve == CX_CURVE_Ed25519) {
-        cx_edward_compress_point(
-            CX_CURVE_Ed25519,
-            priv->res.public_key.W,
-            priv->res.public_key.W_len);
-        priv->res.public_key.W_len = 33;
+            if (cx_curve == CX_CURVE_Ed25519) {
+                cx_edward_compress_point(CX_CURVE_Ed25519,
+                                         priv->res.public_key.W,
+                                         priv->res.public_key.W_len);
+                priv->res.public_key.W_len = 33;
+            }
+        } FINALLY {
+            explicit_bzero(priv->private_key_data, sizeof(priv->private_key_data));
+        }
     }
-    memset(priv->private_key_data, 0, sizeof(priv->private_key_data));
+    END_TRY;
+
     return &priv->res;
 }
 
@@ -85,7 +90,7 @@ cx_ecfp_public_key_t const *generate_public_key_return_global(
 ) {
     check_null(bip32_path);
     key_pair_t *const pair = generate_key_pair_return_global(curve, bip32_path);
-    memset(&pair->private_key, 0, sizeof(pair->private_key));
+    explicit_bzero(&pair->private_key, sizeof(pair->private_key));
     return &pair->public_key;
 }
 
@@ -118,10 +123,9 @@ cx_ecfp_public_key_t const *public_key_hash_return_global(
             THROW(EXC_WRONG_PARAM);
     }
 
-    b2b_state hash_state;
-    b2b_init(&hash_state, HASH_SIZE);
-    b2b_update(&hash_state, compressed->W, compressed->W_len);
-    b2b_final(&hash_state, out, HASH_SIZE);
+    cx_blake2b_t hash_state;
+    cx_blake2b_init(&hash_state, HASH_SIZE*8); // cx_blake2b_init takes size in bits.
+    cx_hash((cx_hash_t *) &hash_state, CX_LAST, compressed->W, compressed->W_len, out, HASH_SIZE);
     return compressed;
 }
 

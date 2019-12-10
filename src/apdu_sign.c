@@ -3,7 +3,6 @@
 #include "apdu.h"
 #include "baking_auth.h"
 #include "base58.h"
-#include "blake2.h"
 #include "globals.h"
 #include "key_macros.h"
 #include "keys.h"
@@ -25,7 +24,7 @@
 static inline void conditional_init_hash_state(blake2b_hash_state_t *const state) {
     check_null(state);
     if (!state->initialized) {
-        b2b_init(&state->state, SIGN_HASH_SIZE);
+        cx_blake2b_init(&state->state, SIGN_HASH_SIZE*8); // cx_blake2b_init takes size in bits.
         state->initialized = true;
     }
 }
@@ -43,7 +42,7 @@ static void blake2b_incremental_hash(
     while (*out_length > B2B_BLOCKBYTES) {
         if (current - out > (int)out_size) THROW(EXC_MEMORY_ERROR);
         conditional_init_hash_state(state);
-        b2b_update(&state->state, current, B2B_BLOCKBYTES);
+        cx_hash((cx_hash_t *) &state->state, 0, current, B2B_BLOCKBYTES, NULL, 0);
         *out_length -= B2B_BLOCKBYTES;
         current += B2B_BLOCKBYTES;
     }
@@ -64,8 +63,7 @@ static void blake2b_finish_hash(
 
     conditional_init_hash_state(state);
     blake2b_incremental_hash(buff, buff_size, buff_length, state);
-    b2b_update(&state->state, buff, *buff_length);
-    b2b_final(&state->state, out, out_size);
+    cx_hash((cx_hash_t *) &state->state, CX_LAST, buff, *buff_length, out, out_size);
 }
 
 static int perform_signature(bool const on_hash, bool const send_hash);
@@ -108,6 +106,7 @@ static bool is_operation_allowed(enum operation_tag tag) {
     }
 }
 
+#ifdef BAKING_APP
 static bool parse_allowed_operations(
     struct parsed_operation_group *const out,
     uint8_t const *const in,
@@ -116,6 +115,18 @@ static bool parse_allowed_operations(
 ) {
     return parse_operations(out, in, in_size, key->derivation_type, &key->bip32_path, &is_operation_allowed);
 }
+
+#else
+
+static bool parse_allowed_operation_packet(
+    struct parsed_operation_group *const out,
+    uint8_t const *const in,
+    size_t const in_size
+) {
+    return parse_operations_packet(out, in, in_size, &is_operation_allowed);
+}
+
+#endif
 
 #ifdef BAKING_APP // ----------------------------------------------------------
 
@@ -336,11 +347,14 @@ bool prompt_transaction(
                 static const uint32_t FEE_INDEX = 1;
                 static const uint32_t SOURCE_INDEX = 2;
                 static const uint32_t DESTINATION_INDEX = 3;
-                static const uint32_t STORAGE_INDEX = 4;
+                static const uint32_t DESTINATION_NAME_INDEX = 4;
+                static const uint32_t STORAGE_INDEX = 5;
 
                 register_ui_callback(SOURCE_INDEX, parsed_contract_to_string,
                                      &ops->operation.source);
                 register_ui_callback(DESTINATION_INDEX, parsed_contract_to_string,
+                                     &ops->operation.destination);
+                register_ui_callback(DESTINATION_NAME_INDEX, lookup_parsed_contract_name,
                                      &ops->operation.destination);
                 register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &ops->total_fee);
                 register_ui_callback(STORAGE_INDEX, number_to_string_indirect64,
@@ -351,6 +365,7 @@ bool prompt_transaction(
                     PROMPT("Fee"),
                     PROMPT("Source"),
                     PROMPT("Delegate"),
+                    PROMPT("Delegate Name"),
                     PROMPT("Storage Limit"),
                     NULL,
                 };
@@ -359,6 +374,7 @@ bool prompt_transaction(
                     PROMPT("Fee"),
                     PROMPT("Source"),
                     PROMPT("Delegate"),
+                    PROMPT("Delegate Name"),
                     PROMPT("Storage Limit"),
                     NULL,
                 };
@@ -553,12 +569,14 @@ static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, 
                 if (!parse_baking_data(&G.parsed_baking_data, buff, buff_size)) PARSE_ERROR();
             }
 #       else
-            if (G.packet_index == 1) {
+	    if (G.packet_index == 1) {
+	        G.maybe_ops.is_valid = false;
                 G.magic_byte = get_magic_byte_or_throw(buff, buff_size);
-                G.maybe_ops.is_valid = parse_allowed_operations(&G.maybe_ops.v, buff, buff_size, &G.key);
-            } else {
-                G.maybe_ops.is_valid = false; // Force multiple packets to be treated as unparsed
-            }
+		parse_operations_init(&G.maybe_ops.v, G.key.derivation_type, &G.key.bip32_path, &G.parse_state);
+	    }
+
+	    parse_allowed_operation_packet(&G.maybe_ops.v, buff, buff_size);
+
 #       endif
     }
 
@@ -588,6 +606,8 @@ static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, 
                 &G.message_data_length,
                 &G.hash_state);
         }
+
+	G.maybe_ops.is_valid = parse_operations_final(&G.parse_state, &G.maybe_ops.v);
 
         return
 #           ifdef BAKING_APP

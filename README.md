@@ -426,7 +426,7 @@ Currently there are two other ways to do this:
 
   1. If you have the Nix package manager, use the
      [Tezos baking platform](https://gitlab.com/obsidian.systems/tezos-baking-platform).
-  2. Build tezos from the tezos repo with [these instructions](http://tezos.gitlab.io/mainnet/introduction/howtoget.html#build-from-sources).
+  2. Build tezos from the tezos repo with [these instructions](http://tezos.gitlab.io/introduction/howtoget.html#build-from-sources).
 
 Depending on how you build it, you might need to prefix `./` to your commands, and the names
 of some of the binaries might be different.
@@ -980,6 +980,42 @@ If the Ledger application crashes when you load it, there are two primary causes
     might have to restart the Ledger device.
   * Out of date firmware: If the Ledger application doesn't work at all, make sure you are running firmware
     version 1.5.5.
+
+### Error "Unexpected sequence number (expected 0, got 191)" on macOS
+
+If `tezos-client` on macOS intermittently fails with an error that looks like
+
+```
+client.signer.ledger: APDU level error: Unexpected sequence number (expected 0, got 191)
+```
+
+then your installation of `tezos-client` was built with an older version of HIDAPI that doesn't work well with macOS (see [#30](https://github.com/obsidiansystems/ledger-app-tezos/issues/30)).
+
+To fix this you need to get the yet-unreleased fixes from the [HIDAPI library](https://github.com/signal11/hidapi) and rebuild `tezos-client`.
+
+If you got HIDAPI from Homebrew, you can update to the `master` branch of HIDAPI like this:
+
+```shell
+$ brew install hidapi --HEAD
+```
+
+Then start a full rebuild of `tezos-client` with HIDAPI's `master` branch:
+
+```shell
+$ brew unlink hidapi   # remove the current one
+$ brew install autoconf automake libtool  # Just keep installing stuff until the following command succeeds:
+$ brew install hidapi --HEAD
+```
+
+Finally, rebuild `ocaml-hidapi` with Tezos. In the `tezos` repository:
+
+```shell
+$ opam reinstall hidapi
+$ make all build-test
+$ ./tezos-client list connected ledgers  # should now work consistently
+```
+
+Note that you may still see warnings similar to `Unexpected sequence number (expected 0, got 191)` even after this update. The reason is that there is a separate, more cosmetic, issue in `tezos-client` itself which has already been fixed but may not be in your branch yet (see the [merge request](https://gitlab.com/tezos/tezos/merge_requests/600)).
 
 ### Contact Us
  You can email us at tezos@obsidian.systems and request to join our Slack.

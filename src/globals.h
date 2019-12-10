@@ -1,9 +1,10 @@
 #pragma once
 
-#include "blake2.h"
 #include "types.h"
 
 #include "bolos_target.h"
+
+#include "operations.h"
 
 // Zeros out all globals that can keep track of APDU instruction state.
 // Notably this does *not* include UI state.
@@ -36,7 +37,7 @@ typedef struct {
 #endif
 
 typedef struct {
-    b2b_state state;
+    cx_blake2b_t state;
     bool initialized;
 } blake2b_hash_state_t;
 
@@ -63,6 +64,7 @@ typedef struct {
 
     uint8_t magic_byte;
     bool hash_only;
+    struct parse_state parse_state;
 } apdu_sign_state_t;
 
 typedef struct {

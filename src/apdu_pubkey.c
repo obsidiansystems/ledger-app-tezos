@@ -7,6 +7,9 @@
 #include "protocol.h"
 #include "to_string.h"
 #include "ui.h"
+#ifdef BAKING_APP
+#include "baking_auth.h"
+#endif // BAKING_APP
 
 #include <string.h>
 

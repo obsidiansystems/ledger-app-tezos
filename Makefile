@@ -19,7 +19,7 @@ GIT_DESCRIBE ?= $(shell git describe --tags --abbrev=8 --always --long --dirty 2
 VERSION_TAG ?= $(shell echo "$(GIT_DESCRIBE)" | cut -f1 -d-)
 APPVERSION_M=2
 APPVERSION_N=2
-APPVERSION_P=1
+APPVERSION_P=5
 APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 
 # Only warn about version tags if specified/inferred
@@ -170,3 +170,8 @@ dep/%.d: %.c Makefile
 
 listvariants:
 	@echo VARIANTS APP tezos_wallet tezos_baking
+
+# Generate delegates from baker list
+src/delegates.h: tools/gen-delegates.sh tools/BakersRegistryCoreUnfilteredData.json
+	bash ./tools/gen-delegates.sh ./tools/BakersRegistryCoreUnfilteredData.json
+dep/to_string.d: src/delegates.h

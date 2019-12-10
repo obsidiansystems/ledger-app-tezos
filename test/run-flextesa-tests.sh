@@ -14,7 +14,8 @@ fail() { "${___fail:?$1}"; }
 
 root="$(git rev-parse --show-toplevel)"
 
-tezos="${root}/nix/dep/tezos-baking-platform"
+tezos_baking_platform="${root}/nix/dep/tezos-baking-platform"
+flextesa_dev="${root}/test/flextesa-dev.nix"
 
 sandbox_args=""
 case "$protocol" in
@@ -27,8 +28,8 @@ case "$protocol" in
     ;;
 esac
 
-: "${client_bin_root:="$(nix-build "$tezos" -A tezos.$branch.kit --no-out-link)/bin"}"
-: "${test_bin_root:="$(nix-build "$tezos" -A tezos.flextesa-dev.kit --no-out-link)/bin"}"
+: "${client_bin_root:="$(nix-build "$tezos_baking_platform" -A tezos.$branch.kit --no-out-link)/bin"}"
+: "${test_bin_root:="$(nix-build "$flextesa_dev" -A kit --no-out-link)/bin"}"
 
 echo
 if [ "${ledger:-}" = "" ]; then

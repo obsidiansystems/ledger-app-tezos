@@ -38,9 +38,10 @@ static void switch_screen(uint32_t which);
 // This is called by internal UI code to prevent callbacks from sticking around
 static void clear_ui_callbacks(void);
 
+#ifndef BAKING_APP
 // ------------------------------- ui_meno
 static void main_menu(void);
-
+#endif
 
 static unsigned button_handler(unsigned button_mask, unsigned button_mask_counter);
 
@@ -52,86 +53,38 @@ static const bagl_element_t ui_idle_screen[] = {
     // fill      fg        bg      fid iid  txt   touchparams...       ]
     {{BAGL_RECTANGLE, 0x00, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
       0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     NULL },
 
     {{BAGL_ICON, 0x00, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
       BAGL_GLYPH_ICON_CROSS},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     NULL },
 
     //{{BAGL_ICON                           , 0x01,  21,   9,  14,  14, 0, 0, 0
     //, 0xFFFFFF, 0x000000, 0, BAGL_GLYPH_ICON_TRANSACTION_BADGE  }, NULL, 0, 0,
     //0, NULL, NULL, NULL },
     {{BAGL_LABELINE, 0x01, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Last Block Level",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     "Last Block Level" },
 
     {{BAGL_LABELINE, 0x01, 0, 26, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     G.baking_idle_screens.hwm,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     G.baking_idle_screens.hwm },
 
     {{BAGL_LABELINE, 0x02, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Baking Key",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     "Baking Key" },
 
     {{BAGL_LABELINE, 0x02, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     G.baking_idle_screens.pkh,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     G.baking_idle_screens.pkh },
 
     {{BAGL_LABELINE, 0x03, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     "Chain",
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     "Chain" },
 
     {{BAGL_LABELINE, 0x03, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     G.baking_idle_screens.chain,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     G.baking_idle_screens.chain },
 
 };
 
@@ -229,19 +182,19 @@ void ui_display(const bagl_element_t *elems, size_t sz, ui_callback_t ok_c, ui_c
     if (!is_idling()) {
         switch_screen(0);
     }
-//#if CX_APILEVEL < 10
-#if 1
+// TODO: Upgrade the nano-sdk to the master branch, and upgrade legacy ui functions
+/* #if CX_APILEVEL < 10 */
     ux.elements = elems;
     ux.elements_count = sz;
     ux.button_push_handler = button_handler;
     ux.elements_preprocessor = prepro;
-#else
-    ux.stack[0].element_arrays[0].element_array = elems;
-    ux.stack[0].element_arrays[0].element_array_count = sz;
-    ux.stack[0].element_arrays_count=1;
-    ux.stack[0].button_push_callback = button_handler;
-    G_ux.stack[0].screen_before_element_display_callback = prepro;
-#endif
+/* #else */
+/*     ux.stack[0].element_arrays[0].element_array = elems; */
+/*     ux.stack[0].element_arrays[0].element_array_count = sz; */
+/*     ux.stack[0].element_arrays_count=1; */
+/*     ux.stack[0].button_push_callback = button_handler; */
+/*     G_ux.stack[0].screen_before_element_display_callback = prepro; */
+/* #endif */
     UX_WAKE_UP();
     UX_REDISPLAY();
 }
@@ -308,53 +261,23 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
 static const bagl_element_t ui_multi_screen[] = {
     {{BAGL_RECTANGLE, BAGL_STATIC_ELEMENT, 0, 0, 128, 32, 0, 0, BAGL_FILL, 0x000000, 0xFFFFFF,
       0, 0},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     NULL },
 
     {{BAGL_ICON, BAGL_STATIC_ELEMENT, 3, 12, 7, 7, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
       BAGL_GLYPH_ICON_CROSS},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     NULL },
 
     {{BAGL_ICON, BAGL_STATIC_ELEMENT, 117, 13, 8, 6, 0, 0, 0, 0xFFFFFF, 0x000000, 0,
       BAGL_GLYPH_ICON_CHECK},
-     NULL,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     NULL },
 
     {{BAGL_LABELINE, BAGL_STATIC_ELEMENT, 0, 12, 128, 12, 0, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 0},
-     global.ui.prompt.active_prompt,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     global.ui.prompt.active_prompt },
 
     {{BAGL_LABELINE, BAGL_SCROLLING_ELEMENT, 23, 26, 82, 12, 0x80 | 10, 0, 0, 0xFFFFFF, 0x000000,
       BAGL_FONT_OPEN_SANS_EXTRABOLD_11px | BAGL_FONT_ALIGNMENT_CENTER, 26},
-     global.ui.prompt.active_value,
-     0,
-     0,
-     0,
-     NULL,
-     NULL,
-     NULL},
+     global.ui.prompt.active_value },
 };
 
 void switch_screen(uint32_t which) {
@@ -388,7 +311,12 @@ void ui_prompt(const char *const *labels, ui_callback_t ok_c, ui_callback_t cxl_
 
     ui_display(ui_multi_screen, NUM_ELEMENTS(ui_multi_screen),
                ok_c, cxl_c, screen_count);
+#ifdef DEBUG
+    // In debug mode, the THROW below produces a PRINTF statement in an invalid position and causes the screen to blank, so instead we just directly call the equivalent longjmp for debug only.
+    longjmp(try_context_get()->jmp_buf, ASYNC_EXCEPTION);
+#else
     THROW(ASYNC_EXCEPTION);
+#endif
 }
 
 
