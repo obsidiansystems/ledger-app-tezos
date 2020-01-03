@@ -662,6 +662,20 @@ If you want to delegate tez controlled by an account on the Ledger device to ano
 account itself to bake, which is also called "delegation," and which is covered
 in the section on the baking application below.
 
+#### since Babylon protocol upgrade (005)
+
+Since Babylon protocol upgrade, it is now possible to delegate directly from
+an implicit account without creating an originated account.
+
+```
+$ tezos-client set delegate for <SRC> to <DELEGATE>
+```
+
+  * `SRC` is the implicit account that you want to delegate from
+  * `DELEGATE` is the baker that you want to delegate to
+
+#### pre-Babylon
+
 To delegate tez controlled by a Ledger device to someone else,
 you must first originate an account. Please read more
 about this in the Tezos documentation, [How to use Tezos](https://tezos.gitlab.io/master/introduction/howtouse.html), to
