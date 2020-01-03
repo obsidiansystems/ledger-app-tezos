@@ -779,7 +779,7 @@ Wallet application on the same Ledger device should suffice.
 ### Start the baking daemon
 
 ```
-$ tezos-baker-003-PsddFKi3 run with local node ~/.tezos-node ledger_<...>_ed_0_0
+$ tezos-baker-005-PsBabyM1 run with local node ~/.tezos-node ledger_<...>_ed_0_0
 ```
 
 This won't actually be able to bake successfully yet until you run the rest of
@@ -789,14 +789,14 @@ a dedicated terminal or in a `tmux` or `screen` session.
 You will also want to start the endorser and accuser daemons:
 
 ```
-$ tezos-endorser-003-PsddFKi3 run ledger_<...>_ed_0_0
-$ tezos-accuser-003-PsddFKi3 run
+$ tezos-endorser-005-PsBabyM1 run ledger_<...>_ed_0_0
+$ tezos-accuser-005-PsBabyM1 run
 ```
 
 Again, each of these will run indefinitely, and each should be in its own terminal
 `tmux`, or `screen` window.
 
-*Note*: The binaries shown above all correspond to current Tezos mainnet protocol. When the Tezos protocol upgrades, the binaries shown above will update to, for instance, `tezos-baker-004-********`.
+*Note*: The binaries shown above all correspond to current Tezos mainnet protocol. When the Tezos protocol upgrades, the binaries shown above will update to, for instance, `tezos-baker-006-********`.
 
 ### Setup ledger device to bake and endorse
 
