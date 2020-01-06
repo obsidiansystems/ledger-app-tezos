@@ -662,6 +662,20 @@ If you want to delegate tez controlled by an account on the Ledger device to ano
 account itself to bake, which is also called "delegation," and which is covered
 in the section on the baking application below.
 
+#### since Babylon protocol upgrade (005)
+
+Since Babylon protocol upgrade, it is now possible to delegate directly from
+an implicit account without creating an originated account.
+
+```
+$ tezos-client set delegate for <SRC> to <DELEGATE>
+```
+
+  * `SRC` is the implicit account that you want to delegate from
+  * `DELEGATE` is the baker that you want to delegate to
+
+#### pre-Babylon
+
 To delegate tez controlled by a Ledger device to someone else,
 you must first originate an account. Please read more
 about this in the Tezos documentation, [How to use Tezos](https://tezos.gitlab.io/master/introduction/howtouse.html), to
@@ -765,7 +779,7 @@ Wallet application on the same Ledger device should suffice.
 ### Start the baking daemon
 
 ```
-$ tezos-baker-003-PsddFKi3 run with local node ~/.tezos-node ledger_<...>_ed_0_0
+$ tezos-baker-005-PsBabyM1 run with local node ~/.tezos-node ledger_<...>_ed_0_0
 ```
 
 This won't actually be able to bake successfully yet until you run the rest of
@@ -775,14 +789,14 @@ a dedicated terminal or in a `tmux` or `screen` session.
 You will also want to start the endorser and accuser daemons:
 
 ```
-$ tezos-endorser-003-PsddFKi3 run ledger_<...>_ed_0_0
-$ tezos-accuser-003-PsddFKi3 run
+$ tezos-endorser-005-PsBabyM1 run ledger_<...>_ed_0_0
+$ tezos-accuser-005-PsBabyM1 run
 ```
 
 Again, each of these will run indefinitely, and each should be in its own terminal
 `tmux`, or `screen` window.
 
-*Note*: The binaries shown above all correspond to current Tezos mainnet protocol. When the Tezos protocol upgrades, the binaries shown above will update to, for instance, `tezos-baker-004-********`.
+*Note*: The binaries shown above all correspond to current Tezos mainnet protocol. When the Tezos protocol upgrades, the binaries shown above will update to, for instance, `tezos-baker-006-********`.
 
 ### Setup ledger device to bake and endorse
 
