@@ -8,7 +8,7 @@ The `nix/` folder contains helper scripts for working with the ledger via Nix.
 Use `./nix/install.sh` to install the apps onto the ledger using Nix.
 
 ### Developing
-Use `nix/env.sh <s or x> to enter a shell where you can run `make` and it will just work. You can also pass a command instead, e.g. `nix/env.sh s --run "make clean SHELL=bash"`.
+Use `nix/env.sh <s or x>` to enter a shell where you can run `make` and it will just work. You can also pass a command instead, e.g. `nix/env.sh s --run "make clean SHELL=bash"`.
 
 For development, use `nix/watch.sh s make APP=<tezos_baking|tezos_wallet>` to incrementally build on every change. Be sure to `nix/env.sh s --run "make clean SHELL=bash"` if you start watching a different `APP`.
 
