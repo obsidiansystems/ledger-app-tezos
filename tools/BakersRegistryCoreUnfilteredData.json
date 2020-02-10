@@ -535,8 +535,13 @@
     "openForDelegation": "true"
   },
   {
-    "bakerName": "Money every 3 days",
+    "bakerName": "Money every 3 days (OLD)",
     "bakerAccount": "tz1egbN6RK2bM5vt4aAZw6r9j4nL8z49bPdS",
+    "openForDelegation": "false"
+  },
+  {
+    "bakerName": "Money every 3 days",
+    "bakerAccount": "tz1NEKxGEHsFufk87CVZcrqWu8o22qh46GK6",
     "openForDelegation": "true"
   },
   {
