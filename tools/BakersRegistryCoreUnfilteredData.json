@@ -117,7 +117,7 @@
   {
     "bakerName": "Ø Crypto Pool",
     "bakerAccount": "tz1KtvGSYU5hdKD288a1koTBURWYuADJGrLE",
-    "openForDelegation": "true"
+    "openForDelegation": "false"
   },
   {
     "bakerName": "Bake Tz",
@@ -265,9 +265,9 @@
     "openForDelegation": "true"
   },
   {
-    "bakerName": "ownBLOCK",
+    "bakerName": "ownBLOCK (OLD)",
     "bakerAccount": "tz1X1fpAZtwQk94QXUgZwfgsvkQgyc2KHp9d",
-    "openForDelegation": "true"
+    "openForDelegation": "false"
   },
   {
     "bakerName": "Melange",
@@ -297,7 +297,7 @@
   {
     "bakerName": "MyBakerSpace",
     "bakerAccount": "tz1c7pVR4w3KSQarJdBeh4NS2WxMUFBy1rHQ",
-    "openForDelegation": "true"
+    "openForDelegation": "false"
   },
   {
     "bakerName": "Elite Tezos",
@@ -402,12 +402,12 @@
   {
     "bakerName": "Steaker",
     "bakerAccount": "tz1fvBC1cHJzPtUW3ZKd2GZDj7P4XVuLk9vW",
-    "openForDelegation": "true"
+    "openForDelegation": "false"
   },
   {
     "bakerName": "TezTech Labs",
     "bakerAccount": "tz1Vtimi84kLh9RANfRVX2JvYtP4NPCT1aFm",
-    "openForDelegation": "true"
+    "openForDelegation": "false"
   },
   {
     "bakerName": "Fresh Tezos",
@@ -472,12 +472,12 @@
   {
     "bakerName": "Tezos Ninja",
     "bakerAccount": "tz1djEKk6j1FqigTgbRsunbnY9BB7qsn1aAQ",
-    "openForDelegation": "true"
+    "openForDelegation": "false"
   },
   {
     "bakerName": "Clutch Oven",
     "bakerAccount": "tz1coHzgoQYRu1Ezn5QChfFEjwTrBzGNQT6U",
-    "openForDelegation": "true"
+    "openForDelegation": "false"
   },
   {
     "bakerName": "Tezetetic",
@@ -532,7 +532,7 @@
   {
     "bakerName": "TEZWHALE",
     "bakerAccount": "tz1isXamBXpTUgbByQ6gXgZQg4GWNW7r6rKE",
-    "openForDelegation": "true"
+    "openForDelegation": "false"
   },
   {
     "bakerName": "Money every 3 days (OLD)",
@@ -562,6 +562,31 @@
   {
     "bakerName": "Coinhouse Staking Services",
     "bakerAccount": "tz1dbfppLAAxXZNtf2SDps7rch3qfUznKSoK",
+    "openForDelegation": "true"
+  },
+  {
+    "bakerName": "Steak.and.Bake",
+    "bakerAccount": "tz1dNVDWPf3Q59SdJqnjdnu277iyvReiRS9M",
+    "openForDelegation": "true"
+  },
+  {
+    "bakerName": "AlphaTezos",
+    "bakerAccount": "tz1UdeKoMJivgqRgRUNzroMwRJYmJY8BtaWe",
+    "openForDelegation": "true"
+  },
+  {
+    "bakerName": "Tezos Japan",
+    "bakerAccount": "tz1ijdEfmUoQXJfSiKCLRioeCfSrKP3sVsff",
+    "openForDelegation": "true"
+  },
+  {
+    "bakerName": "Tez Dispensery",
+    "bakerAccount": "tz1hgjLqCZWCtarByUMYd81F4FKRY5t1V978",
+    "openForDelegation": "true"
+  },
+  {
+    "bakerName": "Ateza",
+    "bakerAccount": "tz1ZcTRk5uxD86EFEn1vvNffWWqJy7q5eVhc",
     "openForDelegation": "true"
   },
   {
