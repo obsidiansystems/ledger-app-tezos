@@ -119,7 +119,7 @@ way, the baking account won't actually store the vast majority of the tez.
 To use these apps, you must be sure to have [up-to-date
 firmware](https://support.ledgerwallet.com/hc/en-us/articles/360002731113)
 on the Ledger device. This code was tested with version
-1.5.5. Please use [Ledger Live](https://www.ledger.com/pages/ledger-live) to do this.
+1.6.0. Please use [Ledger Live](https://www.ledger.com/pages/ledger-live) to do this.
 
 ### udev rules (Linux only)
 
@@ -993,7 +993,11 @@ If the Ledger application crashes when you load it, there are two primary causes
     the operation in question, cancel it from the device before pressing Ctrl-C, otherwise you
     might have to restart the Ledger device.
   * Out of date firmware: If the Ledger application doesn't work at all, make sure you are running firmware
-    version 1.5.5.
+    version 1.6.0.
+
+### Tezos Baking: Screen does blank and the device no longer responds to requests
+
+On Ledger firmware 1.6.0 with the default MCU firmware, the device's screen can go blank while running Tezos Baking and the device may stop responding to requests. This is due to an issue in the device's MCU firmware. Please upgrade it using this tool, distributed by Ledger - https://ledger-live-tools.now.sh/mcu-repair. You will need to use a browser with webHID, such as Chrome. After a successful upgrade, the device's MCU firmware should report as 1.12.
 
 ### Error "Unexpected sequence number (expected 0, got 191)" on macOS
 
