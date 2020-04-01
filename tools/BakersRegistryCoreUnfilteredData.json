@@ -553,5 +553,20 @@
     "bakerName": "Tezos Alliance",
     "bakerAccount": "tz1RSWMYKGAykpizFteowByYMueCYv9TMn1L",
     "openForDelegation": "true"
+  },
+  {
+    "bakerName": "Staking Team",
+    "bakerAccount": "tz1STeamwbp68THcny9zk3LsbG3H36DMvbRK",
+    "openForDelegation": "true"
+  },
+  {
+    "bakerName": " Morpheus Tezos",
+    "bakerAccount": "tz1MWhSr4oT8W67CKdxduqp4bkVyF32qsERK",
+    "openForDelegation": "true"
+  },
+  {
+    "bakerName": " Baking Team",
+    "bakerAccount": "tz1fJHFn6sWEd3NnBPngACuw2dggTv6nQZ7g",
+    "openForDelegation": "true"
   }
 ]
