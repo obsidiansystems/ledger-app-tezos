@@ -10,7 +10,7 @@ The basic format of the APDU request follows.
 |-------|--------|-------------------------------------------------------------------------|
 | CLA   | 1 byte | Instruction class (always 0x80)                                         |
 | INS   | 1 byte | Instruction code (0x00-0x0f)                                            |
-| P1    | 1 byte | User-defined 1-byte parameter                                           |
+| P1    | 1 byte | Message sequence (0x00 = first, 0x81 = last, 0x01 = other)              |
 | P2    | 1 byte | Derivation type (0=ED25519, 1=SECP256K1, 2=SECP256R1, 3=BIPS32_ED25519) |
 | LC    | 1 byte | Length of CDATA                                                         |
 | CDATA | <LC>   | Payload containing instruction arguments                                |
@@ -82,7 +82,9 @@ The main difference between `INS_SIGN` and `INS_SIGN_UNSAFE` is that
 included in the APDU data. This is unsafe, because the user doesn’t
 see what operation they are actually signing. When this happens, we
 tell the user “Unrecognized: Sign Hash” so that they can make
-appropriate external steps to verify this hash.
+appropriate external steps to verify this hash. The difference between
+`INS_SIGN` and `INS_SIGN_WITH_HASH` is that the latter returns both the
+signature *AND* the hash of the data (while the former only returns the signature).
 
 ### Parsing operations
 

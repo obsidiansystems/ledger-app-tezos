@@ -4,16 +4,18 @@ set -euo pipefail
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
 
-LAST_MSG="81"
 # BIP 32 path APDU
-DERIV_MSG="800f000311048000002c800006c18000000080000000"
+BIP="800f000311048000002c800006c18000000080000000"
 INS_SIGN="04"
 INS_SIGN_WITH_HASH="0f"
+LAST_MSG="81"
 
 # tezos-client hash data '"hello world"' of type string
+
+# Note: We take out the magic byte from the above command and prefix it back, so
+# that we can test other magic bytes
 MSG="010000000b68656c6c6f20776f726c64"
 
-# tezos-client sign bytes <data labeled "Raw packed data" from prior cmd> for <my-ledger>
 ## The purpose of these here tests is to establish that the tezos-wallet app
 ## behaves correctly upon receiving messages with varying magic-bytes
 {
@@ -24,12 +26,15 @@ MSG="010000000b68656c6c6f20776f726c64"
     DATA="05$MSG"
     DATA_LENGTH="11"
 
+    # Simulates the following tclient command
+    # tezos-client sign bytes <data> for <my-ledger>
+
     # Expect: Unrecognized Operation: Sign Hash:
-    echo $DERIV_MSG
+    echo $BIP
     echo 80${INS_SIGN_WITH_HASH}${LAST_MSG}00${DATA_LENGTH}${DATA}
 
     # Expect: Unrecognized Operation: Sign Hash:
-    echo $DERIV_MSG
+    echo $BIP
     echo 80${INS_SIGN}${LAST_MSG}00${DATA_LENGTH}${DATA}
   } | ./apdu.sh
 }
@@ -43,11 +48,11 @@ MSG="010000000b68656c6c6f20776f726c64"
     DATA_LENGTH="11"
 
     # Expect: Unrecognized Operation: Sign Hash:
-    echo $DERIV_MSG
+    echo $BIP
     echo 80${INS_SIGN_WITH_HASH}${LAST_MSG}00${DATA_LENGTH}${DATA}
 
     # Expect: Unrecognized Operation: Sign Hash:
-    echo $DERIV_MSG
+    echo $BIP
     echo 80${INS_SIGN}${LAST_MSG}00${DATA_LENGTH}${DATA}
   } | ./apdu.sh
 }
@@ -59,7 +64,7 @@ MSG="010000000b68656c6c6f20776f726c64"
     DATA="04$MSG"
     DATA_LENGTH="11"
 
-    echo $DERIV_MSG
+    echo $BIP
     echo 80${INS_SIGN_WITH_HASH}${LAST_MSG}00${DATA_LENGTH}${DATA}
 
   } | ./apdu.sh
