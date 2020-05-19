@@ -16,11 +16,12 @@ LAST_MSG="81"
 # that we can test other magic bytes
 MSG="010000000b68656c6c6f20776f726c64"
 
+# NOTE: THIS TEST MUST BE RUN IN THE WALLET APP
 ## The purpose of these here tests is to establish that the tezos-wallet app
 ## behaves correctly upon receiving messages with varying magic-bytes
 {
   echo; echo "SignWithHash and Sign requests containing magic byte 0x05 should always be 'Sign Hash'"
-  echo; echo "Expect: 'Unrecognized Operation: Sign Hash:...'"
+  echo; echo "Expect: 'Unrecognized Michelson: Sign Hash:...'"
 
   {
     DATA="05$MSG"
@@ -29,11 +30,11 @@ MSG="010000000b68656c6c6f20776f726c64"
     # Simulates the following tclient command
     # tezos-client sign bytes <data> for <my-ledger>
 
-    # Expect: Unrecognized Operation: Sign Hash:
+    # Expect: Unrecognized Michelson: Sign Hash:
     echo $BIP
     echo 80${INS_SIGN_WITH_HASH}${LAST_MSG}00${DATA_LENGTH}${DATA}
 
-    # Expect: Unrecognized Operation: Sign Hash:
+    # Expect: Unrecognized Michelson: Sign Hash:
     echo $BIP
     echo 80${INS_SIGN}${LAST_MSG}00${DATA_LENGTH}${DATA}
   } | ./apdu.sh
