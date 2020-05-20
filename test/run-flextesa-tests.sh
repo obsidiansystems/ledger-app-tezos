@@ -14,7 +14,10 @@ fail() { "${___fail:?$1}"; }
 
 root="$(git rev-parse --show-toplevel)"
 
+# Use tezos-baking-platform for the tezos executables of a specific network (carthage)
 tezos_baking_platform="${root}/nix/dep/tezos-baking-platform"
+# But use the flextesa branch of our tezos fork to access the sandbox, and our tests
+# inside of tezos/src/bin_sandbox/command_ledger_<wallet/baking>.ml
 flextesa_dev="${root}/test/flextesa-dev.nix"
 
 sandbox_args=""
