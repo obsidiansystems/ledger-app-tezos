@@ -702,6 +702,17 @@ $ tezos-client set delegate for <NEW> to <DELEGATE>
 
 Originated accounts have names beginning with `KT1` rather than `tz1`, `tz2` or `tz3`.
 
+### Signing Michelson
+The wallet app allows you to sign packed Michelson values. This can be useful when interacting with a Michelson contract that
+uses `PACK` and `CHECK_SIGNATURE` (multisig contracts use this functionality). 
+
+Here is an example:
+```
+tezos-client hash data '"hello world!"' of type string
+tezos-client sign bytes <bytes> for <my-ledger>
+```
+The ledger will prompt with `Sign Michelson` and the hash of the data
+
 ### Proposals and Voting
 
 To submit (or upvote) a proposal during the Proposal Period, open the Wallet application on your ledger and run
