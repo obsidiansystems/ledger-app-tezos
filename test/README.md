@@ -37,3 +37,15 @@ More specifically, the tests are in `tezos/src/bin_sandbox/command_ledger_<walle
 
 The code used to generate the `tezos-client` and `tezos-node` executables that the sandbox uses (flextesa is a wrapper around these executables)
 lies in `nix/dep/tezos-baking-platform/tezos/<network>`.
+
+#### Hacking on the tests
+I have found that the best way to hack on the tests involve some sort of environement such as the following
+```
+ cd nix/dep/flextesa-dev
+ nix-shell -p ocamlPackages.utop opam ocamlPackages.dune m4 pkgconfig gmp hidapi                   
+ opam init --root=.                                                                                
+ eval $(opam env)                                                                                  
+ export PATH=_opam/bin:$PATH
+ make build-dev-deps
+ dune build src/bin_sandbox/main.exe
+```
