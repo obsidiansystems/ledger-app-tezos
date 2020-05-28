@@ -18,17 +18,18 @@ MSG="010000000b68656c6c6f20776f726c64"
 ## behaves correctly upon receiving messages with varying magic-bytes
 {
   echo; echo "SignWithHash and Sign requests containing magic byte 0x05 should always be 'Sign Hash'"
-  echo; echo "Expect: 'Unrecognized Operation: Sign Hash:...'"
+  echo; echo "Confirm that the next two tests say: "
+  echo; echo "Expect: 'Unrecognized Michelson: Sign Hash:...'"
 
   {
     DATA="05$MSG"
     DATA_LENGTH="11"
 
-    # Expect: Unrecognized Operation: Sign Hash:
+    # Expect: Unrecognized Michelson: Sign Hash:
     echo $DERIV_MSG
     echo 80${INS_SIGN_WITH_HASH}${LAST_MSG}00${DATA_LENGTH}${DATA}
 
-    # Expect: Unrecognized Operation: Sign Hash:
+    # Expect: Unrecognized Michelson: Sign Hash:
     echo $DERIV_MSG
     echo 80${INS_SIGN}${LAST_MSG}00${DATA_LENGTH}${DATA}
   } | ../apdu.sh
@@ -36,16 +37,20 @@ MSG="010000000b68656c6c6f20776f726c64"
 
 {
   echo; echo "SignWithHash and Sign requests containing magic byte 0x03 should parse but fallback to 'Sign Hash'"
+  echo; echo "Confirm that the next two tests say: "
   echo; echo "Expect: 'Unrecognized Operation: Sign Hash:...'"
 
-  {
     DATA="03$MSG"
     DATA_LENGTH="11"
 
+  {
     # Expect: Unrecognized Operation: Sign Hash:
     echo $DERIV_MSG
     echo 80${INS_SIGN_WITH_HASH}${LAST_MSG}00${DATA_LENGTH}${DATA}
+  } | ../apdu.sh
 
+echo; echo "Expect: 'Unrecognized Operation: Sign Hash:...'"
+  {
     # Expect: Unrecognized Operation: Sign Hash:
     echo $DERIV_MSG
     echo 80${INS_SIGN}${LAST_MSG}00${DATA_LENGTH}${DATA}

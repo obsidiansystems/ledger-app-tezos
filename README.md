@@ -711,7 +711,7 @@ Here is an example:
 tezos-client hash data '"hello world!"' of type string
 tezos-client sign bytes <bytes> for <my-ledger>
 ```
-The ledger will prompt with `Sign Michelson` and the hash of the data
+The ledger will prompt with `Unrecognized Michelson: Sign Hash` and the hash of the data
 
 ### Proposals and Voting
 
