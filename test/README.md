@@ -38,6 +38,9 @@ More specifically, the tests are in `tezos/src/bin_sandbox/command_ledger_<walle
 The code used to generate the `tezos-client` and `tezos-node` executables that the sandbox uses (flextesa is a wrapper around these executables)
 lies in `nix/dep/tezos-baking-platform/tezos/<network>`.
 
+*IMPORTANT*: it is imperative that upon packing the thunk for the flextesa-dev repo, that you also update the sha256 in `test/flextesa-dev.nix` or
+else the `./test/run-flextesa-tests.sh` script will not work
+
 #### Hacking on the tests
 I have found that the best way to hack on the tests involve some sort of environement such as the following
 ```
