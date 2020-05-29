@@ -2,7 +2,7 @@
 
 The tests for the ledger are split into that of two types. 1) The apdu tests and 2) the flextesa tests.
 
-#### APDU tests
+### APDU tests
 APDU tests use the ledgerblue python app to send bytes directly to the ledger. 
 They are split up into tests that run on the wallet app, and tests that run on the baking app. To execute them, simply run
 the various shell scripts found in `test/apdu-tests/<baking/wallet>`
@@ -13,7 +13,7 @@ and run various scenarios in order to ensure that the ledger behaves appropriate
 following the prompts. 
 
 
-##### Different sections of the ledger wallet test
+#### Different sections of the ledger wallet test
 
 - voting
 - delegation
@@ -42,6 +42,13 @@ lies in `nix/dep/tezos-baking-platform/tezos/<network>`.
 else the `./test/run-flextesa-tests.sh` script will not work
 
 #### Hacking on the tests
+##### Thunks
+The flextesa-dev repo is stored in an [obelisk](https://github.com/obsidiansystems/obelisk) thunk. To hack on the repo,
+install the obelisk command line app, and run `ob thunk unpack nix/flextesa-dev`. This will fetch the repo so that you
+can hack on it. When you have committed changes to that repo and pushed them upstream, simply run `ob thunk pack nix/flextesa-dev` to
+pack the repo into thunk form
+
+##### Setup
 I have found that the best way to hack on the tests involve some sort of environement such as the following
 ```
  cd nix/dep/flextesa-dev
