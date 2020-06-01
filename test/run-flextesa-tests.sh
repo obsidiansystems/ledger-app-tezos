@@ -22,12 +22,12 @@ flextesa_dev="${root}/test/flextesa-dev.nix"
 
 sandbox_args=""
 case "$protocol" in
-  Babylon)
-    branch="babylonnet"
-    sandbox_args+=" --protocol-kind=Babylon --protocol-hash=PsBabyM1eUXZseaJdmXFApDSBqj8YBfwELoxZHHW77EMcAbbwAS"
+  Carthage)
+    branch="carthagenet"
+    sandbox_args+=" --protocol-kind=Carthage --protocol-hash=PsCARTHAGazKbHtnKfLzQg3kms52kSRpgnDY982a9oYsSXRLQEb"
     ;;
   *)
-    fail "Protocol not known, use 'Babylon'"
+    fail "Protocol not known, use 'Carthage'"
     ;;
 esac
 

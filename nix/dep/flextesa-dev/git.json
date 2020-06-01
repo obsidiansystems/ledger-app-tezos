@@ -1,7 +1,8 @@
 {
   "url": "https://gitlab.com/obsidian.systems/tezos.git",
-  "rev": "08c288ebe13d3647294a8603358ad98771eea7b1",
-  "sha256": "0kdnzd3ib93r63h509jd5c85svj0wyqcyi1v85xkghg94raswj0b",
+  "rev": "d676f6495e545c996815990f5ba11a320ccc6ba1",
+  "sha256": "05ymmj5nd0s202i2rm4g0h4wnj96mjfqgsajivdain44qhw3jd7d",
+  "private": false,
   "fetchSubmodules": false,
   "branch": "flextesa-dev-master"
 }
