@@ -27,7 +27,7 @@ is run 2 times -- once to test the rejection of the ledger's prompt, and once to
 
 To run only a specific section with no rejections, run:
 ```
-./run-flextesa-tests ledger-wallet Carthage --only-test=<section> --no-rejections
+./test/run-flextesa-tests.sh ledger-wallet Carthage --only-test <section> --no-rejections
 ```
 
 #### Notes about development on flextesa
