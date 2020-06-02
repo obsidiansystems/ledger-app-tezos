@@ -14,6 +14,9 @@ Use `nix/env.sh <s or x>` to enter a shell where you can run `make` and it will 
 
 For development, use `nix/watch.sh s make APP=<tezos_baking|tezos_wallet>` to incrementally build on every change. Be sure to `nix/env.sh s --run "make clean SHELL=bash"` if you start watching a different `APP`.
 
+#### Debugging
+Set `DEBUG=1` in the `Makefile` to so that the user-defined `parse_error()` macro provides a line-number. For `printf` style debugging see [Ledger's official instructions](https://ledger.readthedocs.io/en/latest/userspace/debugging.html)
+
 ### Building
 To do a full Nix build run `nix/build.sh`. You can pass `nix-build` arguments to this to build specific attributes, e.g. `nix/build.sh -A nano.s.wallet`.
 
@@ -38,6 +41,4 @@ directly to/from the ledger
 
 ### Notes on testing
 
-Currently there are two types of tests: those that require the [Flextesa framework](https://gitlab.com/tezos/flextesa) and those that rely on the apdu script from LedgerLive.The apdu tests are inside of *test/apdu-tests/* while the flextesa tests are actually inside of the main tezos repo in /src/bin-flextesa/
-
-The flextesa tests can be run using the *test/run-flextesa.sh* script.
+See `test/README.md`
