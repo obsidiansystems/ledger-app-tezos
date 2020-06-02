@@ -13,22 +13,16 @@ fail() {
 
 {
   echo; echo "Authorize baking"
+  echo "ACCEPT"
   {
     echo 8001000011048000002c800006c18000000080000000 # Authorize baking
   } | ../apdu.sh
 }
 
 {
-  echo; echo "Self-delegation should work"
-  {
-    echo 8004000011048000002c800006c18000000080000000
-    echo 800481005703cae1b71a3355e4476620d68d40356c5a4e5773d28357fea2833f24cd99c767260a0000aed011841ffbb0bcc3b51c80f2b6c333a1be3df0ec09f9ef01f44e9502ff00aed011841ffbb0bcc3b51c80f2b6c333a1be3df0
-  } | ../apdu.sh
-}
-
-{
   echo; echo "Baking a block with multiple packets should fail"
 
+  echo "ACCEPT Reset HWM"
   {
     echo 800681000400000000                           # Reset HWM
   } | ../apdu.sh
@@ -66,6 +60,7 @@ fail() {
 {
   echo; echo "Endorsing a previous level should fail"
 
+  echo ACCEPT Reset HWM
   {
     echo 800681000400000000                           # Reset HWM
 

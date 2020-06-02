@@ -59,3 +59,12 @@ I have found that the best way to hack on the tests involve some sort of environ
  make build-dev-deps
  dune build src/bin_sandbox/main.exe
 ```
+I also usually tinker with the `test/run-flextesa-tests.sh` so that it gets the flextesa executable from `nix/dep/flextesa-dev/_build/default/src/bin_sandbox/main.exe` 
+so that I can build and execute the test suite at a much faster rate than would otherwise be possible.
+
+##### Flextesa Dbg module
+Add: `Dbg.on := true;` to the beginning of the run function. This will enable you to add useful statements such as:
+```ocaml
+Dbg.e EF.(wf "id_script %s: %s" parameter tmp) ;
+```
+for working on tests

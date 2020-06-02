@@ -4,6 +4,7 @@ set -euo pipefail
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
 
+# NOTE: THIS TEST MUST BE RUN IN THE WALLET APP
 LAST_MSG="81"
 # BIP 32 path APDU
 DERIV_MSG="800f000311048000002c800006c18000000080000000"
