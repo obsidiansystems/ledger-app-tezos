@@ -100,7 +100,7 @@
     "openForDelegation": "true"
   },
   {
-    "bakerName": "Everstake",
+    "bakerName": "Everstake Legacy",
     "bakerAccount": "tz1MXFrtZoaXckE41bjUCSjAjAap3AFDSr3N",
     "openForDelegation": "true"
   },
@@ -567,6 +567,16 @@
   {
     "bakerName": " Baking Team",
     "bakerAccount": "tz1fJHFn6sWEd3NnBPngACuw2dggTv6nQZ7g",
+    "openForDelegation": "true"
+  },
+  {
+    "bakerName": "Everstake",
+    "bakerAccount": "tz1aRoaRhSpRYvFdyvgWLL6TGyRoGF51wDjM",
+    "openForDelegation": "true"
+  },
+  {
+    "bakerName": "Money Every 3 Days",
+    "bakerAccount": "tz1NEKxGEHsFufk87CVZcrqWu8o22qh46GK6",
     "openForDelegation": "true"
   }
 ]
