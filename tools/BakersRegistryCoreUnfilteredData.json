@@ -80,7 +80,7 @@
     "bakerAccount": "tz2FCNBrERXtaTtNX6iimR1UJ5JSDxvdHM93"
   },
   {
-    "bakerName": "Everstake",
+    "bakerName": "Everstake Legacy",
     "bakerAccount": "tz1MXFrtZoaXckE41bjUCSjAjAap3AFDSr3N"
   },
   {
@@ -486,5 +486,13 @@
   {
     "bakerName": "Baking Team",
     "bakerAccount": "tz1fJHFn6sWEd3NnBPngACuw2dggTv6nQZ7g"
+  },
+  {
+    "bakerName": "Everstake",
+    "bakerAccount": "tz1aRoaRhSpRYvFdyvgWLL6TGyRoGF51wDjM"
+  },
+  {
+    "bakerName": "Money Every 3 Days",
+    "bakerAccount": "tz1NEKxGEHsFufk87CVZcrqWu8o22qh46GK6"
   }
 ]
