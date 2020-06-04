@@ -5,20 +5,25 @@
 The `nix/` folder contains helper scripts for working with the ledger via Nix.
 
 ### Installing
-Use `./nix/install.sh` to install the apps onto the ledger using Nix.
+`nix/install.sh` will install both the wallet and baking apps. Use
+`nix/install.sh s baking` to install just the baking app or
+`nix/install.sh s wallet` to install just the wallet.
 
 ### Developing
-Use `nix/env.sh <s or x>` to enter a shell where you can run `make` and it will just work. You can also pass a command instead, e.g. `nix/env.sh s --run "make clean SHELL=bash"`.
+Use `nix/env.sh <s or x>` to enter a shell where you can run `make` and it will just work. You can also pass a command instead, e.g. `nix/env.sh s --run "make clean SHELL=bash"`. All `make` commands should be prefixed with `SHELL=bash`. Check the Makefile to see what options exist
 
 For development, use `nix/watch.sh s make APP=<tezos_baking|tezos_wallet>` to incrementally build on every change. Be sure to `nix/env.sh s --run "make clean SHELL=bash"` if you start watching a different `APP`.
+
+#### Debugging
+Set `DEBUG=1` in the `Makefile` to so that the user-defined `parse_error()` macro provides a line-number. For `printf` style debugging see [Ledger's official instructions](https://ledger.readthedocs.io/en/latest/userspace/debugging.html)
 
 ### Building
 To do a full Nix build run `nix/build.sh`. You can pass `nix-build` arguments to this to build specific attributes, e.g. `nix/build.sh -A nano.s.wallet`.
 
-### Installing
-`nix/install.sh` will install both the wallet and baking apps. Use
-`nix/install.sh s baking` to install just the baking app or
-`nix/install.sh s wallet` to install just the wallet.
+### Using tezos-client
+Set environment variable `TEZOS_LOG="client.signer.ledger -> debug"` when running tezos-client to get the byte-level IO being sent
+directly to/from the ledger
+
 
 ### Editor Integration
 
@@ -36,7 +41,4 @@ To do a full Nix build run `nix/build.sh`. You can pass `nix-build` arguments to
 
 ### Notes on testing
 
-Currently there are two types of tests: those that require the [Flextesa framework](https://gitlab.com/tezos/flextesa) and those that rely on the apdu script from LedgerLive.The apdu tests are inside of *test/apdu-tests/* while the flextesa tests are actually inside of the main tezos repo in /src/bin-flextesa/
-
-The flextesa tests can be run using the *test/run-flextesa.sh* script.
-The apdu tests can be run using *test/run-apdu-tests.sh* script.
+See `test/README.md`

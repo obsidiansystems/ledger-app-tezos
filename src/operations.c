@@ -635,8 +635,6 @@ static inline bool parse_byte(
 
                     case STEP_MICHELSON_SET_DELEGATE_CHAIN:
 
-                    OP_STEP_REQUIRE_SHORT(MICHELSON_SOME)
-
                     {
                         uint16_t val = MICHELSON_READ_SHORT;
                         if(val != MICHELSON_SET_DELEGATE) PARSE_ERROR();
