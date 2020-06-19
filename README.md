@@ -1046,8 +1046,12 @@ $ ./tezos-client list connected ledgers  # should now work consistently
 
 Note that you may still see warnings similar to `Unexpected sequence number (expected 0, got 191)` even after this update. The reason is that there is a separate, more cosmetic, issue in `tezos-client` itself which has already been fixed but may not be in your branch yet (see the [merge request](https://gitlab.com/tezos/tezos/merge_requests/600)).
 
-### Contact Us
- You can email us at tezos@obsidian.systems and request to join our Slack.
+### Command Line Installations: "This app is not genuine"
+
+If you install a Ledger application, such as Tezos Wallet or Tezos Baking, outside of Ledger Live you will see the message "This app is not genuine" followed by an Indentifier when opening the app. This message began appearing with Ledger firmware 1.6.0 as a warning to the user whenever an application is installed outside Ledger Live. Ledger signs the applications available in Ledger Live to verify their authenticity, but the same applications available elsewhere, such as from this repo, are not signed by Ledger. As a result, the user is warned that the app is not "genuine", i.e. signed by Ledger. This helps protect users who may have accidentally downloaded an app from a malicious client without knowing it. Note that the application available from this repo's [releases page](https://github.com/obsidiansystems/ledger-app-tezos/releases/tag/v2.2.7) is otherwise no different from the one downloaded from Ledger Live.
+
+## Contact Us
+You can email us at tezos@obsidian.systems and request to join our Slack.
 We have several channels about baking and one specifically for our Ledger applications.
 You can ask questions and get answers from Obsidian staff or from the community.
 
