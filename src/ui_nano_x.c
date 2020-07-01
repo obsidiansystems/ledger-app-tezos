@@ -217,7 +217,7 @@ void ui_prompt(const char *const *labels, ui_callback_t ok_c, ui_callback_t cxl_
         const char *const label = (const char *)PIC(labels[i]);
         if (strlen(label) > sizeof(G.prompt.screen[i].prompt)) THROW(EXC_MEMORY_ERROR);
         strcpy(G.prompt.screen[offset + i].prompt, label);
-
+        memset(G.prompt.screen[offset + i].value, 0, sizeof(G.prompt.screen[offset + 1].value));
         G.prompt.callbacks[i](G.prompt.screen[offset + i].value, sizeof(G.prompt.screen[offset + i].value), G.prompt.callback_data[i]);
     }
 
