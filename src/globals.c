@@ -3,9 +3,7 @@
 #include "exception.h"
 #include "to_string.h"
 
-#ifdef TARGET_NANOX
 #include "ux.h"
-#endif
 
 #include <string.h>
 
@@ -21,12 +19,8 @@
 globals_t global;
 
 // These are strange variables that the SDK relies on us to define but uses directly itself.
-#ifdef TARGET_NANOX
-    ux_state_t G_ux;
-    bolos_ux_params_t G_ux_params;
-#else
-    ux_state_t ux;
-#endif
+ux_state_t G_ux;
+bolos_ux_params_t G_ux_params;
 
 unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
@@ -37,12 +31,8 @@ void clear_apdu_globals(void) {
 void init_globals(void) {
     memset(&global, 0, sizeof(global));
 
-#ifdef TARGET_NANOX
     memset(&G_ux, 0, sizeof(G_ux));
     memset(&G_ux_params, 0, sizeof(G_ux_params));
-#else
-    memset(&ux, 0, sizeof(ux));
-#endif
 
     memset(G_io_seproxyhal_spi_buffer, 0, sizeof(G_io_seproxyhal_spi_buffer));
 }
@@ -51,11 +41,8 @@ void init_globals(void) {
 
 // DO NOT TRY TO INIT THIS. This can only be written via an system call.
 // The "N_" is *significant*. It tells the linker to put this in NVRAM.
-#    ifdef TARGET_NANOX
-        nvram_data const N_data_real;
-#    else
-        nvram_data N_data_real;
-#    endif
+nvram_data const N_data_real;
+
 
 high_watermark_t volatile *select_hwm_by_chain(chain_id_t const chain_id, nvram_data volatile *const ram) {
   check_null(ram);
@@ -65,14 +52,10 @@ high_watermark_t volatile *select_hwm_by_chain(chain_id_t const chain_id, nvram_
 }
 
 void calculate_baking_idle_screens_data(void) {
-#   ifdef TARGET_NANOX
         memset(global.ui.baking_idle_screens.hwm, 0, sizeof(global.ui.baking_idle_screens.hwm));
         static char const HWM_PREFIX[] = "HWM: ";
         strcpy(global.ui.baking_idle_screens.hwm, HWM_PREFIX);
         number_to_string(&global.ui.baking_idle_screens.hwm[sizeof(HWM_PREFIX) - 1], (level_t const)N_data.hwm.main.highest_level);
-#   else
-        number_to_string(global.ui.baking_idle_screens.hwm, N_data.hwm.main.highest_level);
-#   endif
 
     if (N_data.baking_key.bip32_path.length == 0) {
         STRCPY(global.ui.baking_idle_screens.pkh, "No Key Authorized");
@@ -85,19 +68,15 @@ void calculate_baking_idle_screens_data(void) {
             (derivation_type_t const)N_data.baking_key.derivation_type, pubkey);
     }
 
-#   ifdef TARGET_NANOX
         if (N_data.main_chain_id.v == 0) {
             strcpy(global.ui.baking_idle_screens.chain, "Chain: any");
         } else {
-#   endif
 
     chain_id_to_string_with_aliases(
         global.ui.baking_idle_screens.chain, sizeof(global.ui.baking_idle_screens.chain),
         (chain_id_t const *const)&N_data.main_chain_id);
 
-#   ifdef TARGET_NANOX
         }
-#   endif
 }
 
 void update_baking_idle_screens(void) {
