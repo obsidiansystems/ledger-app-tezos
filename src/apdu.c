@@ -42,6 +42,7 @@ void main_loop(apdu_handler const *const handlers, size_t const handlers_size) {
     while (true) {
         BEGIN_TRY {
             TRY {
+                PRINTF("New APDU received:\n%.*H\n", rx, G_io_apdu_buffer);
                 // Process APDU of size rx
 
                 if (rx == 0) {
