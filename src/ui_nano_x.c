@@ -1,7 +1,5 @@
 #include "bolos_target.h"
 
-#ifdef TARGET_NANOX
-
 #include "ui.h"
 
 #include "baking_auth.h"
@@ -132,7 +130,7 @@ UX_FLOW(ux_idle_flow,
 #define PROMPT_SCREEN_NAME(idx) ux_prompt_flow_ ## idx ## _step
 #define PROMPT_SCREEN_TPL(idx) \
     UX_STEP_NOCB( \
-        PROMPT_SCREEN_NAME(idx), \
+        ux_prompt_flow_## idx ## _step, \
         bnnn_paging, \
         { \
             .title = G.prompt.screen[idx].prompt, \
@@ -226,5 +224,3 @@ void ui_prompt(const char *const *labels, ui_callback_t ok_c, ui_callback_t cxl_
     ux_flow_init(0, &ux_prompts_flow[offset], NULL);
     THROW(ASYNC_EXCEPTION);
 }
-
-#endif // #ifdef TARGET_NANOX
