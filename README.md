@@ -119,7 +119,7 @@ way, the baking account won't actually store the vast majority of the tez.
 To use these apps, you must be sure to have [up-to-date
 firmware](https://support.ledgerwallet.com/hc/en-us/articles/360002731113)
 on the Ledger device. This code was tested with version
-1.5.5. Please use [Ledger Live](https://www.ledger.com/pages/ledger-live) to do this.
+1.6.0. Please use [Ledger Live](https://www.ledger.com/pages/ledger-live) to do this.
 
 ### udev rules (Linux only)
 
@@ -662,6 +662,20 @@ If you want to delegate tez controlled by an account on the Ledger device to ano
 account itself to bake, which is also called "delegation," and which is covered
 in the section on the baking application below.
 
+#### since Babylon protocol upgrade (005)
+
+Since Babylon protocol upgrade, it is now possible to delegate directly from
+an implicit account without creating an originated account.
+
+```
+$ tezos-client set delegate for <SRC> to <DELEGATE>
+```
+
+  * `SRC` is the implicit account that you want to delegate from
+  * `DELEGATE` is the baker that you want to delegate to
+
+#### pre-Babylon
+
 To delegate tez controlled by a Ledger device to someone else,
 you must first originate an account. Please read more
 about this in the Tezos documentation, [How to use Tezos](https://tezos.gitlab.io/master/introduction/howtouse.html), to
@@ -687,6 +701,17 @@ $ tezos-client set delegate for <NEW> to <DELEGATE>
 ```
 
 Originated accounts have names beginning with `KT1` rather than `tz1`, `tz2` or `tz3`.
+
+### Signing Michelson
+The wallet app allows you to sign packed Michelson values. This can be useful when interacting with a Michelson contract that
+uses `PACK` and `CHECK_SIGNATURE` (multisig contracts use this functionality). 
+
+Here is an example:
+```
+tezos-client hash data '"hello world!"' of type string
+tezos-client sign bytes <bytes> for <my-ledger>
+```
+The ledger will prompt with `Unrecognized Michelson: Sign Hash` and the hash of the data
 
 ### Proposals and Voting
 
@@ -765,7 +790,7 @@ Wallet application on the same Ledger device should suffice.
 ### Start the baking daemon
 
 ```
-$ tezos-baker-003-PsddFKi3 run with local node ~/.tezos-node ledger_<...>_ed_0_0
+$ tezos-baker-005-PsBabyM1 run with local node ~/.tezos-node ledger_<...>_ed_0_0
 ```
 
 This won't actually be able to bake successfully yet until you run the rest of
@@ -775,14 +800,14 @@ a dedicated terminal or in a `tmux` or `screen` session.
 You will also want to start the endorser and accuser daemons:
 
 ```
-$ tezos-endorser-003-PsddFKi3 run ledger_<...>_ed_0_0
-$ tezos-accuser-003-PsddFKi3 run
+$ tezos-endorser-005-PsBabyM1 run ledger_<...>_ed_0_0
+$ tezos-accuser-005-PsBabyM1 run
 ```
 
 Again, each of these will run indefinitely, and each should be in its own terminal
 `tmux`, or `screen` window.
 
-*Note*: The binaries shown above all correspond to current Tezos mainnet protocol. When the Tezos protocol upgrades, the binaries shown above will update to, for instance, `tezos-baker-004-********`.
+*Note*: The binaries shown above all correspond to current Tezos mainnet protocol. When the Tezos protocol upgrades, the binaries shown above will update to, for instance, `tezos-baker-006-********`.
 
 ### Setup ledger device to bake and endorse
 
@@ -979,7 +1004,11 @@ If the Ledger application crashes when you load it, there are two primary causes
     the operation in question, cancel it from the device before pressing Ctrl-C, otherwise you
     might have to restart the Ledger device.
   * Out of date firmware: If the Ledger application doesn't work at all, make sure you are running firmware
-    version 1.5.5.
+    version 1.6.0.
+
+### Tezos Baking: Screen does blank and the device no longer responds to requests
+
+On Ledger firmware 1.6.0 with the default MCU firmware, the device's screen can go blank while running Tezos Baking and the device may stop responding to requests. This is due to an issue in the device's MCU firmware. Please upgrade it using this tool, distributed by Ledger - https://ledger-live-tools.now.sh/mcu-repair. You will need to use a browser with webHID, such as Chrome. After a successful upgrade, the device's MCU firmware should report as 1.12.
 
 ### Error "Unexpected sequence number (expected 0, got 191)" on macOS
 
@@ -1017,8 +1046,12 @@ $ ./tezos-client list connected ledgers  # should now work consistently
 
 Note that you may still see warnings similar to `Unexpected sequence number (expected 0, got 191)` even after this update. The reason is that there is a separate, more cosmetic, issue in `tezos-client` itself which has already been fixed but may not be in your branch yet (see the [merge request](https://gitlab.com/tezos/tezos/merge_requests/600)).
 
-### Contact Us
- You can email us at tezos@obsidian.systems and request to join our Slack.
+### Command Line Installations: "This app is not genuine"
+
+If you install a Ledger application, such as Tezos Wallet or Tezos Baking, outside of Ledger Live you will see the message "This app is not genuine" followed by an Indentifier when opening the app. This message is generated by the device firmware as a warning to the user whenever an application is installed outside Ledger Live. Ledger signs the applications available in Ledger Live to verify their authenticity, but the same applications available elsewhere, such as from this repo, are not signed by Ledger. As a result, the user is warned that the app is not "genuine", i.e. signed by Ledger. This helps protect users who may have accidentally downloaded an app from a malicious client without knowing it. Note that the application available from this repo's [releases page](https://github.com/obsidiansystems/ledger-app-tezos/releases/tag/v2.2.7) is otherwise no different from the one downloaded from Ledger Live.
+
+## Contact Us
+You can email us at tezos@obsidian.systems and request to join our Slack.
 We have several channels about baking and one specifically for our Ledger applications.
 You can ask questions and get answers from Obsidian staff or from the community.
 

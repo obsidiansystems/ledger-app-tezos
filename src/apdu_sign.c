@@ -448,7 +448,7 @@ bool prompt_transaction(
     }
 }
 
-static size_t wallet_sign_complete(uint8_t instruction) {
+static size_t wallet_sign_complete(uint8_t instruction, uint8_t magic_byte) {
     static size_t const TYPE_INDEX = 0;
     static size_t const HASH_INDEX = 1;
 
@@ -458,7 +458,12 @@ static size_t wallet_sign_complete(uint8_t instruction) {
         NULL,
     };
 
-    REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Operation");
+    if (magic_byte == MAGIC_BYTE_UNSAFE_OP3) {
+      REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Michelson");
+    }
+    else {
+      REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Operation");
+    }
 
     if (instruction == INS_SIGN_UNSAFE) {
         static const char *const prehashed_prompts[] = {
@@ -516,11 +521,11 @@ static uint8_t get_magic_byte_or_throw(uint8_t const *const buff, size_t const b
         case MAGIC_BYTE_UNSAFE_OP: // Only for self-delegations
 #       else
         case MAGIC_BYTE_UNSAFE_OP:
+        case MAGIC_BYTE_UNSAFE_OP3:
 #       endif
             return magic_byte;
 
         case MAGIC_BYTE_UNSAFE_OP2:
-        case MAGIC_BYTE_UNSAFE_OP3:
         default: PARSE_ERROR();
     }
 }
@@ -570,12 +575,25 @@ static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, 
             }
 #       else
 	    if (G.packet_index == 1) {
+
 	        G.maybe_ops.is_valid = false;
-                G.magic_byte = get_magic_byte_or_throw(buff, buff_size);
-		parse_operations_init(&G.maybe_ops.v, G.key.derivation_type, &G.key.bip32_path, &G.parse_state);
+          G.magic_byte = get_magic_byte_or_throw(buff, buff_size);
+
+          // If it is an "operation" (starting with the 0x03 magic byte), set up parsing
+          // If it is arbitrary Michelson (starting with 0x05), dont bother parsing and show the "Sign Hash" prompt
+          if (G.magic_byte == MAGIC_BYTE_UNSAFE_OP) {
+            parse_operations_init(&G.maybe_ops.v, G.key.derivation_type, &G.key.bip32_path, &G.parse_state);
+          }
+          // If magic byte is not 0x03 or 0x05, fail
+          else if (G.magic_byte != MAGIC_BYTE_UNSAFE_OP3) {
+            PARSE_ERROR();
+          }
 	    }
 
-	    parse_allowed_operation_packet(&G.maybe_ops.v, buff, buff_size);
+      // Only parse if the message is an "Operation"
+      if (G.magic_byte == MAGIC_BYTE_UNSAFE_OP) {
+        parse_allowed_operation_packet(&G.maybe_ops.v, buff, buff_size);
+      }
 
 #       endif
     }
@@ -613,7 +631,7 @@ static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, 
 #           ifdef BAKING_APP
                 baking_sign_complete(instruction == INS_SIGN_WITH_HASH);
 #           else
-                wallet_sign_complete(instruction);
+                wallet_sign_complete(instruction, G.magic_byte);
 #           endif
     } else {
         return finalize_successful_send(0);

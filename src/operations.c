@@ -560,7 +560,7 @@ static inline bool parse_byte(
                         state->argument_length = MICHELSON_READ_LENGTH;
                     }
 
-		    OP_STEP
+                    OP_STEP
 
                     // Error on anything but a michelson sequence.
                     OP_STEP_REQUIRE_BYTE(MICHELSON_TYPE_SEQUENCE);
@@ -634,8 +634,6 @@ static inline bool parse_byte(
                     }
 
                     case STEP_MICHELSON_SET_DELEGATE_CHAIN:
-
-                    OP_STEP_REQUIRE_SHORT(MICHELSON_SOME)
 
                     {
                         uint16_t val = MICHELSON_READ_SHORT;
