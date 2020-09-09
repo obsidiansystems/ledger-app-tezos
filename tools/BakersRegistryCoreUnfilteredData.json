@@ -506,5 +506,17 @@
   {
     "bakerName": "Baking Team",
     "bakerAccount": "tz1fJHFn6sWEd3NnBPngACuw2dggTv6nQZ7g"
+  },
+  {
+    "bakerName": "ownBLOCK",
+    "bakerAccount": "tz1hTFcQk2KJRPzZyHkCwbj7E1zY1xBkiHsk"
+  },
+  {
+    "bakerName": "Staking Facilities",
+    "bakerAccount": "tz1WpeqFaBG9Jm73Dmgqamy8eF8NWLz9JCoY"
+  },
+  {
+    "bakerName": "Spice",
+    "bakerAccount": "tz1dRKU4FQ9QRRQPdaH4zCR6gmCmXfcvcgtB"
   }
 ]
