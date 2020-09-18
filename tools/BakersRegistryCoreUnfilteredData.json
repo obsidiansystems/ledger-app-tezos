@@ -448,16 +448,8 @@
     "bakerAccount": "tz1RSWMYKGAykpizFteowByYMueCYv9TMn1L"
   },
   {
-    "bakerName": "Staking Team",
-    "bakerAccount": "tz1STeamwbp68THcny9zk3LsbG3H36DMvbRK"
-  },
-  {
-    "bakerName": " Morpheus Tezos",
+    "bakerName": "Morpheus Tezos",
     "bakerAccount": "tz1MWhSr4oT8W67CKdxduqp4bkVyF32qsERK"
-  },
-  {
-    "bakerName": " Baking Team",
-    "bakerAccount": "tz1fJHFn6sWEd3NnBPngACuw2dggTv6nQZ7g"
   },
   {
     "bakerName": "Everstake",
@@ -498,10 +490,6 @@
   {
     "bakerName": "Staking Team",
     "bakerAccount": "tz1STeamwbp68THcny9zk3LsbG3H36DMvbRK"
-  },
-  {
-    "bakerName": "Morpheus Tezos",
-    "bakerAccount": "tz1MWhSr4oT8W67CKdxduqp4bkVyF32qsERK"
   },
   {
     "bakerName": "Baking Team",
