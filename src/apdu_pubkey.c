@@ -76,8 +76,8 @@ size_t handle_apdu_get_public_key(uint8_t instruction) {
 
     if (READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_P1]) != 0) THROW(EXC_WRONG_PARAM);
 
-    // do not expose pks without prompt over U2F (browser support)
-    if (instruction == INS_GET_PUBLIC_KEY) require_hid();
+    // do not expose pks without prompt through U2F (permissionless legacy comm in browser)
+    if (instruction == INS_GET_PUBLIC_KEY) require_permissioned_comm();
 
     G.key.derivation_type = parse_derivation_type(READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
 
