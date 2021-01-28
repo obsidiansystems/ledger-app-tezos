@@ -273,15 +273,13 @@ struct parsed_operation_group {
     strcpy(buff, x); \
 })
 
-#undef MAX
-#define MAX(a, b) ({ \
+#define CUSTOM_MAX(a, b) ({ \
     __typeof__(a) ____a_ = (a); \
     __typeof__(b) ____b_ = (b); \
     ____a_ > ____b_ ? ____a_ : ____b_; \
 })
 
-#undef MIN
-#define MIN(a, b) ({ \
+#define CUSTOM_MIN(a, b) ({ \
     __typeof__(a) ____a_ = (a); \
     __typeof__(b) ____b_ = (b); \
     ____a_ < ____b_ ? ____a_ : ____b_; \
