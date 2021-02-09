@@ -28,24 +28,12 @@ int generate_key_pair(key_pair_t *key_pair,
                       );
 
 // Non-reentrant
-cx_ecfp_public_key_t const *public_key_hash_return_global(
-    uint8_t *const out, size_t const out_size,
-    derivation_type_t const derivation_type,
-    cx_ecfp_public_key_t const *const restrict public_key);
-
-// Non-reentrant
-static inline void public_key_hash(
+void public_key_hash(
     uint8_t *const hash_out, size_t const hash_out_size,
-    cx_ecfp_public_key_t *const pubkey_out, // pass NULL if this value is not desired
+    cx_ecfp_public_key_t *const compressed_out, // pass NULL if this value is not desired
     derivation_type_t const derivation_type,
     cx_ecfp_public_key_t const *const restrict public_key
-) {
-    cx_ecfp_public_key_t const *const pubkey = public_key_hash_return_global(
-        hash_out, hash_out_size, derivation_type, public_key);
-    if (pubkey_out != NULL) {
-        memcpy(pubkey_out, pubkey, sizeof(*pubkey_out));
-    }
-}
+);
 
 size_t sign(
     uint8_t *const out, size_t const out_size,

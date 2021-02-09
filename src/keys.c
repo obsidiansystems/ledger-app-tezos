@@ -126,29 +126,30 @@ int generate_public_key(cx_ecfp_public_key_t *public_key,
     return (0);   
 }
 
-cx_ecfp_public_key_t const *public_key_hash_return_global(
-    uint8_t *const out, size_t const out_size,
-    derivation_type_t const curve,
+void public_key_hash(
+    uint8_t *const hash_out, size_t const hash_out_size,
+    cx_ecfp_public_key_t *compressed_out,
+    derivation_type_t const derivation_type,
     cx_ecfp_public_key_t const *const restrict public_key)
 {
-    check_null(out);
+    check_null(hash_out);
     check_null(public_key);
-    if (out_size < HASH_SIZE) THROW(EXC_WRONG_LENGTH);
+    if (hash_out_size < HASH_SIZE) THROW(EXC_WRONG_LENGTH);
 
-    cx_ecfp_public_key_t *const compressed = &global.apdu.priv.public_key_hash.compressed;
-    switch (derivation_type_to_signature_type(curve)) {
+    cx_ecfp_public_key_t compressed = {0};
+    switch (derivation_type_to_signature_type(derivation_type)) {
         case SIGNATURE_TYPE_ED25519:
             {
-                compressed->W_len = public_key->W_len - 1;
-                memcpy(compressed->W, public_key->W + 1, compressed->W_len);
+                compressed.W_len = public_key->W_len - 1;
+                memcpy(compressed.W, public_key->W + 1, compressed.W_len);
                 break;
             }
         case SIGNATURE_TYPE_SECP256K1:
         case SIGNATURE_TYPE_SECP256R1:
             {
-                memcpy(compressed->W, public_key->W, public_key->W_len);
-                compressed->W[0] = 0x02 + (public_key->W[64] & 0x01);
-                compressed->W_len = 33;
+                memcpy(compressed.W, public_key->W, public_key->W_len);
+                compressed.W[0] = 0x02 + (public_key->W[64] & 0x01);
+                compressed.W_len = 33;
                 break;
             }
         default:
@@ -157,8 +158,10 @@ cx_ecfp_public_key_t const *public_key_hash_return_global(
 
     cx_blake2b_t hash_state;
     cx_blake2b_init(&hash_state, HASH_SIZE*8); // cx_blake2b_init takes size in bits.
-    cx_hash((cx_hash_t *) &hash_state, CX_LAST, compressed->W, compressed->W_len, out, HASH_SIZE);
-    return compressed;
+    cx_hash((cx_hash_t *) &hash_state, CX_LAST, compressed.W, compressed.W_len, hash_out, HASH_SIZE);
+    if (compressed_out != NULL) {
+        memmove(compressed_out, &compressed, sizeof (*compressed_out));
+    }
 }
 
 size_t sign(

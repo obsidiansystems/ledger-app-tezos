@@ -124,13 +124,6 @@ typedef struct {
           char address_display_data[VALUE_WIDTH + 1];
       } baking_auth;
 #     endif
-
-      struct {
-
-          struct {
-              cx_ecfp_public_key_t compressed;
-          } public_key_hash;
-      } priv;
     } apdu;
 } globals_t;
 
