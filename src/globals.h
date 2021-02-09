@@ -37,8 +37,6 @@ typedef struct {
 } blake2b_hash_state_t;
 
 typedef struct {
-    bip32_path_with_curve_t key;
-
     uint8_t packet_index; // 0-index is the initial setup packet, 1 is first packet to hash, etc.
 
 #   ifdef BAKING_APP
@@ -91,10 +89,11 @@ typedef struct {
     } prompt;
   } ui;
 
+  bip32_path_with_curve_t path_with_curve;
+
   struct {
       union {
           struct {
-              bip32_path_with_curve_t key;
               cx_ecfp_public_key_t public_key;
           } pubkey;
 

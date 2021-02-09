@@ -148,7 +148,7 @@ __attribute__((noreturn)) static void prompt_register_delegate(
     if (!G.maybe_ops.is_valid) THROW(EXC_MEMORY_ERROR);
 
     REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "as delegate?");
-    register_ui_callback(ADDRESS_INDEX, bip32_path_with_curve_to_pkh_string, &G.key);
+    register_ui_callback(ADDRESS_INDEX, bip32_path_with_curve_to_pkh_string, &global.path_with_curve);
     register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &G.maybe_ops.v.total_fee);
 
     ui_prompt(prompts, ok_cb, cxl_cb);
@@ -158,7 +158,7 @@ size_t baking_sign_complete(bool const send_hash) {
     switch (G.magic_byte) {
         case MAGIC_BYTE_BLOCK:
         case MAGIC_BYTE_BAKING_OP:
-            guard_baking_authorized(&G.parsed_baking_data, &G.key);
+            guard_baking_authorized(&G.parsed_baking_data, &global.path_with_curve);
             return perform_signature(true, send_hash);
             break;
 
@@ -167,7 +167,7 @@ size_t baking_sign_complete(bool const send_hash) {
                 if (!G.maybe_ops.is_valid) PARSE_ERROR();
 
                 // Must be self-delegation signed by the *authorized* baking key
-                if (bip32_path_with_curve_eq(&G.key, &N_data.baking_key) &&
+                if (bip32_path_with_curve_eq(&global.path_with_curve, &N_data.baking_key) &&
 
                     // ops->signing is generated from G.bip32_path and G.curve
                     COMPARE(&G.maybe_ops.v.operation.source, &G.maybe_ops.v.signing) == 0 &&
@@ -487,7 +487,7 @@ static size_t wallet_sign_complete(uint8_t instruction, uint8_t magic_byte) {
             default:
                 PARSE_ERROR();
             case MAGIC_BYTE_UNSAFE_OP:
-                if (!G.maybe_ops.is_valid || !prompt_transaction(&G.maybe_ops.v, &G.key, ok_c, sign_reject)) {
+                if (!G.maybe_ops.is_valid || !prompt_transaction(&G.maybe_ops.v, &global.path_with_curve, ok_c, sign_reject)) {
                     goto unsafe;
                 }
 
@@ -540,8 +540,8 @@ static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, 
     switch (p1 & ~P1_LAST_MARKER) {
     case P1_FIRST:
         clear_data();
-        read_bip32_path(&G.key.bip32_path, buff, buff_size);
-        G.key.derivation_type = parse_derivation_type(READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
+        read_bip32_path(&global.path_with_curve.bip32_path, buff, buff_size);
+        global.path_with_curve.derivation_type = parse_derivation_type(READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
         return finalize_successful_send(0);
 #ifndef BAKING_APP
     case P1_HASH_ONLY_NEXT:
@@ -550,7 +550,7 @@ static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, 
         // FALL THROUGH
 #endif
     case P1_NEXT:
-        if (G.key.bip32_path.length == 0) THROW(EXC_WRONG_LENGTH_FOR_INS);
+        if (global.path_with_curve.bip32_path.length == 0) THROW(EXC_WRONG_LENGTH_FOR_INS);
 
         // Guard against overflow
         if (G.packet_index >= 0xFF) PARSE_ERROR();
@@ -568,7 +568,7 @@ static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, 
             G.magic_byte = get_magic_byte_or_throw(buff, buff_size);
             if (G.magic_byte == MAGIC_BYTE_UNSAFE_OP) {
                 // Parse the operation. It will be verified in `baking_sign_complete`.
-                G.maybe_ops.is_valid = parse_allowed_operations(&G.maybe_ops.v, buff, buff_size, &G.key);
+                G.maybe_ops.is_valid = parse_allowed_operations(&G.maybe_ops.v, buff, buff_size, &global.path_with_curve);
             } else {
                 // This should be a baking operation so parse it.
                 if (!parse_baking_data(&G.parsed_baking_data, buff, buff_size)) PARSE_ERROR();
@@ -582,7 +582,7 @@ static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, 
           // If it is an "operation" (starting with the 0x03 magic byte), set up parsing
           // If it is arbitrary Michelson (starting with 0x05), dont bother parsing and show the "Sign Hash" prompt
           if (G.magic_byte == MAGIC_BYTE_UNSAFE_OP) {
-            parse_operations_init(&G.maybe_ops.v, G.key.derivation_type, &G.key.bip32_path, &G.parse_state);
+            parse_operations_init(&G.maybe_ops.v, global.path_with_curve.derivation_type, &global.path_with_curve.bip32_path, &G.parse_state);
           }
           // If magic byte is not 0x03 or 0x05, fail
           else if (G.magic_byte != MAGIC_BYTE_UNSAFE_OP3) {
@@ -675,8 +675,8 @@ static int perform_signature(bool const on_hash, bool const send_hash) {
 
     BEGIN_TRY {
         TRY {
-            generate_key_pair(&key_pair, G.key.derivation_type, &G.key.bip32_path);
-            signature_size = sign(&G_io_apdu_buffer[tx], MAX_SIGNATURE_SIZE, G.key.derivation_type, &key_pair, data, data_length);
+            generate_key_pair(&key_pair, global.path_with_curve.derivation_type, &global.path_with_curve.bip32_path);
+            signature_size = sign(&G_io_apdu_buffer[tx], MAX_SIGNATURE_SIZE, global.path_with_curve.derivation_type, &key_pair, data, data_length);
         }
         CATCH_OTHER(e) {
             THROW(e);
