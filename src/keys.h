@@ -21,7 +21,6 @@ struct bip32_path_wire {
 // throws
 size_t read_bip32_path(bip32_path_t *const out, uint8_t const *const in, size_t const in_size);
 
-// scott
 int generate_key_pair(key_pair_t *key_pair,
                         derivation_type_t const derivation_type,
                         bip32_path_t const *const bip32_path

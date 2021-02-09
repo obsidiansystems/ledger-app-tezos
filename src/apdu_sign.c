@@ -4,7 +4,6 @@
 #include "baking_auth.h"
 #include "base58.h"
 #include "globals.h"
-#include "key_macros.h"
 #include "keys.h"
 #include "memory.h"
 #include "protocol.h"
@@ -388,7 +387,7 @@ bool prompt_transaction(
             }
 
         case OPERATION_TAG_ATHENS_TRANSACTION:
-        case OPERATION_TAG_BABYLON_TRANSACTION: // typical tx
+        case OPERATION_TAG_BABYLON_TRANSACTION:
             {
                 static const uint32_t TYPE_INDEX = 0;
                 static const uint32_t AMOUNT_INDEX = 1;
@@ -398,7 +397,7 @@ bool prompt_transaction(
                 static const uint32_t STORAGE_INDEX = 5;
 
                 static const char *const transaction_prompts[] = {
-                    PROMPT("Confirm"), // pscott
+                    PROMPT("Confirm"),
                     PROMPT("Amount"),
                     PROMPT("Fee"),
                     PROMPT("Source"),

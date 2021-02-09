@@ -3,7 +3,6 @@
 #include "apdu_hmac.h"
 
 #include "globals.h"
-#include "key_macros.h"
 #include "keys.h"
 #include "protocol.h"
 

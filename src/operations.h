@@ -10,9 +10,7 @@
 #include "cx.h"
 #include "types.h"
 
-
 typedef bool (*is_operation_allowed_t)(enum operation_tag);
-
 
 // Wire format that gets parsed into `signature_type`.
 typedef struct {

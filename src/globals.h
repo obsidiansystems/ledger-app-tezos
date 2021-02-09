@@ -127,9 +127,6 @@ extern globals_t global;
 
 extern unsigned int app_stack_canary; // From SDK
 
-// Used by macros that we don't control.
-// extern ux_state_t G_ux;
-// extern bolos_ux_params_t G_ux_params;
 extern unsigned char G_io_seproxyhal_spi_buffer[IO_SEPROXYHAL_BUFFER_SIZE_B];
 
 static inline void throw_stack_size() {
