@@ -60,12 +60,14 @@ void calculate_baking_idle_screens_data(void) {
     if (N_data.baking_key.bip32_path.length == 0) {
         STRCPY(global.ui.baking_idle_screens.pkh, "No Key Authorized");
     } else {
-        cx_ecfp_public_key_t const *const pubkey = generate_public_key_return_global(
+        cx_ecfp_public_key_t pubkey = {0};
+        generate_public_key(
+            &pubkey,
             (derivation_type_t const)N_data.baking_key.derivation_type,
             (bip32_path_t const *const)&N_data.baking_key.bip32_path);
         pubkey_to_pkh_string(
             global.ui.baking_idle_screens.pkh, sizeof(global.ui.baking_idle_screens.pkh),
-            (derivation_type_t const)N_data.baking_key.derivation_type, pubkey);
+            (derivation_type_t const)N_data.baking_key.derivation_type, &pubkey);
     }
 
         if (N_data.main_chain_id.v == 0) {

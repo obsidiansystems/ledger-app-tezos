@@ -32,9 +32,11 @@ static bool ok(void) {
         ram->hwm.test.had_endorsement = false;
     });
 
-    cx_ecfp_public_key_t const *const pubkey = generate_public_key_return_global(
+    cx_ecfp_public_key_t pubkey = {0};
+    generate_public_key(
+        &pubkey,
         G.key.derivation_type, &G.key.bip32_path);
-    delayed_send(provide_pubkey(G_io_apdu_buffer, pubkey));
+    delayed_send(provide_pubkey(G_io_apdu_buffer, &pubkey));
     return true;
 }
 

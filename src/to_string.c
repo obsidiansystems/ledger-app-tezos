@@ -85,9 +85,10 @@ void bip32_path_with_curve_to_pkh_string(
     check_null(out);
     check_null(key);
 
-    cx_ecfp_public_key_t const *const pubkey = generate_public_key_return_global(
-        key->derivation_type, &key->bip32_path);
-    pubkey_to_pkh_string(out, out_size, key->derivation_type, pubkey);
+    cx_ecfp_public_key_t pubkey = {0};
+    generate_public_key(
+        &pubkey, key->derivation_type, &key->bip32_path);
+    pubkey_to_pkh_string(out, out_size, key->derivation_type, &pubkey);
 }
 
 

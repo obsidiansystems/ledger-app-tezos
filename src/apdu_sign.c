@@ -388,7 +388,7 @@ bool prompt_transaction(
             }
 
         case OPERATION_TAG_ATHENS_TRANSACTION:
-        case OPERATION_TAG_BABYLON_TRANSACTION:
+        case OPERATION_TAG_BABYLON_TRANSACTION: // typical tx
             {
                 static const uint32_t TYPE_INDEX = 0;
                 static const uint32_t AMOUNT_INDEX = 1;
@@ -398,7 +398,7 @@ bool prompt_transaction(
                 static const uint32_t STORAGE_INDEX = 5;
 
                 static const char *const transaction_prompts[] = {
-                    PROMPT("Confirm"),
+                    PROMPT("Confirm"), // pscott
                     PROMPT("Amount"),
                     PROMPT("Fee"),
                     PROMPT("Source"),
@@ -669,9 +669,25 @@ static int perform_signature(bool const on_hash, bool const send_hash) {
 
     uint8_t const *const data = on_hash ? G.final_hash : G.message_data;
     size_t const data_length = on_hash ? sizeof(G.final_hash) : G.message_data_length;
-    tx += WITH_KEY_PAIR(G.key, key_pair, size_t, ({
-        sign(&G_io_apdu_buffer[tx], MAX_SIGNATURE_SIZE, G.key.derivation_type, key_pair, data, data_length);
-    }));
+
+    key_pair_t key_pair = {0};
+    size_t signature_size = 0;
+
+    BEGIN_TRY {
+        TRY {
+            generate_key_pair(&key_pair, G.key.derivation_type, &G.key.bip32_path);
+            signature_size = sign(&G_io_apdu_buffer[tx], MAX_SIGNATURE_SIZE, G.key.derivation_type, &key_pair, data, data_length);
+        }
+        CATCH_OTHER(e) {
+            THROW(e);
+        }
+        FINALLY {
+            memset(&key_pair, 0, sizeof(key_pair));
+        }
+    }
+    END_TRY
+
+    tx += signature_size;
 
     clear_data();
     return finalize_successful_send(tx);

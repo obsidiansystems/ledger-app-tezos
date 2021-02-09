@@ -22,11 +22,6 @@ void init_globals(void);
 
 #define MAX_SIGNATURE_SIZE 100
 
-struct priv_generate_key_pair {
-    uint8_t private_key_data[PRIVATE_KEY_DATA_SIZE];
-    key_pair_t res;
-};
-
 #ifdef BAKING_APP
 typedef struct {
     bip32_path_with_curve_t key;
@@ -75,9 +70,6 @@ typedef struct {
     ui_callback_t ok_callback;
     ui_callback_t cxl_callback;
 
-    uint32_t ux_step;
-    uint32_t ux_step_count;
-
     uint32_t timeout_cycle_count;
 
 #   ifdef BAKING_APP
@@ -89,13 +81,13 @@ typedef struct {
 #   endif
 
     struct {
-      string_generation_callback callbacks[MAX_SCREEN_COUNT];
-      const void *callback_data[MAX_SCREEN_COUNT];
+        string_generation_callback callbacks[MAX_SCREEN_COUNT];
+        const void *callback_data[MAX_SCREEN_COUNT];
 
-    struct {
-        char prompt[PROMPT_WIDTH + 1];
-        char value[VALUE_WIDTH + 1];
-    } screen[MAX_SCREEN_COUNT];
+        struct {
+            char prompt[PROMPT_WIDTH + 1];
+            char value[VALUE_WIDTH + 1];
+        } screen[MAX_SCREEN_COUNT];
     } prompt;
   } ui;
 
@@ -135,7 +127,6 @@ typedef struct {
 #     endif
 
       struct {
-          struct priv_generate_key_pair generate_key_pair;
 
           struct {
               cx_ecfp_public_key_t compressed;

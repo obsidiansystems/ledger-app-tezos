@@ -53,11 +53,12 @@ static inline void compute_pkh(
     check_null(bip32_path);
     check_null(compressed_pubkey_out);
     check_null(contract_out);
-    cx_ecfp_public_key_t const *const pubkey = generate_public_key_return_global(derivation_type, bip32_path);
+    cx_ecfp_public_key_t pubkey = {0};
+    generate_public_key(&pubkey, derivation_type, bip32_path);
     public_key_hash(
         contract_out->hash, sizeof(contract_out->hash),
         compressed_pubkey_out,
-        derivation_type, pubkey);
+        derivation_type, &pubkey);
     contract_out->signature_type = derivation_type_to_signature_type(derivation_type);
     if (contract_out->signature_type == SIGNATURE_TYPE_UNSET) THROW(EXC_MEMORY_ERROR);
     contract_out->originated = 0;
@@ -804,12 +805,13 @@ static void parse_operations_throws_parse_error(
     size_t length,
     derivation_type_t derivation_type,
     bip32_path_t const *const bip32_path,
-    is_operation_allowed_t is_operation_allowed
+    is_operation_allowed_t is_operation_allowed,
+    apdu_sign_state_t *G
 ) {
 
     size_t ix = 0;
 
-    parse_operations_init(out, derivation_type, bip32_path, &G.parse_state);
+    parse_operations_init(out, derivation_type, bip32_path, &G->parse_state);
 
     while (ix < length) {
         uint8_t byte = ((uint8_t*)data)[ix];
@@ -818,7 +820,7 @@ static void parse_operations_throws_parse_error(
         ix++;
     }
 
-    if(! parse_operations_final(&G.parse_state, out)) PARSE_ERROR();
+    if(! parse_operations_final(&G->.parse_state, out)) PARSE_ERROR();
 
 }
 
