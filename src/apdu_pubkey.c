@@ -16,7 +16,9 @@
 #define G global.apdu.u.pubkey
 
 static bool pubkey_ok(void) {
-    delayed_send(provide_pubkey(G_io_apdu_buffer, &G.public_key));
+    cx_ecfp_public_key_t public_key = {0};
+    generate_public_key(&public_key, global.path_with_curve.derivation_type, &global.path_with_curve.bip32_path);
+    delayed_send(provide_pubkey(G_io_apdu_buffer, &public_key));
     return true;
 }
 
@@ -93,10 +95,12 @@ size_t handle_apdu_get_public_key(uint8_t instruction) {
         if (G.key.bip32_path.length == 0) THROW(EXC_WRONG_LENGTH_FOR_INS);
     }
 #endif
-    generate_public_key(&G.public_key, global.path_with_curve.derivation_type, &global.path_with_curve.bip32_path);
+
+    cx_ecfp_public_key_t public_key = {0};
+    generate_public_key(&public_key, global.path_with_curve.derivation_type, &global.path_with_curve.bip32_path);
 
     if (instruction == INS_GET_PUBLIC_KEY) {
-        return provide_pubkey(G_io_apdu_buffer, &G.public_key);
+        return provide_pubkey(G_io_apdu_buffer, &public_key);
     } else {
         // instruction == INS_PROMPT_PUBLIC_KEY || instruction == INS_AUTHORIZE_BAKING
         ui_callback_t cb;

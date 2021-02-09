@@ -93,10 +93,6 @@ typedef struct {
 
   struct {
       union {
-          struct {
-              cx_ecfp_public_key_t public_key;
-          } pubkey;
-
           apdu_sign_state_t sign;
 
 #         ifdef BAKING_APP
