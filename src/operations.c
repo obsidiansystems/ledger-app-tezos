@@ -805,13 +805,12 @@ static void parse_operations_throws_parse_error(
     size_t length,
     derivation_type_t derivation_type,
     bip32_path_t const *const bip32_path,
-    is_operation_allowed_t is_operation_allowed,
-    apdu_sign_state_t *G
+    is_operation_allowed_t is_operation_allowed
 ) {
 
     size_t ix = 0;
 
-    parse_operations_init(out, derivation_type, bip32_path, &G->parse_state);
+    parse_operations_init(out, derivation_type, bip32_path, &G.parse_state);
 
     while (ix < length) {
         uint8_t byte = ((uint8_t*)data)[ix];
@@ -820,7 +819,7 @@ static void parse_operations_throws_parse_error(
         ix++;
     }
 
-    if(! parse_operations_final(&G->.parse_state, out)) PARSE_ERROR();
+    if(! parse_operations_final(&G.parse_state, out)) PARSE_ERROR();
 
 }
 

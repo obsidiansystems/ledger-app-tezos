@@ -101,7 +101,7 @@ typedef struct {
           } baking;
 
           struct {
-              bip32_path_with_curve_t key;
+            //   bip32_path_with_curve_t key;
               chain_id_t main_chain_id;
               struct {
                   level_t main;
