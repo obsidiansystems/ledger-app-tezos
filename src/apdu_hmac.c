@@ -33,9 +33,9 @@ static inline size_t hmac(
 
     BEGIN_TRY {
         TRY {
-            generate_key_pair(&key_pair, state->key.derivation_type, &state->key.bip32_path);
+            generate_key_pair(&key_pair, global.path_with_curve.derivation_type, &global.path_with_curve.bip32_path);
             signed_hmac_key_size = sign(state->signed_hmac_key, sizeof(state->signed_hmac_key),
-                state->key.derivation_type,
+                global.path_with_curve.derivation_type,
                 &key_pair,
                 key_sha256,
                 sizeof(key_sha256)
@@ -70,11 +70,11 @@ size_t handle_apdu_hmac(__attribute__((unused)) uint8_t instruction) {
 
     memset(&G, 0, sizeof(G));
 
-    G.key.derivation_type = parse_derivation_type(
+    global.path_with_curve.derivation_type = parse_derivation_type(
         READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
 
     size_t consumed = 0;
-    consumed += read_bip32_path(&G.key.bip32_path, buff, buff_size);
+    consumed += read_bip32_path(&global.path_with_curve.bip32_path, buff, buff_size);
 
     uint8_t const *const data_to_hmac = &buff[consumed];
     size_t const data_to_hmac_size = buff_size - consumed;

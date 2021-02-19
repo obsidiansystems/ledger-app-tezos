@@ -24,7 +24,6 @@ void init_globals(void);
 
 #ifdef BAKING_APP
 typedef struct {
-    bip32_path_with_curve_t key;
     uint8_t signed_hmac_key[MAX_SIGNATURE_SIZE];
     uint8_t hashed_signed_hmac_key[CX_SHA512_SIZE];
     uint8_t hmac[CX_SHA256_SIZE];
@@ -101,7 +100,6 @@ typedef struct {
           } baking;
 
           struct {
-            //   bip32_path_with_curve_t key;
               chain_id_t main_chain_id;
               struct {
                   level_t main;

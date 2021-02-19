@@ -70,26 +70,37 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
     return 1;
 }
 
-
 #ifdef BAKING_APP
 UX_STEP_NOCB(
     ux_idle_flow_1_step,
-    nnn,
+    bn,
     {
-      global.ui.baking_idle_screens.chain,
-      global.ui.baking_idle_screens.pkh,
-      global.ui.baking_idle_screens.hwm
+      "Tezos Baking",
+      VERSION
     });
 UX_STEP_NOCB(
     ux_idle_flow_2_step,
-    bnn,
+    bnnn_paging,
     {
-      "Tezos Baking",
-      VERSION,
-      COMMIT
+        .title = "Chain",
+        .text = global.ui.baking_idle_screens.chain
+    });
+UX_STEP_NOCB(
+    ux_idle_flow_3_step,
+    bnnn_paging,
+    {
+        .title = "Publlic Key Hash",
+        .text = global.ui.baking_idle_screens.pkh
+    });
+UX_STEP_NOCB(
+    ux_idle_flow_4_step,
+    bnnn_paging,
+    {
+        .title = "High Watermark",
+        .text = global.ui.baking_idle_screens.hwm
     });
 UX_STEP_CB(
-    ux_idle_flow_3_step,
+    ux_idle_flow_5_step,
     pb,
     exit_app(),
     {
@@ -100,7 +111,9 @@ UX_STEP_CB(
 UX_FLOW(ux_idle_flow,
     &ux_idle_flow_1_step,
     &ux_idle_flow_2_step,
-    &ux_idle_flow_3_step
+    &ux_idle_flow_3_step,
+    &ux_idle_flow_4_step,
+    &ux_idle_flow_5_step
 );
 #else
 UX_STEP_NOCB(

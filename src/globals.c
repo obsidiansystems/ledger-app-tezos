@@ -53,9 +53,7 @@ high_watermark_t volatile *select_hwm_by_chain(chain_id_t const chain_id, nvram_
 
 void calculate_baking_idle_screens_data(void) {
         memset(global.ui.baking_idle_screens.hwm, 0, sizeof(global.ui.baking_idle_screens.hwm));
-        static char const HWM_PREFIX[] = "HWM: ";
-        strcpy(global.ui.baking_idle_screens.hwm, HWM_PREFIX);
-        number_to_string(&global.ui.baking_idle_screens.hwm[sizeof(HWM_PREFIX) - 1], (level_t const)N_data.hwm.main.highest_level);
+        number_to_string(&global.ui.baking_idle_screens.hwm, (level_t const)N_data.hwm.main.highest_level);
 
     if (N_data.baking_key.bip32_path.length == 0) {
         STRCPY(global.ui.baking_idle_screens.pkh, "No Key Authorized");
@@ -71,7 +69,7 @@ void calculate_baking_idle_screens_data(void) {
     }
 
         if (N_data.main_chain_id.v == 0) {
-            strcpy(global.ui.baking_idle_screens.chain, "Chain: any");
+            strcpy(global.ui.baking_idle_screens.chain, "any");
         } else {
 
     chain_id_to_string_with_aliases(
