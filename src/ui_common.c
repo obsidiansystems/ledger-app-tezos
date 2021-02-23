@@ -14,10 +14,24 @@ void ui_init(void) {
     UX_INIT();
 }
 
-void register_ui_callback(uint32_t which, string_generation_callback cb, const void *data) {
-    if (which >= MAX_SCREEN_COUNT) THROW(EXC_MEMORY_ERROR);
-    global.ui.prompt.callbacks[which] = cb;
-    global.ui.prompt.callback_data[which] = data;
+// User MUST call `init_formatter_stack()` before the first call to this function.
+void push_ui_callback(char *title, string_generation_callback cb, void *data) {
+    if (global.formatter_index + 1 >= MAX_SCREEN_COUNT) { // scott update screen
+        THROW(0x6124);
+    }
+    struct fmt_callback *fmt = &global.formatter_stack[global.formatter_index];
+
+    fmt->title = title;
+    fmt->callback_fn = cb;
+    fmt->data = data;
+    global.formatter_index++;
+}
+
+void init_formatter_stack() {
+    explicit_bzero(&global.formatter_stack, sizeof(global.formatter_stack));
+    global.formatter_index = 0;
+    global.formatter_stack_size = 0;
+    global.current_state = OUT_OF_BORDERS;
 }
 
 void require_pin(void) {

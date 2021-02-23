@@ -133,24 +133,14 @@ __attribute__((noreturn)) static void prompt_register_delegate(
     ui_callback_t const ok_cb,
     ui_callback_t const cxl_cb
 ) {
-    static const size_t TYPE_INDEX = 0;
-    static const size_t ADDRESS_INDEX = 1;
-    static const size_t FEE_INDEX = 2;
-
-    static const char *const prompts[] = {
-        PROMPT("Register"),
-        PROMPT("Address"),
-        PROMPT("Fee"),
-        NULL,
-    };
-
     if (!G.maybe_ops.is_valid) THROW(EXC_MEMORY_ERROR);
 
-    REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "as delegate?");
-    register_ui_callback(ADDRESS_INDEX, bip32_path_with_curve_to_pkh_string, &global.path_with_curve);
-    register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &G.maybe_ops.v.total_fee);
+    init_formatter_stack();
+    push_ui_callback("Register", copy_string, "as delegate?");
+    push_ui_callback("Address", bip32_path_with_curve_to_pkh_string, &global.path_with_curve);
+    push_ui_callback("Fee", microtez_to_string_indirect, &G.maybe_ops.v.total_fee);
 
-    ui_prompt(prompts, ok_cb, cxl_cb);
+    ux_confirm_screen(ok_cb, cxl_cb);
 }
 
 size_t baking_sign_complete(bool const send_hash) {
@@ -208,275 +198,149 @@ bool prompt_transaction(
 
         case OPERATION_TAG_PROPOSAL:
             {
-                static const uint32_t TYPE_INDEX = 0;
-                static const uint32_t SOURCE_INDEX = 1;
-                static const uint32_t PERIOD_INDEX = 2;
-                static const uint32_t PROTOCOL_HASH_INDEX = 3;
+                init_formatter_stack();
+                push_ui_callback("Confirm", copy_string, "Proposal");
+                push_ui_callback("Source", parsed_contract_to_string, &ops->operation.source);
+                push_ui_callback("Period", number_to_string_indirect32, &ops->operation.proposal.voting_period);
+                push_ui_callback("Protocol", protocol_hash_to_string, ops->operation.proposal.protocol_hash);
 
-                static const char *const proposal_prompts[] = {
-                    PROMPT("Confirm"),
-                    PROMPT("Source"),
-                    PROMPT("Period"),
-                    PROMPT("Protocol"),
-                    NULL,
-                };
-
-                register_ui_callback(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
-                register_ui_callback(PERIOD_INDEX, number_to_string_indirect32, &ops->operation.proposal.voting_period);
-                register_ui_callback(PROTOCOL_HASH_INDEX, protocol_hash_to_string, ops->operation.proposal.protocol_hash);
-
-                REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Proposal");
-                ui_prompt(proposal_prompts, ok, cxl);
+                ux_confirm_screen(ok, cxl);
             }
 
         case OPERATION_TAG_BALLOT:
             {
-                static const uint32_t TYPE_INDEX = 0;
-                static const uint32_t SOURCE_INDEX = 1;
-                static const uint32_t PROTOCOL_HASH_INDEX = 2;
-                static const uint32_t PERIOD_INDEX = 3;
-
-                static const char *const ballot_prompts[] = {
-                    PROMPT("Confirm Vote"),
-                    PROMPT("Source"),
-                    PROMPT("Protocol"),
-                    PROMPT("Period"),
-                    NULL,
-                };
-
-                register_ui_callback(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
-                register_ui_callback(PROTOCOL_HASH_INDEX, protocol_hash_to_string,
-                                     ops->operation.ballot.protocol_hash);
-                register_ui_callback(PERIOD_INDEX, number_to_string_indirect32, &ops->operation.ballot.voting_period);
+                char *vote;
 
                 switch (ops->operation.ballot.vote) {
                     case BALLOT_VOTE_YEA:
-                        REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Yea");
+                        vote = "Yea";
                         break;
                     case BALLOT_VOTE_NAY:
-                        REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Nay");
+                        vote = "Nay";
                         break;
                     case BALLOT_VOTE_PASS:
-                        REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Pass");
+                        vote = "Pass";
                         break;
                 }
 
-                ui_prompt(ballot_prompts, ok, cxl);
+                init_formatter_stack();
+                push_ui_callback("Confirm Vote", copy_string, vote);
+                push_ui_callback("Source", parsed_contract_to_string, &ops->operation.source);
+                push_ui_callback("Protocol", protocol_hash_to_string,
+                                     ops->operation.ballot.protocol_hash);
+                push_ui_callback("Period", number_to_string_indirect32, &ops->operation.ballot.voting_period);
+
+                ux_confirm_screen(ok, cxl);
             }
 
         case OPERATION_TAG_ATHENS_ORIGINATION:
         case OPERATION_TAG_BABYLON_ORIGINATION:
             {
-                static const uint32_t TYPE_INDEX = 0;
-                static const uint32_t AMOUNT_INDEX = 1;
-                static const uint32_t FEE_INDEX = 2;
-                static const uint32_t SOURCE_INDEX = 3;
-                static const uint32_t DESTINATION_INDEX = 4;
-                static const uint32_t DELEGATE_INDEX = 5;
-                static const uint32_t STORAGE_INDEX = 6;
-
-                register_ui_callback(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
-                register_ui_callback(DESTINATION_INDEX, parsed_contract_to_string,
-                                     &ops->operation.destination);
-                register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &ops->total_fee);
-                register_ui_callback(STORAGE_INDEX, number_to_string_indirect64,
-                                     &ops->total_storage_limit);
-
-                static const char *const origination_prompts_fixed[] = {
-                    PROMPT("Confirm"),
-                    PROMPT("Amount"),
-                    PROMPT("Fee"),
-                    PROMPT("Source"),
-                    PROMPT("Manager"),
-                    PROMPT("Fixed Delegate"),
-                    PROMPT("Storage Limit"),
-                    NULL,
-                };
-                static const char *const origination_prompts_delegatable[] = {
-                    PROMPT("Confirm"),
-                    PROMPT("Amount"),
-                    PROMPT("Fee"),
-                    PROMPT("Source"),
-                    PROMPT("Manager"),
-                    PROMPT("Delegate"),
-                    PROMPT("Storage Limit"),
-                    NULL,
-                };
-                static const char *const origination_prompts_undelegatable[] = {
-                    PROMPT("Confirm"),
-                    PROMPT("Amount"),
-                    PROMPT("Fee"),
-                    PROMPT("Source"),
-                    PROMPT("Manager"),
-                    PROMPT("Delegation"),
-                    PROMPT("Storage Limit"),
-                    NULL,
-                };
 
                 if (!(ops->operation.flags & ORIGINATION_FLAG_SPENDABLE)) return false;
 
-                REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Origination");
-                register_ui_callback(AMOUNT_INDEX, microtez_to_string_indirect, &ops->operation.amount);
+                init_formatter_stack();
+                push_ui_callback("Confirm", copy_string, "Origination");
+                push_ui_callback("Amount", microtez_to_string_indirect, &ops->operation.amount);
+                push_ui_callback("Fee", microtez_to_string_indirect, &ops->total_fee);
+                push_ui_callback("Source", parsed_contract_to_string, &ops->operation.source);
+                push_ui_callback("Manager", parsed_contract_to_string,
+                                     &ops->operation.destination);
 
-                char const *const *prompts;
                 bool const delegatable = ops->operation.flags & ORIGINATION_FLAG_DELEGATABLE;
                 bool const has_delegate = ops->operation.delegate.signature_type != SIGNATURE_TYPE_UNSET;
                 if (delegatable && has_delegate) {
-                    prompts = origination_prompts_delegatable;
-                    register_ui_callback(DELEGATE_INDEX, parsed_contract_to_string,
+                    push_ui_callback("Delegate", parsed_contract_to_string,
                                          &ops->operation.delegate);
                 } else if (delegatable && !has_delegate) {
-                    prompts = origination_prompts_delegatable;
-                    REGISTER_STATIC_UI_VALUE(DELEGATE_INDEX, "Any");
+                    push_ui_callback("Delegate", copy_string, "Any");
                 } else if (!delegatable && has_delegate) {
-                    prompts = origination_prompts_fixed;
-                    register_ui_callback(DELEGATE_INDEX, parsed_contract_to_string,
+                    push_ui_callback("Fixed Delegate", parsed_contract_to_string,
                                          &ops->operation.delegate);
                 } else if (!delegatable && !has_delegate) {
-                    prompts = origination_prompts_undelegatable;
-                    REGISTER_STATIC_UI_VALUE(DELEGATE_INDEX, "Disabled");
+                    push_ui_callback("Delegation", copy_string, "Disabled");
                 }
+                push_ui_callback("Storage Limit", number_to_string_indirect64,
+                                     &ops->total_storage_limit);
 
-                ui_prompt(prompts, ok, cxl);
+                ux_confirm_screen(ok, cxl);
             }
         case OPERATION_TAG_ATHENS_DELEGATION:
         case OPERATION_TAG_BABYLON_DELEGATION:
             {
-                static const uint32_t TYPE_INDEX = 0;
-                static const uint32_t FEE_INDEX = 1;
-                static const uint32_t SOURCE_INDEX = 2;
-                static const uint32_t DESTINATION_INDEX = 3;
-                static const uint32_t DESTINATION_NAME_INDEX = 4;
-                static const uint32_t STORAGE_INDEX = 5;
-
-                register_ui_callback(SOURCE_INDEX, parsed_contract_to_string,
-                                     &ops->operation.source);
-                register_ui_callback(DESTINATION_INDEX, parsed_contract_to_string,
-                                     &ops->operation.destination);
-                register_ui_callback(DESTINATION_NAME_INDEX, lookup_parsed_contract_name,
-                                     &ops->operation.destination);
-                register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &ops->total_fee);
-                register_ui_callback(STORAGE_INDEX, number_to_string_indirect64,
-                                     &ops->total_storage_limit);
-
-                static const char *const withdrawal_prompts[] = {
-                    PROMPT("Withdraw"),
-                    PROMPT("Fee"),
-                    PROMPT("Source"),
-                    PROMPT("Delegate"),
-                    PROMPT("Delegate Name"),
-                    PROMPT("Storage Limit"),
-                    NULL,
-                };
-                static const char *const delegation_prompts[] = {
-                    PROMPT("Confirm"),
-                    PROMPT("Fee"),
-                    PROMPT("Source"),
-                    PROMPT("Delegate"),
-                    PROMPT("Delegate Name"),
-                    PROMPT("Storage Limit"),
-                    NULL,
-                };
-
-                REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Delegation");
-
                 bool const withdrawal = ops->operation.destination.originated == 0 &&
                     ops->operation.destination.signature_type == SIGNATURE_TYPE_UNSET;
+                
+                
+                char *type_msg;
+                if (withdrawal) {
+                    type_msg = "Withdraw";
+                } else {
+                    type_msg = "Confirm";
+                }
+                init_formatter_stack();
+                push_ui_callback(type_msg, copy_string, "Delegation");
 
-                ui_prompt(withdrawal ? withdrawal_prompts : delegation_prompts, ok, cxl);
+                push_ui_callback("Fee", microtez_to_string_indirect, &ops->total_fee);
+                push_ui_callback("Source", parsed_contract_to_string,
+                                     &ops->operation.source);
+                push_ui_callback("Delegate", parsed_contract_to_string,
+                                     &ops->operation.destination);
+                push_ui_callback("Delegate Name", lookup_parsed_contract_name,
+                                     &ops->operation.destination);
+                push_ui_callback("Storage Limit", number_to_string_indirect64,
+                                     &ops->total_storage_limit);
+
+                ux_confirm_screen(ok, cxl);
             }
 
         case OPERATION_TAG_ATHENS_TRANSACTION:
         case OPERATION_TAG_BABYLON_TRANSACTION:
             {
-                static const uint32_t TYPE_INDEX = 0;
-                static const uint32_t AMOUNT_INDEX = 1;
-                static const uint32_t FEE_INDEX = 2;
-                static const uint32_t SOURCE_INDEX = 3;
-                static const uint32_t DESTINATION_INDEX = 4;
-                static const uint32_t STORAGE_INDEX = 5;
-
-                static const char *const transaction_prompts[] = {
-                    PROMPT("Confirm"),
-                    PROMPT("Amount"),
-                    PROMPT("Fee"),
-                    PROMPT("Source"),
-                    PROMPT("Destination"),
-                    PROMPT("Storage Limit"),
-                    NULL,
-                };
-
-                register_ui_callback(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
-                register_ui_callback(DESTINATION_INDEX, parsed_contract_to_string,
+                init_formatter_stack();
+                push_ui_callback("Confirm", copy_string, "Transaction");
+                push_ui_callback("Amount", microtez_to_string_indirect, &ops->operation.amount);
+                push_ui_callback("Fee", microtez_to_string_indirect, &ops->total_fee);
+                push_ui_callback("Source", parsed_contract_to_string, &ops->operation.source);
+                push_ui_callback("Destination", parsed_contract_to_string,
                                      &ops->operation.destination);
-                register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &ops->total_fee);
-                register_ui_callback(STORAGE_INDEX, number_to_string_indirect64,
+                push_ui_callback("Storage Limit", number_to_string_indirect64,
                                      &ops->total_storage_limit);
-                register_ui_callback(AMOUNT_INDEX, microtez_to_string_indirect, &ops->operation.amount);
 
-                REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Transaction");
-
-                ui_prompt(transaction_prompts, ok, cxl);
+                ux_confirm_screen(ok, cxl);
             }
         case OPERATION_TAG_NONE:
             {
-                static const uint32_t TYPE_INDEX = 0;
-                static const uint32_t SOURCE_INDEX = 1;
-                static const uint32_t FEE_INDEX = 2;
-                static const uint32_t STORAGE_INDEX = 3;
-
-                register_ui_callback(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
-                register_ui_callback(FEE_INDEX, microtez_to_string_indirect, &ops->total_fee);
-
-                // Parser function guarantees this has a reveal
-                static const char *const reveal_prompts[] = {
-                    PROMPT("Reveal Key"),
-                    PROMPT("Key"),
-                    PROMPT("Fee"),
-                    PROMPT("Storage Limit"),
-                    NULL,
-                };
-
-                REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "To Blockchain");
-                register_ui_callback(STORAGE_INDEX, number_to_string_indirect64,
+                init_formatter_stack();
+                push_ui_callback("Reveal Key", copy_string, "To Blockchain");
+                push_ui_callback("Key", parsed_contract_to_string, &ops->operation.source);
+                push_ui_callback("Fee", microtez_to_string_indirect, &ops->total_fee);
+                push_ui_callback("Storage Limit", number_to_string_indirect64,
                                      &ops->total_storage_limit);
-                register_ui_callback(SOURCE_INDEX, parsed_contract_to_string, &ops->operation.source);
 
-                ui_prompt(reveal_prompts, ok, cxl);
+                ux_confirm_screen(ok, cxl);
             }
     }
 }
 
 static size_t wallet_sign_complete(uint8_t instruction, uint8_t magic_byte) {
-    static size_t const TYPE_INDEX = 0;
-    static size_t const HASH_INDEX = 1;
-
-    static const char *const parse_fail_prompts[] = {
-        PROMPT("Unrecognized"),
-        PROMPT("Sign Hash"),
-        NULL,
-    };
-
+    char *ops;
     if (magic_byte == MAGIC_BYTE_UNSAFE_OP3) {
-      REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Michelson");
+      ops = "Michelson";
     }
     else {
-      REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Operation");
+      ops = "Operation";
     }
 
     if (instruction == INS_SIGN_UNSAFE) {
-        static const char *const prehashed_prompts[] = {
-            PROMPT("Pre-hashed"),
-            PROMPT("Sign Hash"),
-            NULL,
-        };
-
         G.message_data_as_buffer.bytes = (uint8_t *)&G.message_data;
         G.message_data_as_buffer.size = sizeof(G.message_data);
         G.message_data_as_buffer.length = G.message_data_length;
+        init_formatter_stack();
+        push_ui_callback("Pre-hashed", copy_string, ops);
         // Base58 encoding of 32-byte hash is 43 bytes long.
-        register_ui_callback(HASH_INDEX, buffer_to_base58, &G.message_data_as_buffer);
-        ui_prompt(prehashed_prompts, sign_unsafe_ok, sign_reject);
+        push_ui_callback("Sign Hash", buffer_to_base58, &G.message_data_as_buffer);
+        ux_confirm_screen(sign_unsafe_ok, sign_reject);
     } else {
         ui_callback_t const ok_c = instruction == INS_SIGN_WITH_HASH ? sign_with_hash_ok : sign_without_hash_ok;
 
@@ -498,9 +362,11 @@ unsafe:
         G.message_data_as_buffer.bytes = (uint8_t *)&G.final_hash;
         G.message_data_as_buffer.size = sizeof(G.final_hash);
         G.message_data_as_buffer.length = sizeof(G.final_hash);
+        init_formatter_stack();
         // Base58 encoding of 32-byte hash is 43 bytes long.
-        register_ui_callback(HASH_INDEX, buffer_to_base58, &G.message_data_as_buffer);
-        ui_prompt(parse_fail_prompts, ok_c, sign_reject);
+        push_ui_callback("Unrecognized", copy_string, ops);
+        push_ui_callback("Sign Hash", buffer_to_base58, &G.message_data_as_buffer);
+        ux_confirm_screen(ok_c, sign_reject);
     }
 }
 

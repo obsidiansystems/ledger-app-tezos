@@ -27,13 +27,10 @@ size_t handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
 
     G.reset_level = lvl;
 
-    register_ui_callback(0, number_to_string_indirect32, &G.reset_level);
+    init_formatter_stack();
+    push_ui_callback("Reset HWM", number_to_string_indirect32, &G.reset_level);
 
-    static const char *const reset_prompts[] = {
-        PROMPT("Reset HWM"),
-        NULL,
-    };
-    ui_prompt(reset_prompts, reset_ok, delay_reject);
+    ux_confirm_screen(reset_ok, delay_reject);
 }
 
 bool reset_ok(void) {

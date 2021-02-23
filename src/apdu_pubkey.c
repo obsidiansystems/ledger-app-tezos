@@ -13,8 +13,6 @@
 
 #include <string.h>
 
-#define G global.apdu.u.pubkey
-
 static bool pubkey_ok(void) {
     cx_ecfp_public_key_t public_key = {0};
     generate_public_key(&public_key, global.path_with_curve.derivation_type, &global.path_with_curve.bip32_path);
@@ -50,24 +48,22 @@ static void prompt_address(
     ui_callback_t ok_cb,
     ui_callback_t cxl_cb
 ) {
-    static size_t const TYPE_INDEX = 0;
-    static size_t const ADDRESS_INDEX = 1;
+    // static size_t const TYPE_INDEX = 0;
+    // static size_t const ADDRESS_INDEX = 1;
 
 #   ifdef BAKING_APP
     if (baking) {
-        REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "With Public Key?");
-        register_ui_callback(ADDRESS_INDEX, bip32_path_with_curve_to_pkh_string, &global.path_with_curve);
-        ui_prompt(get_baking_prompts(), ok_cb, cxl_cb);
+        init_formatter_stack();
+        push_ui_callback("Authorize Baking", copy_string, "With Public Key?");
+        push_ui_callback("Public Key Hash", bip32_path_with_curve_to_pkh_string, &global.path_with_curve);
+        ux_confirm_screen(ok_cb, cxl_cb);
     } else {
 #   endif
-        static const char *const pubkey_labels[] = {
-            PROMPT("Provide"),
-            PROMPT("Public Key Hash"),
-            NULL,
-        };
-        REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Public Key");
-        register_ui_callback(ADDRESS_INDEX, bip32_path_with_curve_to_pkh_string, &global.path_with_curve);
-        ui_prompt(pubkey_labels, ok_cb, cxl_cb);
+        init_formatter_stack();
+        push_ui_callback("Provide", copy_string, "Public Key");
+        push_ui_callback("Publick Key Hash", bip32_path_with_curve_to_pkh_string, &global.path_with_curve);
+
+        ux_confirm_screen(ok_cb, cxl_cb);
 #   ifdef BAKING_APP
     }
 #   endif

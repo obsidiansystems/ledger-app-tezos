@@ -44,28 +44,14 @@ __attribute__((noreturn)) static void prompt_setup(
     ui_callback_t const ok_cb,
     ui_callback_t const cxl_cb)
 {
-    static const size_t TYPE_INDEX = 0;
-    static const size_t ADDRESS_INDEX = 1;
-    static const size_t CHAIN_INDEX = 2;
-    static const size_t MAIN_HWM_INDEX = 3;
-    static const size_t TEST_HWM_INDEX = 4;
+    init_formatter_stack();
+    push_ui_callback("Setup", copy_string, "Baking?");
+    push_ui_callback("Address", bip32_path_with_curve_to_pkh_string, &global.path_with_curve);
+    push_ui_callback("Chain", chain_id_to_string_with_aliases, &G.main_chain_id);
+    push_ui_callback("Main Chain HWM", number_to_string_indirect32, &G.hwm.main);
+    push_ui_callback("Test Chain HWM", number_to_string_indirect32, &G.hwm.test);
 
-    static const char *const prompts[] = {
-        PROMPT("Setup"),
-        PROMPT("Address"),
-        PROMPT("Chain"),
-        PROMPT("Main Chain HWM"),
-        PROMPT("Test Chain HWM"),
-        NULL,
-    };
-
-    REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Baking?");
-    register_ui_callback(ADDRESS_INDEX, bip32_path_with_curve_to_pkh_string, &global.path_with_curve);
-    register_ui_callback(CHAIN_INDEX, chain_id_to_string_with_aliases, &G.main_chain_id);
-    register_ui_callback(MAIN_HWM_INDEX, number_to_string_indirect32, &G.hwm.main);
-    register_ui_callback(TEST_HWM_INDEX, number_to_string_indirect32, &G.hwm.test);
-
-    ui_prompt(prompts, ok_cb, cxl_cb);
+    ux_confirm_screen(ok_cb, cxl_cb);
 }
 
 __attribute__((noreturn)) size_t handle_apdu_setup(__attribute__((unused)) uint8_t instruction) {

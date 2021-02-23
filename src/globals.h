@@ -59,37 +59,33 @@ typedef struct {
     struct parse_state parse_state;
 } apdu_sign_state_t;
 
+struct fmt_callback {
+    char                    *title;
+    string_generation_callback          callback_fn;
+    void                    *data;
+};
+
+enum e_state {
+    OUT_OF_BORDERS,
+    IN_BORDERS,
+};
+
 typedef struct {
+  struct fmt_callback formatter_stack[MAX_SCREEN_COUNT];
+  enum e_state current_state;
+  uint8_t formatter_stack_size;
+  uint8_t formatter_index;
+
   void *stack_root;
   apdu_handler handlers[INS_MAX + 1];
 
-  struct {
-    ui_callback_t ok_callback;
-    ui_callback_t cxl_callback;
-
-    uint32_t timeout_cycle_count;
-
-#   ifdef BAKING_APP
-    struct {
-        char hwm[MAX_INT_DIGITS + 1]; // with null termination
-        char pkh[PKH_STRING_SIZE];
-        char chain[CHAIN_ID_BASE58_STRING_SIZE];
-    } baking_idle_screens;
-#   endif
-
-    struct {
-        string_generation_callback callbacks[MAX_SCREEN_COUNT];
-        const void *callback_data[MAX_SCREEN_COUNT];
-
-        struct {
-            char prompt[PROMPT_WIDTH + 1];
-            char value[VALUE_WIDTH + 1];
-        } screen[MAX_SCREEN_COUNT];
-    } prompt;
-  } ui;
-
+  ui_callback_t ok_callback;
+  ui_callback_t cxl_callback;
   bip32_path_with_curve_t path_with_curve;
 
+  char screen_title[PROMPT_WIDTH + 1]; // scott
+  char screen_value[VALUE_WIDTH + 1]; // scott
+  
   struct {
       union {
           apdu_sign_state_t sign;
@@ -114,8 +110,6 @@ typedef struct {
 #     ifdef BAKING_APP
       struct {
           nvram_data new_data;  // Staging area for setting N_data
-
-          char address_display_data[VALUE_WIDTH + 1];
       } baking_auth;
 #     endif
     } apdu;

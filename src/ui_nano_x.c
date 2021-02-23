@@ -17,6 +17,8 @@
 
 #define G global.ui
 
+void display_next_state(bool is_upper_border);
+
 void ui_refresh(void) {
     ux_stack_display(0);
 }
@@ -70,61 +72,38 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
     return 1;
 }
 
-#ifdef BAKING_APP
-UX_STEP_NOCB(
-    ux_idle_flow_1_step,
-    bn,
+UX_STEP_INIT(
+    ux_init_upper_border,
+    NULL,
+    NULL,
     {
-      "Tezos Baking",
-      VERSION
+        display_next_state(true);
     });
 UX_STEP_NOCB(
-    ux_idle_flow_2_step,
+    ux_variable_display, 
     bnnn_paging,
     {
-        .title = "Chain",
-        .text = global.ui.baking_idle_screens.chain
+      .title = global.screen_title,
+      .text = global.screen_value,
     });
-UX_STEP_NOCB(
-    ux_idle_flow_3_step,
-    bnnn_paging,
+UX_STEP_INIT(
+    ux_init_lower_border,
+    NULL,
+    NULL,
     {
-        .title = "Publlic Key Hash",
-        .text = global.ui.baking_idle_screens.pkh
-    });
-UX_STEP_NOCB(
-    ux_idle_flow_4_step,
-    bnnn_paging,
-    {
-        .title = "High Watermark",
-        .text = global.ui.baking_idle_screens.hwm
-    });
-UX_STEP_CB(
-    ux_idle_flow_5_step,
-    pb,
-    exit_app(),
-    {
-      &C_icon_dashboard,
-      "Quit",
+        display_next_state(false);
     });
 
-UX_FLOW(ux_idle_flow,
-    &ux_idle_flow_1_step,
-    &ux_idle_flow_2_step,
-    &ux_idle_flow_3_step,
-    &ux_idle_flow_4_step,
-    &ux_idle_flow_5_step
-);
-#else
 UX_STEP_NOCB(
-    ux_idle_flow_1_step,
-    bn,
+    ux_app_is_ready_step,
+    nn,
     {
-      "Tezos Wallet",
-      VERSION
+      "Application",
+      "is ready",
     });
+
 UX_STEP_CB(
-    ux_idle_flow_2_step,
+    ux_idle_quit_step,
     pb,
     exit_app(),
     {
@@ -133,37 +112,22 @@ UX_STEP_CB(
     });
 
 UX_FLOW(ux_idle_flow,
-    &ux_idle_flow_1_step,
-    &ux_idle_flow_2_step
+    &ux_app_is_ready_step,
+
+    &ux_init_upper_border,
+    &ux_variable_display,
+    &ux_init_lower_border,
+
+    &ux_idle_quit_step,
+    FLOW_LOOP
 );
-#endif
-
-
-// prompt
-#define PROMPT_SCREEN_NAME(idx) ux_prompt_flow_ ## idx ## _step
-#define PROMPT_SCREEN_TPL(idx) \
-    UX_STEP_NOCB( \
-        ux_prompt_flow_## idx ## _step, \
-        bnnn_paging, \
-        { \
-            .title = G.prompt.screen[idx].prompt, \
-            .text = G.prompt.screen[idx].value, \
-        })
-
-PROMPT_SCREEN_TPL(0);
-PROMPT_SCREEN_TPL(1);
-PROMPT_SCREEN_TPL(2);
-PROMPT_SCREEN_TPL(3);
-PROMPT_SCREEN_TPL(4);
-PROMPT_SCREEN_TPL(5);
-PROMPT_SCREEN_TPL(6);
 
 static void prompt_response(bool const accepted) {
     ui_initial_screen();
     if (accepted) {
-        G.ok_callback();
+        global.ok_callback();
     } else {
-        G.cxl_callback();
+        global.cxl_callback();
     }
 }
 
@@ -185,55 +149,119 @@ UX_STEP_CB(
         "Reject"
     });
 
-UX_FLOW(ux_prompts_flow,
-    &PROMPT_SCREEN_NAME(0),
-    &PROMPT_SCREEN_NAME(1),
-    &PROMPT_SCREEN_NAME(2),
-    &PROMPT_SCREEN_NAME(3),
-    &PROMPT_SCREEN_NAME(4),
-    &PROMPT_SCREEN_NAME(5),
-    &PROMPT_SCREEN_NAME(6),
-    &ux_prompt_flow_reject_step,
-    &ux_prompt_flow_accept_step
-);
-_Static_assert(NUM_ELEMENTS(ux_prompts_flow) - 3 /*reject + accept + end*/ == MAX_SCREEN_COUNT, "ux_prompts_flow doesn't have the same number of screens as MAX_SCREEN_COUNT");
+UX_STEP_NOCB(
+    ux_eye_step,
+    nn,
+    {
+      "Hello",
+      "World",
+    });
 
+UX_FLOW(ux_confirm_flow,
+  &ux_eye_step,
+
+  &ux_init_upper_border,
+  &ux_variable_display,
+  &ux_init_lower_border,
+
+  &ux_prompt_flow_reject_step,
+  &ux_prompt_flow_accept_step
+);
+
+void clear_data() {
+    explicit_bzero(&global.screen_title, sizeof(global.screen_title));
+    explicit_bzero(&global.screen_value, sizeof(global.screen_value));
+}
+
+void set_state_data() {
+    struct fmt_callback *fmt = &global.formatter_stack[global.formatter_index];
+    clear_data();
+    copy_string((char *)global.screen_title, sizeof(global.screen_title), fmt->title);
+    fmt->callback_fn(global.screen_value, sizeof(global.screen_value), fmt->data);
+}
+
+/*
+* Enables coherent behavior on bnnn_paging when there are multiple
+* screens.
+*/
+void update_layout() {
+    G_ux.flow_stack[G_ux.stack_count - 1].prev_index =
+    G_ux.flow_stack[G_ux.stack_count - 1].index - 2;
+    G_ux.flow_stack[G_ux.stack_count - 1].index--;
+    ux_flow_relayout();
+}
+
+void display_next_state(bool is_upper_border) {
+    if (is_upper_border) {
+        if (global.current_state == OUT_OF_BORDERS) {
+            global.current_state = IN_BORDERS;
+            global.formatter_index = 0;
+            set_state_data();
+            ux_flow_next();
+        } else {
+            // Go back to first screen
+            if (global.formatter_index == 0) {
+                global.current_state = OUT_OF_BORDERS;
+                ux_flow_prev();
+            } else {
+                global.formatter_index--;
+                set_state_data();
+                ux_flow_next();
+            }
+        }
+    } else {
+        if (global.current_state == OUT_OF_BORDERS) {
+            global.current_state = IN_BORDERS;
+            global.formatter_index = global.formatter_stack_size - 1;
+            set_state_data();
+            ux_flow_prev();
+        } else {
+            global.formatter_index++;
+            if (global.formatter_index == global.formatter_stack_size) {
+                global.current_state = OUT_OF_BORDERS;
+                ux_flow_next();
+            } else {
+                set_state_data();
+                update_layout(); // Similar to `ux_flow_prev()` but updates layout to account for `bnnn_paging`'s weird behaviour.
+            }
+        }
+    }
+}
 
 void ui_initial_screen(void) {
-#   ifdef BAKING_APP
-        calculate_baking_idle_screens_data();
-#   endif
-
     // reserve a display stack slot if none yet
     if(G_ux.stack_count == 0) {
         ux_stack_push();
     }
-    ux_flow_init(0, ux_idle_flow, NULL);
+
+    init_formatter_stack();
+#   ifdef BAKING_APP
+        calculate_baking_idle_screens_data();
+#   else
+        push_ui_callback("Tezos Wallet", copy_string, VERSION);
+#   endif
+
+    ux_idle_screen(NULL, NULL);
 }
 
-__attribute__((noreturn))
-void ui_prompt(const char *const *labels, ui_callback_t ok_c, ui_callback_t cxl_c) {
-    check_null(labels);
+void ux_prepare_display(ui_callback_t ok_c, ui_callback_t cxl_c) {
+    global.formatter_stack_size = global.formatter_index;
+    global.formatter_index = 0;
+    global.current_state = OUT_OF_BORDERS;
 
-    size_t const screen_count = ({
-        size_t i = 0;
-        while (i < MAX_SCREEN_COUNT && labels[i] != NULL) { i++; }
-        i;
-    });
+    if (ok_c)
+        global.ok_callback = ok_c;
+    if (cxl_c)
+        global.cxl_callback = cxl_c;
+}
 
-    // We fill the destination buffers at the end instead of the beginning so we can
-    // use the same array for any number of screens.
-    size_t const offset = MAX_SCREEN_COUNT - screen_count;
-    for (size_t i = 0; labels[i] != NULL; i++) {
-        const char *const label = (const char *)PIC(labels[i]);
-        if (strlen(label) > sizeof(G.prompt.screen[i].prompt)) THROW(EXC_MEMORY_ERROR);
-        strcpy(G.prompt.screen[offset + i].prompt, label);
-        memset(G.prompt.screen[offset + i].value, 0, sizeof(G.prompt.screen[offset + 1].value));
-        G.prompt.callbacks[i](G.prompt.screen[offset + i].value, sizeof(G.prompt.screen[offset + i].value), G.prompt.callback_data[i]);
-    }
-
-    G.ok_callback = ok_c;
-    G.cxl_callback = cxl_c;
-    ux_flow_init(0, &ux_prompts_flow[offset], NULL);
+void ux_confirm_screen(ui_callback_t ok_c, ui_callback_t cxl_c) {
+    ux_prepare_display(ok_c, cxl_c);
+    ux_flow_init(0, ux_confirm_flow, NULL);
     THROW(ASYNC_EXCEPTION);
+}
+
+void ux_idle_screen(ui_callback_t ok_c, ui_callback_t cxl_c) {
+    ux_prepare_display(ok_c, cxl_c);
+    ux_flow_init(0, ux_idle_flow, NULL);
 }

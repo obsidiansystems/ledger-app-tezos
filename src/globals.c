@@ -51,37 +51,50 @@ high_watermark_t volatile *select_hwm_by_chain(chain_id_t const chain_id, nvram_
       : &ram->hwm.test;
 }
 
-void calculate_baking_idle_screens_data(void) {
-        memset(global.ui.baking_idle_screens.hwm, 0, sizeof(global.ui.baking_idle_screens.hwm));
-        number_to_string(&global.ui.baking_idle_screens.hwm, (level_t const)N_data.hwm.main.highest_level);
+void copy_chain(char *out, size_t out_size, void *data) {
+    chain_id_t *chain_id = (chain_id_t *)data;
 
-    if (N_data.baking_key.bip32_path.length == 0) {
-        STRCPY(global.ui.baking_idle_screens.pkh, "No Key Authorized");
+    if (chain_id->v == 0) {
+        copy_string(out, out_size, "any");
+    } else {
+        chain_id_to_string_with_aliases(out, out_size, (chain_id_t const *const)chain_id);
+    }
+}
+
+void copy_key(char *out, size_t out_size, void *data) {
+    bip32_path_with_curve_t *baking_key = (bip32_path_with_curve_t *)data;
+    if (baking_key->bip32_path.length == 0) {
+        copy_string(out, out_size, "No Key Authorized");
     } else {
         cx_ecfp_public_key_t pubkey = {0};
         generate_public_key(
             &pubkey,
-            (derivation_type_t const)N_data.baking_key.derivation_type,
-            (bip32_path_t const *const)&N_data.baking_key.bip32_path);
+            (derivation_type_t const)baking_key->derivation_type,
+            (bip32_path_t const *const)&baking_key->bip32_path);
         pubkey_to_pkh_string(
-            global.ui.baking_idle_screens.pkh, sizeof(global.ui.baking_idle_screens.pkh),
-            (derivation_type_t const)N_data.baking_key.derivation_type, &pubkey);
+            out, out_size,
+            (derivation_type_t const)baking_key->derivation_type, &pubkey);
     }
+}
 
-        if (N_data.main_chain_id.v == 0) {
-            strcpy(global.ui.baking_idle_screens.chain, "any");
-        } else {
+void copy_hwm(char *out, size_t out_size, void *data) {
+    level_t *level = (level_t *)data;
+    (void) out_size;
 
-    chain_id_to_string_with_aliases(
-        global.ui.baking_idle_screens.chain, sizeof(global.ui.baking_idle_screens.chain),
-        (chain_id_t const *const)&N_data.main_chain_id);
+    number_to_string(out, *level);
+}
 
-        }
+void calculate_baking_idle_screens_data(void) {
+    push_ui_callback("Tezos Baking", copy_string, VERSION);
+    push_ui_callback("Chain", copy_chain, &N_data.main_chain_id);
+    push_ui_callback("Public Key Hash", copy_key, &N_data.baking_key);
+    push_ui_callback("High Watermark", copy_hwm, &N_data.hwm.main.highest_level);
 }
 
 void update_baking_idle_screens(void) {
+    init_formatter_stack();
     calculate_baking_idle_screens_data();
-    ui_refresh();
+    ui_refresh(); // scott check
 }
 
 #endif // #ifdef BAKING_APP
