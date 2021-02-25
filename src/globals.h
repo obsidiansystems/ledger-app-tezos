@@ -79,7 +79,7 @@ enum e_state {
 
 typedef struct {
   struct {
-    struct screen_data screen_stack[MAX_SCREEN_COUNT]; // 
+    struct screen_data screen_stack[MAX_SCREEN_STACK_SIZE];
     enum e_state current_state; // State of the dynamic display
 
     // Size of the screen stack

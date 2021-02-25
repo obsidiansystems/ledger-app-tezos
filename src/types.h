@@ -156,7 +156,7 @@ typedef struct {
 #define PKH_STRING_SIZE 40 // includes null byte // TODO: use sizeof for this.
 #define PROTOCOL_HASH_BASE58_STRING_SIZE sizeof("ProtoBetaBetaBetaBetaBetaBetaBetaBetaBet11111a5ug96")
 
-#define MAX_SCREEN_COUNT 7 // Current maximum usage
+#define MAX_SCREEN_STACK_SIZE 7 // Maximum number of screens in a flow.
 #define PROMPT_WIDTH 16
 #define VALUE_WIDTH PROTOCOL_HASH_BASE58_STRING_SIZE
 
