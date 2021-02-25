@@ -27,7 +27,7 @@ size_t handle_apdu_reset(__attribute__((unused)) uint8_t instruction) {
 
     G.reset_level = lvl;
 
-    init_formatter_stack();
+    init_screen_stack();
     push_ui_callback("Reset HWM", number_to_string_indirect32, &G.reset_level);
 
     ux_confirm_screen(reset_ok, delay_reject);

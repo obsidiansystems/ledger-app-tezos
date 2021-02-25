@@ -44,7 +44,7 @@ __attribute__((noreturn)) static void prompt_setup(
     ui_callback_t const ok_cb,
     ui_callback_t const cxl_cb)
 {
-    init_formatter_stack();
+    init_screen_stack();
     push_ui_callback("Setup", copy_string, "Baking?");
     push_ui_callback("Address", bip32_path_with_curve_to_pkh_string, &global.path_with_curve);
     push_ui_callback("Chain", chain_id_to_string_with_aliases, &G.main_chain_id);

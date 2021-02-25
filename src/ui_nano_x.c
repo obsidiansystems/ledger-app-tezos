@@ -83,8 +83,8 @@ UX_STEP_NOCB(
     ux_variable_display, 
     bnnn_paging,
     {
-      .title = global.screen_title,
-      .text = global.screen_value,
+      .title = global.dynamic_display.screen_title,
+      .text = global.dynamic_display.screen_value,
     });
 UX_STEP_INIT(
     ux_init_lower_border,
@@ -125,9 +125,9 @@ UX_FLOW(ux_idle_flow,
 static void prompt_response(bool const accepted) {
     ui_initial_screen();
     if (accepted) {
-        global.ok_callback();
+        global.dynamic_display.ok_callback();
     } else {
-        global.cxl_callback();
+        global.dynamic_display.cxl_callback();
     }
 }
 
@@ -169,15 +169,15 @@ UX_FLOW(ux_confirm_flow,
 );
 
 void clear_data() {
-    explicit_bzero(&global.screen_title, sizeof(global.screen_title));
-    explicit_bzero(&global.screen_value, sizeof(global.screen_value));
+    explicit_bzero(&global.dynamic_display.screen_title, sizeof(global.dynamic_display.screen_title));
+    explicit_bzero(&global.dynamic_display.screen_value, sizeof(global.dynamic_display.screen_value));
 }
 
 void set_state_data() {
-    struct fmt_callback *fmt = &global.formatter_stack[global.formatter_index];
+    struct screen_data *fmt = &global.dynamic_display.screen_stack[global.dynamic_display.formatter_index];
     clear_data();
-    copy_string((char *)global.screen_title, sizeof(global.screen_title), fmt->title);
-    fmt->callback_fn(global.screen_value, sizeof(global.screen_value), fmt->data);
+    copy_string((char *)global.dynamic_display.screen_title, sizeof(global.dynamic_display.screen_title), fmt->title);
+    fmt->callback_fn(global.dynamic_display.screen_value, sizeof(global.dynamic_display.screen_value), fmt->data);
 }
 
 /*
@@ -193,32 +193,32 @@ void update_layout() {
 
 void display_next_state(bool is_upper_border) {
     if (is_upper_border) {
-        if (global.current_state == OUT_OF_BORDERS) {
-            global.current_state = IN_BORDERS;
-            global.formatter_index = 0;
+        if (global.dynamic_display.current_state == OUT_OF_BORDERS) {
+            global.dynamic_display.current_state = IN_BORDERS;
+            global.dynamic_display.formatter_index = 0;
             set_state_data();
             ux_flow_next();
         } else {
             // Go back to first screen
-            if (global.formatter_index == 0) {
-                global.current_state = OUT_OF_BORDERS;
+            if (global.dynamic_display.formatter_index == 0) {
+                global.dynamic_display.current_state = OUT_OF_BORDERS;
                 ux_flow_prev();
             } else {
-                global.formatter_index--;
+                global.dynamic_display.formatter_index--;
                 set_state_data();
                 ux_flow_next();
             }
         }
     } else {
-        if (global.current_state == OUT_OF_BORDERS) {
-            global.current_state = IN_BORDERS;
-            global.formatter_index = global.formatter_stack_size - 1;
+        if (global.dynamic_display.current_state == OUT_OF_BORDERS) {
+            global.dynamic_display.current_state = IN_BORDERS;
+            global.dynamic_display.formatter_index = global.dynamic_display.screen_stack_size - 1;
             set_state_data();
             ux_flow_prev();
         } else {
-            global.formatter_index++;
-            if (global.formatter_index == global.formatter_stack_size) {
-                global.current_state = OUT_OF_BORDERS;
+            global.dynamic_display.formatter_index++;
+            if (global.dynamic_display.formatter_index == global.dynamic_display.screen_stack_size) {
+                global.dynamic_display.current_state = OUT_OF_BORDERS;
                 ux_flow_next();
             } else {
                 set_state_data();
@@ -234,7 +234,7 @@ void ui_initial_screen(void) {
         ux_stack_push();
     }
 
-    init_formatter_stack();
+    init_screen_stack();
 #   ifdef BAKING_APP
         calculate_baking_idle_screens_data();
 #   else
@@ -245,14 +245,14 @@ void ui_initial_screen(void) {
 }
 
 void ux_prepare_display(ui_callback_t ok_c, ui_callback_t cxl_c) {
-    global.formatter_stack_size = global.formatter_index;
-    global.formatter_index = 0;
-    global.current_state = OUT_OF_BORDERS;
+    global.dynamic_display.screen_stack_size = global.dynamic_display.formatter_index;
+    global.dynamic_display.formatter_index = 0;
+    global.dynamic_display.current_state = OUT_OF_BORDERS;
 
     if (ok_c)
-        global.ok_callback = ok_c;
+        global.dynamic_display.ok_callback = ok_c;
     if (cxl_c)
-        global.cxl_callback = cxl_c;
+        global.dynamic_display.cxl_callback = cxl_c;
 }
 
 void ux_confirm_screen(ui_callback_t ok_c, ui_callback_t cxl_c) {

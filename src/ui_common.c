@@ -14,24 +14,24 @@ void ui_init(void) {
     UX_INIT();
 }
 
-// User MUST call `init_formatter_stack()` before the first call to this function.
+// User MUST call `init_screen_stack()` before the first call to this function.
 void push_ui_callback(char *title, string_generation_callback cb, void *data) {
-    if (global.formatter_index + 1 >= MAX_SCREEN_COUNT) { // scott update screen
+    if (global.dynamic_display.formatter_index + 1 >= MAX_SCREEN_COUNT) { // scott update screen
         THROW(0x6124);
     }
-    struct fmt_callback *fmt = &global.formatter_stack[global.formatter_index];
+    struct screen_data *fmt = &global.dynamic_display.screen_stack[global.dynamic_display.formatter_index];
 
     fmt->title = title;
     fmt->callback_fn = cb;
     fmt->data = data;
-    global.formatter_index++;
+    global.dynamic_display.formatter_index++;
 }
 
-void init_formatter_stack() {
-    explicit_bzero(&global.formatter_stack, sizeof(global.formatter_stack));
-    global.formatter_index = 0;
-    global.formatter_stack_size = 0;
-    global.current_state = OUT_OF_BORDERS;
+void init_screen_stack() {
+    explicit_bzero(&global.dynamic_display.screen_stack, sizeof(global.dynamic_display.screen_stack));
+    global.dynamic_display.formatter_index = 0;
+    global.dynamic_display.screen_stack_size = 0;
+    global.dynamic_display.current_state = OUT_OF_BORDERS;
 }
 
 void require_pin(void) {

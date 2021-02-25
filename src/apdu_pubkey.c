@@ -53,13 +53,13 @@ static void prompt_address(
 
 #   ifdef BAKING_APP
     if (baking) {
-        init_formatter_stack();
+        init_screen_stack();
         push_ui_callback("Authorize Baking", copy_string, "With Public Key?");
         push_ui_callback("Public Key Hash", bip32_path_with_curve_to_pkh_string, &global.path_with_curve);
         ux_confirm_screen(ok_cb, cxl_cb);
     } else {
 #   endif
-        init_formatter_stack();
+        init_screen_stack();
         push_ui_callback("Provide", copy_string, "Public Key");
         push_ui_callback("Publick Key Hash", bip32_path_with_curve_to_pkh_string, &global.path_with_curve);
 

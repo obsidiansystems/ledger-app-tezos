@@ -135,7 +135,7 @@ __attribute__((noreturn)) static void prompt_register_delegate(
 ) {
     if (!G.maybe_ops.is_valid) THROW(EXC_MEMORY_ERROR);
 
-    init_formatter_stack();
+    init_screen_stack();
     push_ui_callback("Register", copy_string, "as delegate?");
     push_ui_callback("Address", bip32_path_with_curve_to_pkh_string, &global.path_with_curve);
     push_ui_callback("Fee", microtez_to_string_indirect, &G.maybe_ops.v.total_fee);
@@ -198,7 +198,7 @@ bool prompt_transaction(
 
         case OPERATION_TAG_PROPOSAL:
             {
-                init_formatter_stack();
+                init_screen_stack();
                 push_ui_callback("Confirm", copy_string, "Proposal");
                 push_ui_callback("Source", parsed_contract_to_string, &ops->operation.source);
                 push_ui_callback("Period", number_to_string_indirect32, &ops->operation.proposal.voting_period);
@@ -223,7 +223,7 @@ bool prompt_transaction(
                         break;
                 }
 
-                init_formatter_stack();
+                init_screen_stack();
                 push_ui_callback("Confirm Vote", copy_string, vote);
                 push_ui_callback("Source", parsed_contract_to_string, &ops->operation.source);
                 push_ui_callback("Protocol", protocol_hash_to_string,
@@ -239,7 +239,7 @@ bool prompt_transaction(
 
                 if (!(ops->operation.flags & ORIGINATION_FLAG_SPENDABLE)) return false;
 
-                init_formatter_stack();
+                init_screen_stack();
                 push_ui_callback("Confirm", copy_string, "Origination");
                 push_ui_callback("Amount", microtez_to_string_indirect, &ops->operation.amount);
                 push_ui_callback("Fee", microtez_to_string_indirect, &ops->total_fee);
@@ -278,7 +278,7 @@ bool prompt_transaction(
                 } else {
                     type_msg = "Confirm";
                 }
-                init_formatter_stack();
+                init_screen_stack();
                 push_ui_callback(type_msg, copy_string, "Delegation");
 
                 push_ui_callback("Fee", microtez_to_string_indirect, &ops->total_fee);
@@ -297,7 +297,7 @@ bool prompt_transaction(
         case OPERATION_TAG_ATHENS_TRANSACTION:
         case OPERATION_TAG_BABYLON_TRANSACTION:
             {
-                init_formatter_stack();
+                init_screen_stack();
                 push_ui_callback("Confirm", copy_string, "Transaction");
                 push_ui_callback("Amount", microtez_to_string_indirect, &ops->operation.amount);
                 push_ui_callback("Fee", microtez_to_string_indirect, &ops->total_fee);
@@ -311,7 +311,7 @@ bool prompt_transaction(
             }
         case OPERATION_TAG_NONE:
             {
-                init_formatter_stack();
+                init_screen_stack();
                 push_ui_callback("Reveal Key", copy_string, "To Blockchain");
                 push_ui_callback("Key", parsed_contract_to_string, &ops->operation.source);
                 push_ui_callback("Fee", microtez_to_string_indirect, &ops->total_fee);
@@ -336,7 +336,7 @@ static size_t wallet_sign_complete(uint8_t instruction, uint8_t magic_byte) {
         G.message_data_as_buffer.bytes = (uint8_t *)&G.message_data;
         G.message_data_as_buffer.size = sizeof(G.message_data);
         G.message_data_as_buffer.length = G.message_data_length;
-        init_formatter_stack();
+        init_screen_stack();
         push_ui_callback("Pre-hashed", copy_string, ops);
         // Base58 encoding of 32-byte hash is 43 bytes long.
         push_ui_callback("Sign Hash", buffer_to_base58, &G.message_data_as_buffer);
@@ -362,7 +362,7 @@ unsafe:
         G.message_data_as_buffer.bytes = (uint8_t *)&G.final_hash;
         G.message_data_as_buffer.size = sizeof(G.final_hash);
         G.message_data_as_buffer.length = sizeof(G.final_hash);
-        init_formatter_stack();
+        init_screen_stack();
         // Base58 encoding of 32-byte hash is 43 bytes long.
         push_ui_callback("Unrecognized", copy_string, ops);
         push_ui_callback("Sign Hash", buffer_to_base58, &G.message_data_as_buffer);
