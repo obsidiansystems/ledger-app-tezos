@@ -94,7 +94,7 @@ void calculate_baking_idle_screens_data(void) {
 void update_baking_idle_screens(void) {
     init_screen_stack();
     calculate_baking_idle_screens_data();
-    ui_refresh(); // scott check
+    ui_refresh();
 }
 
 #endif // #ifdef BAKING_APP
