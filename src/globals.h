@@ -73,8 +73,8 @@ struct screen_data {
 // Used to keep track on whether we are displaying screens inside the stack,
 // or outside the stack (for example confirmation screens).
 enum e_state {
-    OUT_OF_BORDERS,
-    IN_BORDERS,
+    STATIC_SCREEN,
+    DYNAMIC_SCREEN,
 };
 
 typedef struct {

@@ -31,7 +31,7 @@ void init_screen_stack() {
     explicit_bzero(&global.dynamic_display.screen_stack, sizeof(global.dynamic_display.screen_stack));
     global.dynamic_display.formatter_index = 0;
     global.dynamic_display.screen_stack_size = 0;
-    global.dynamic_display.current_state = OUT_OF_BORDERS;
+    global.dynamic_display.current_state = STATIC_SCREEN;
 }
 
 void require_pin(void) {

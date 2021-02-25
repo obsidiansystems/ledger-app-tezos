@@ -17,7 +17,7 @@
 
 #define G global.ui
 
-void display_next_state(bool is_upper_border);
+void display_next_state(bool is_left_ux_step);
 
 void ui_refresh(void) {
     ux_stack_display(0);
@@ -168,16 +168,21 @@ UX_FLOW(ux_confirm_flow,
   &ux_prompt_flow_accept_step
 );
 
+#define G_display global.dynamic_display
+
 void clear_data() {
-    explicit_bzero(&global.dynamic_display.screen_title, sizeof(global.dynamic_display.screen_title));
-    explicit_bzero(&global.dynamic_display.screen_value, sizeof(global.dynamic_display.screen_value));
+    explicit_bzero(&G_display.screen_title, sizeof(G_display.screen_title));
+    explicit_bzero(&G_display.screen_value, sizeof(G_display.screen_value));
 }
 
-void set_state_data() {
-    struct screen_data *fmt = &global.dynamic_display.screen_stack[global.dynamic_display.formatter_index];
+// Fills the screen with the data in the `screen_stack` pointed by the index `G_display.formatter_index`.
+// Fills the `screen_title` by copying the `.title` field and fills the `screen_value` by 
+// computing `callback_fn` with the `.data` field as a parameter
+void set_screen_data() {
+    struct screen_data *fmt = &G_display.screen_stack[G_display.formatter_index];
     clear_data();
-    copy_string((char *)global.dynamic_display.screen_title, sizeof(global.dynamic_display.screen_title), fmt->title);
-    fmt->callback_fn(global.dynamic_display.screen_value, sizeof(global.dynamic_display.screen_value), fmt->data);
+    copy_string((char *)G_display.screen_title, sizeof(G_display.screen_title), fmt->title);
+    fmt->callback_fn(G_display.screen_value, sizeof(G_display.screen_value), fmt->data);
 }
 
 /*
@@ -191,38 +196,64 @@ void update_layout() {
     ux_flow_relayout();
 }
 
-void display_next_state(bool is_upper_border) {
-    if (is_upper_border) {
-        if (global.dynamic_display.current_state == OUT_OF_BORDERS) {
-            global.dynamic_display.current_state = IN_BORDERS;
-            global.dynamic_display.formatter_index = 0;
-            set_state_data();
+void display_next_state(bool is_left_ux_step) {
+    if (is_left_ux_step) { // We're called from the LEFT ux step
+        if (G_display.current_state == STATIC_SCREEN) {
+            // The previous screen was a static screen, so we're now entering the stack (from the start of the stack).
+
+            // Since we're in the stack, set the state to DYNAMIC_SCREEN.
+            G_display.current_state = DYNAMIC_SCREEN;
+            // We're just entering the stack so the `formatter_index` is set to 0.
+            G_display.formatter_index = 0;
+            // Update the screen data.
+            set_screen_data();
+            // Move to the next step, which will display the screen.
             ux_flow_next();
         } else {
-            // Go back to first screen
-            if (global.dynamic_display.formatter_index == 0) {
-                global.dynamic_display.current_state = OUT_OF_BORDERS;
+            // The previous screen was NOT a static screen, so we were already in the stack.
+            if (G_display.formatter_index == 0) {
+                // If `formatter_index` is 0 then we need to exit the dynamic display.
+
+                // Update the current_state accordingly.
+                G_display.current_state = STATIC_SCREEN;
+                // Don't need to update the screen data, simply display the ux_flow_prev() which will be a static screen.
                 ux_flow_prev();
             } else {
-                global.dynamic_display.formatter_index--;
-                set_state_data();
+                // The user is still browsing the stack: simply decrement `formatter_index` and update `screen_data`.
+                G_display.formatter_index--;
+                set_screen_data();
                 ux_flow_next();
             }
         }
     } else {
-        if (global.dynamic_display.current_state == OUT_OF_BORDERS) {
-            global.dynamic_display.current_state = IN_BORDERS;
-            global.dynamic_display.formatter_index = global.dynamic_display.screen_stack_size - 1;
-            set_state_data();
+        // We're called from the RIGHT ux step.
+        if (G_display.current_state == STATIC_SCREEN) {
+            // We're called from a static screen, so we're now entering the stack (from the end of the stack).
+
+            // Update the current_state.
+            G_display.current_state = DYNAMIC_SCREEN;
+            // We're starting the stack from the end, so the index is the size - 1.
+            G_display.formatter_index = G_display.screen_stack_size - 1;
+            // Update the screen data.
+            set_screen_data();
+            // Since we're called from the RIGHT ux step, if we wish to display
+            // the data we need to call ux_flow_PREV and not `ux_flow_NEXT`.
             ux_flow_prev();
         } else {
-            global.dynamic_display.formatter_index++;
-            if (global.dynamic_display.formatter_index == global.dynamic_display.screen_stack_size) {
-                global.dynamic_display.current_state = OUT_OF_BORDERS;
+            // We're being called from a dynamic screen, so the user was already browsing the stack.
+            // The user wants to go to the next screen so increment the index.
+            G_display.formatter_index++;
+            if (G_display.formatter_index == G_display.screen_stack_size) {
+                // Index is equal to stack size, so time to exit the stack and display the static screens.
+
+                // Make sure we update the state accordingly.
+                G_display.current_state = STATIC_SCREEN;
                 ux_flow_next();
             } else {
-                set_state_data();
-                update_layout(); // Similar to `ux_flow_prev()` but updates layout to account for `bnnn_paging`'s weird behaviour.
+                // We're just browsing the stack so update the screen and display it.
+                set_screen_data();
+                // Similar to `ux_flow_prev()` but updates layout to account for `bnnn_paging`'s weird behaviour.
+                update_layout();
             }
         }
     }
@@ -247,7 +278,7 @@ void ui_initial_screen(void) {
 void ux_prepare_display(ui_callback_t ok_c, ui_callback_t cxl_c) {
     global.dynamic_display.screen_stack_size = global.dynamic_display.formatter_index;
     global.dynamic_display.formatter_index = 0;
-    global.dynamic_display.current_state = OUT_OF_BORDERS;
+    global.dynamic_display.current_state = STATIC_SCREEN;
 
     if (ok_c)
         global.dynamic_display.ok_callback = ok_c;
