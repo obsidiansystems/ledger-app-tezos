@@ -494,5 +494,29 @@
   {
     "bakerName": "Money Every 3 Days",
     "bakerAccount": "tz1NEKxGEHsFufk87CVZcrqWu8o22qh46GK6"
+  },
+  {
+    "bakerName": "ownBLOCK",
+    "bakerAccount": "tz1hTFcQk2KJRPzZyHkCwbj7E1zY1xBkiHsk"
+  },
+  {
+    "bakerName": "Staking Facilities",
+    "bakerAccount": "tz1WpeqFaBG9Jm73Dmgqamy8eF8NWLz9JCoY"
+  },
+  {
+    "bakerName": "Spice",
+    "bakerAccount": "tz1dRKU4FQ9QRRQPdaH4zCR6gmCmXfcvcgtB"
+  },
+  {
+    "bakerName": "KryptStar Staking",
+    "bakerAccount": "tz1aDiEJf9ztRrAJEXZfcG3CKimoKsGhwVAi"
+  },
+  {
+    "bakerName": "Smart-Node",
+    "bakerAccount": "tz1NMNQYrYrfNpmUqQrMhJypf6ovnaDZhJHM"
+  },
+  {
+    "bakerName": "MOKU",
+    "bakerAccount": "tz1QXrzaHrGACVn15UiCg33aLCJ6npWdQb3J"
   }
 ]
