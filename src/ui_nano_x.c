@@ -154,7 +154,7 @@ UX_STEP_NOCB(
     nn,
     {
       "Review",
-      "Transaction",
+      "Request",
     });
 
 UX_FLOW(ux_confirm_flow,
