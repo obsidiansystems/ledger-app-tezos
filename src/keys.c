@@ -69,9 +69,7 @@ int crypto_derive_private_key(
             }
 
             // new private_key from raw
-            cx_ecfp_init_private_key(cx_curve, raw_private_key, sizeof(raw_private_key), private_key);
-
-
+            cx_ecfp_init_private_key(cx_curve, raw_private_key, 32, private_key);
         } FINALLY {
             explicit_bzero(raw_private_key, sizeof(raw_private_key));
         }
@@ -108,9 +106,6 @@ int generate_key_pair(key_pair_t *key_pair,
                         derivation_type_t const derivation_type,
                         bip32_path_t const *const bip32_path
                       ) {
-    PRINTF("PRIV--COMPONENTS: %.*H\n", sizeof(bip32_path->components), bip32_path->components);
-    PRINTF("PRIV--LEN: %u\n", bip32_path->length);
-    PRINTF("PRIV--TYPE: %u\n", derivation_type);
     // derive private key according to BIP32 path
     crypto_derive_private_key(&key_pair->private_key, derivation_type, bip32_path);
     // generate corresponding public key
@@ -124,9 +119,6 @@ int generate_public_key(cx_ecfp_public_key_t *public_key,
                     ) {
     cx_ecfp_private_key_t private_key = {0};
 
-    PRINTF("--COMPONENTS: %.*H\n", sizeof(bip32_path->components), bip32_path->components);
-    PRINTF("--LEN: %u\n", bip32_path->length);
-    PRINTF("--TYPE: %u\n", derivation_type);
     crypto_derive_private_key(&private_key, derivation_type, bip32_path);
     crypto_init_public_key(derivation_type, &private_key, public_key);
     return (0);   
