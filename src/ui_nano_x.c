@@ -153,8 +153,8 @@ UX_STEP_NOCB(
     ux_eye_step,
     nn,
     {
-      "Hello",
-      "World",
+      "Review",
+      "Transaction",
     });
 
 UX_FLOW(ux_confirm_flow,
