@@ -156,10 +156,10 @@ DEFINES   += HAVE_IO_U2F HAVE_U2F
 endif
 
 load: all
-	python -m ledgerblue.loadApp $(APP_LOAD_PARAMS)
+	python3 -m ledgerblue.loadApp $(APP_LOAD_PARAMS)
 
 delete:
-	python -m ledgerblue.deleteApp $(COMMON_DELETE_PARAMS)
+	python3 -m ledgerblue.deleteApp $(COMMON_DELETE_PARAMS)
 
 # import generic rules from the sdk
 include $(BOLOS_SDK)/Makefile.rules
