@@ -9,6 +9,7 @@
 #include "protocol.h"
 #include "to_string.h"
 #include "ui.h"
+#include "swap_lib_calls.h"
 
 #include "cx.h"
 
@@ -475,6 +476,11 @@ static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, 
 
     memmove(G.message_data + G.message_data_length, buff, buff_size);
     G.message_data_length += buff_size;
+
+    if (called_from_swap) {
+        swap_check();
+        os_sched_exit(0);
+    }
 
     if (last) {
         if (enable_hashing) {
