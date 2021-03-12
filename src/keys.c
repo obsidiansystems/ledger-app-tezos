@@ -51,6 +51,7 @@ int crypto_derive_private_key(
 ) {
     check_null(bip32_path);
     uint8_t raw_private_key[PRIVATE_KEY_DATA_SIZE] = {0};
+    int error;
 
     cx_curve_t const cx_curve = signature_type_to_cx_curve(derivation_type_to_signature_type(derivation_type));
 
@@ -69,14 +70,14 @@ int crypto_derive_private_key(
             }
 
             // new private_key from raw
-            cx_ecfp_init_private_key(cx_curve, raw_private_key, 32, private_key);
+            error = cx_ecfp_init_private_key(cx_curve, raw_private_key, 32, private_key);
         } FINALLY {
             explicit_bzero(raw_private_key, sizeof(raw_private_key));
         }
     }
     END_TRY;
 
-    return 0;
+    return error;
 }
 
 int crypto_init_public_key(
@@ -86,9 +87,10 @@ int crypto_init_public_key(
 ) {
 
     cx_curve_t const cx_curve = signature_type_to_cx_curve(derivation_type_to_signature_type(derivation_type));
+    int error;
 
     // generate corresponding public key
-    cx_ecfp_generate_pair(cx_curve, public_key, private_key, 1);
+    error = cx_ecfp_generate_pair(cx_curve, public_key, private_key, 1);
 
     // If we're using the old curve, make sure to adjust accordingly.
     if (cx_curve == CX_CURVE_Ed25519) {
@@ -98,7 +100,7 @@ int crypto_init_public_key(
         public_key->W_len = 33;
     }
 
-    return 0;
+    return error;
 }
 
 // The caller should not forget to bzero out the `key_pair` as it contains sensitive information.
@@ -118,10 +120,14 @@ int generate_public_key(cx_ecfp_public_key_t *public_key,
                     bip32_path_t const *const bip32_path
                     ) {
     cx_ecfp_private_key_t private_key = {0};
+    int error;
 
-    crypto_derive_private_key(&private_key, derivation_type, bip32_path);
-    crypto_init_public_key(derivation_type, &private_key, public_key);
-    return (0);   
+    error = crypto_derive_private_key(&private_key, derivation_type, bip32_path);
+    if (error) {
+        return (error);
+    }
+    error = crypto_init_public_key(derivation_type, &private_key, public_key);
+    return (error);   
 }
 
 void public_key_hash(

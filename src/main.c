@@ -7,6 +7,9 @@
 #include "globals.h"
 #include "memory.h"
 
+bool called_from_swap;
+swap_values_t swap_values;
+
 __attribute__((noreturn))
 void app_main(void) {
     // TODO: Consider using static initialization of a const, instead of this

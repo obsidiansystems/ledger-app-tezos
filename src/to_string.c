@@ -265,6 +265,20 @@ void microtez_to_string_indirect(char *const dest, size_t const buff_size, uint6
     microtez_to_string(dest, *number);
 }
 
+// Like `microtez_to_strind_indirect` but returns an error code
+int microtez_to_string_indirect_no_throw(char *const dest, size_t const buff_size, uint64_t const *const number) {
+    if (!dest || !number) {
+        return (0);
+    }
+    if (buff_size < MAX_INT_DIGITS + 1) {// + terminating null + decimal point
+        return (0);
+    }
+    // Can safely call `microtez_to_string` because we know dest is not NULL.
+    microtez_to_string(dest, *number);
+    return (1);
+}
+
+
 size_t number_to_string(char *const dest, uint64_t number) {
     check_null(dest);
     char tmp[MAX_INT_DIGITS];
