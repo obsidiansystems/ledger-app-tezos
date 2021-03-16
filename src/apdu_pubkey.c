@@ -13,16 +13,16 @@
 
 #include <string.h>
 
-#define G global.apdu.u.pubkey
-
 static bool pubkey_ok(void) {
-    delayed_send(provide_pubkey(G_io_apdu_buffer, &G.public_key));
+    cx_ecfp_public_key_t public_key = {0};
+    generate_public_key(&public_key, global.path_with_curve.derivation_type, &global.path_with_curve.bip32_path);
+    delayed_send(provide_pubkey(G_io_apdu_buffer, &public_key));
     return true;
 }
 
 #ifdef BAKING_APP
 static bool baking_ok(void) {
-    authorize_baking(G.key.derivation_type, &G.key.bip32_path);
+    authorize_baking(global.path_with_curve.derivation_type, &global.path_with_curve.bip32_path);
     pubkey_ok();
     return true;
 }
@@ -48,27 +48,21 @@ static void prompt_address(
     ui_callback_t ok_cb,
     ui_callback_t cxl_cb
 ) {
-    static size_t const TYPE_INDEX = 0;
-    static size_t const ADDRESS_INDEX = 1;
+    init_screen_stack();
 
 #   ifdef BAKING_APP
     if (baking) {
-        REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "With Public Key?");
-        register_ui_callback(ADDRESS_INDEX, bip32_path_with_curve_to_pkh_string, &G.key);
-        ui_prompt(get_baking_prompts(), ok_cb, cxl_cb);
+        push_ui_callback("Authorize Baking", copy_string, "With Public Key?");
+        push_ui_callback("Public Key Hash", bip32_path_with_curve_to_pkh_string, &global.path_with_curve);
     } else {
 #   endif
-        static const char *const pubkey_labels[] = {
-            PROMPT("Provide"),
-            PROMPT("Public Key Hash"),
-            NULL,
-        };
-        REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Public Key");
-        register_ui_callback(ADDRESS_INDEX, bip32_path_with_curve_to_pkh_string, &G.key);
-        ui_prompt(pubkey_labels, ok_cb, cxl_cb);
+        push_ui_callback("Provide", copy_string, "Public Key");
+        push_ui_callback("Publick Key Hash", bip32_path_with_curve_to_pkh_string, &global.path_with_curve);
 #   ifdef BAKING_APP
     }
 #   endif
+
+    ux_confirm_screen(ok_cb, cxl_cb);
 }
 
 size_t handle_apdu_get_public_key(uint8_t instruction) {
@@ -79,24 +73,26 @@ size_t handle_apdu_get_public_key(uint8_t instruction) {
     // do not expose pks without prompt through U2F (permissionless legacy comm in browser)
     if (instruction == INS_GET_PUBLIC_KEY) require_permissioned_comm();
 
-    G.key.derivation_type = parse_derivation_type(READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
+    global.path_with_curve.derivation_type = parse_derivation_type(READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
 
     size_t const cdata_size = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]);
 
 #ifdef BAKING_APP
     if (cdata_size == 0 && instruction == INS_AUTHORIZE_BAKING) {
-        copy_bip32_path_with_curve(&G.key, &N_data.baking_key);
+        copy_bip32_path_with_curve(&global.path_with_curve, &N_data.baking_key);
     } else {
 #endif
-        read_bip32_path(&G.key.bip32_path, dataBuffer, cdata_size);
+        read_bip32_path(&global.path_with_curve.bip32_path, dataBuffer, cdata_size);
 #ifdef BAKING_APP
-        if (G.key.bip32_path.length == 0) THROW(EXC_WRONG_LENGTH_FOR_INS);
+        if (global.path_with_curve.bip32_path.length == 0) THROW(EXC_WRONG_LENGTH_FOR_INS);
     }
 #endif
-    generate_public_key(&G.public_key, G.key.derivation_type, &G.key.bip32_path);
+
+    cx_ecfp_public_key_t public_key = {0};
+    generate_public_key(&public_key, global.path_with_curve.derivation_type, &global.path_with_curve.bip32_path);
 
     if (instruction == INS_GET_PUBLIC_KEY) {
-        return provide_pubkey(G_io_apdu_buffer, &G.public_key);
+        return provide_pubkey(G_io_apdu_buffer, &public_key);
     } else {
         // instruction == INS_PROMPT_PUBLIC_KEY || instruction == INS_AUTHORIZE_BAKING
         ui_callback_t cb;

@@ -53,11 +53,12 @@ static inline void compute_pkh(
     check_null(bip32_path);
     check_null(compressed_pubkey_out);
     check_null(contract_out);
-    cx_ecfp_public_key_t const *const pubkey = generate_public_key_return_global(derivation_type, bip32_path);
+    cx_ecfp_public_key_t pubkey = {0};
+    generate_public_key(&pubkey, derivation_type, bip32_path);
     public_key_hash(
         contract_out->hash, sizeof(contract_out->hash),
         compressed_pubkey_out,
-        derivation_type, pubkey);
+        derivation_type, &pubkey);
     contract_out->signature_type = derivation_type_to_signature_type(derivation_type);
     if (contract_out->signature_type == SIGNATURE_TYPE_UNSET) THROW(EXC_MEMORY_ERROR);
     contract_out->originated = 0;

@@ -44,79 +44,110 @@ size_t read_bip32_path(bip32_path_t *const out, uint8_t const *const in, size_t 
     return ix;
 }
 
-key_pair_t *generate_key_pair_return_global(
+int crypto_derive_private_key(
+    cx_ecfp_private_key_t *private_key,
     derivation_type_t const derivation_type,
     bip32_path_t const *const bip32_path
 ) {
     check_null(bip32_path);
-    struct priv_generate_key_pair *const priv = &global.apdu.priv.generate_key_pair;
+    uint8_t raw_private_key[PRIVATE_KEY_DATA_SIZE] = {0};
 
     cx_curve_t const cx_curve = signature_type_to_cx_curve(derivation_type_to_signature_type(derivation_type));
 
-    if (derivation_type == DERIVATION_TYPE_ED25519) {
-        // Old, non BIP32_Ed25519 way...
-        os_perso_derive_node_bip32_seed_key(
-            HDW_ED25519_SLIP10, CX_CURVE_Ed25519, bip32_path->components, bip32_path->length,
-            priv->private_key_data, NULL, NULL, 0);
-    } else {
-        os_perso_derive_node_bip32(
-            cx_curve, bip32_path->components, bip32_path->length,
-            priv->private_key_data, NULL);
-    }
-
     BEGIN_TRY {
         TRY {
-            cx_ecfp_init_private_key(cx_curve, priv->private_key_data, sizeof(priv->private_key_data), &priv->res.private_key);
-            cx_ecfp_generate_pair(cx_curve, &priv->res.public_key, &priv->res.private_key, 1);
-
-            if (cx_curve == CX_CURVE_Ed25519) {
-                cx_edward_compress_point(CX_CURVE_Ed25519,
-                                         priv->res.public_key.W,
-                                         priv->res.public_key.W_len);
-                priv->res.public_key.W_len = 33;
+            if (derivation_type == DERIVATION_TYPE_ED25519) {
+                // Old, non BIP32_Ed25519 way...
+                os_perso_derive_node_bip32_seed_key(
+                    HDW_ED25519_SLIP10, CX_CURVE_Ed25519, bip32_path->components, bip32_path->length,
+                    raw_private_key, NULL, NULL, 0);
+            } else {
+                // derive the seed with bip32_path
+                os_perso_derive_node_bip32(
+                    cx_curve, bip32_path->components, bip32_path->length,
+                    raw_private_key, NULL);
             }
+
+            // new private_key from raw
+            cx_ecfp_init_private_key(cx_curve, raw_private_key, 32, private_key);
         } FINALLY {
-            explicit_bzero(priv->private_key_data, sizeof(priv->private_key_data));
+            explicit_bzero(raw_private_key, sizeof(raw_private_key));
         }
     }
     END_TRY;
 
-    return &priv->res;
+    return 0;
 }
 
-cx_ecfp_public_key_t const *generate_public_key_return_global(
-    derivation_type_t const curve,
-    bip32_path_t const *const bip32_path
+int crypto_init_public_key(
+    derivation_type_t const derivation_type,
+    cx_ecfp_private_key_t *private_key,
+    cx_ecfp_public_key_t *public_key
 ) {
-    check_null(bip32_path);
-    key_pair_t *const pair = generate_key_pair_return_global(curve, bip32_path);
-    explicit_bzero(&pair->private_key, sizeof(pair->private_key));
-    return &pair->public_key;
+
+    cx_curve_t const cx_curve = signature_type_to_cx_curve(derivation_type_to_signature_type(derivation_type));
+
+    // generate corresponding public key
+    cx_ecfp_generate_pair(cx_curve, public_key, private_key, 1);
+
+    // If we're using the old curve, make sure to adjust accordingly.
+    if (cx_curve == CX_CURVE_Ed25519) {
+        cx_edward_compress_point(CX_CURVE_Ed25519,
+                                 public_key->W,
+                                 public_key->W_len);
+        public_key->W_len = 33;
+    }
+
+    return 0;
 }
 
-cx_ecfp_public_key_t const *public_key_hash_return_global(
-    uint8_t *const out, size_t const out_size,
-    derivation_type_t const curve,
+// The caller should not forget to bzero out the `key_pair` as it contains sensitive information.
+int generate_key_pair(key_pair_t *key_pair,
+                        derivation_type_t const derivation_type,
+                        bip32_path_t const *const bip32_path
+                      ) {
+    // derive private key according to BIP32 path
+    crypto_derive_private_key(&key_pair->private_key, derivation_type, bip32_path);
+    // generate corresponding public key
+    crypto_init_public_key(derivation_type, &key_pair->private_key, &key_pair->public_key);
+    return (0);
+}
+
+int generate_public_key(cx_ecfp_public_key_t *public_key,
+                    derivation_type_t const derivation_type,
+                    bip32_path_t const *const bip32_path
+                    ) {
+    cx_ecfp_private_key_t private_key = {0};
+
+    crypto_derive_private_key(&private_key, derivation_type, bip32_path);
+    crypto_init_public_key(derivation_type, &private_key, public_key);
+    return (0);   
+}
+
+void public_key_hash(
+    uint8_t *const hash_out, size_t const hash_out_size,
+    cx_ecfp_public_key_t *compressed_out,
+    derivation_type_t const derivation_type,
     cx_ecfp_public_key_t const *const restrict public_key)
 {
-    check_null(out);
+    check_null(hash_out);
     check_null(public_key);
-    if (out_size < HASH_SIZE) THROW(EXC_WRONG_LENGTH);
+    if (hash_out_size < HASH_SIZE) THROW(EXC_WRONG_LENGTH);
 
-    cx_ecfp_public_key_t *const compressed = &global.apdu.priv.public_key_hash.compressed;
-    switch (derivation_type_to_signature_type(curve)) {
+    cx_ecfp_public_key_t compressed = {0};
+    switch (derivation_type_to_signature_type(derivation_type)) {
         case SIGNATURE_TYPE_ED25519:
             {
-                compressed->W_len = public_key->W_len - 1;
-                memcpy(compressed->W, public_key->W + 1, compressed->W_len);
+                compressed.W_len = public_key->W_len - 1;
+                memcpy(compressed.W, public_key->W + 1, compressed.W_len);
                 break;
             }
         case SIGNATURE_TYPE_SECP256K1:
         case SIGNATURE_TYPE_SECP256R1:
             {
-                memcpy(compressed->W, public_key->W, public_key->W_len);
-                compressed->W[0] = 0x02 + (public_key->W[64] & 0x01);
-                compressed->W_len = 33;
+                memcpy(compressed.W, public_key->W, public_key->W_len);
+                compressed.W[0] = 0x02 + (public_key->W[64] & 0x01);
+                compressed.W_len = 33;
                 break;
             }
         default:
@@ -125,8 +156,10 @@ cx_ecfp_public_key_t const *public_key_hash_return_global(
 
     cx_blake2b_t hash_state;
     cx_blake2b_init(&hash_state, HASH_SIZE*8); // cx_blake2b_init takes size in bits.
-    cx_hash((cx_hash_t *) &hash_state, CX_LAST, compressed->W, compressed->W_len, out, HASH_SIZE);
-    return compressed;
+    cx_hash((cx_hash_t *) &hash_state, CX_LAST, compressed.W, compressed.W_len, hash_out, HASH_SIZE);
+    if (compressed_out != NULL) {
+        memmove(compressed_out, &compressed, sizeof (*compressed_out));
+    }
 }
 
 size_t sign(

@@ -1,7 +1,5 @@
 #include "bolos_target.h"
 
-#ifdef TARGET_NANOX
-
 #include "ui.h"
 
 #include "baking_auth.h"
@@ -18,6 +16,8 @@
 
 
 #define G global.ui
+
+void display_next_state(bool is_left_ux_step);
 
 void ui_refresh(void) {
     ux_stack_display(0);
@@ -72,48 +72,38 @@ unsigned char io_event(__attribute__((unused)) unsigned char channel) {
     return 1;
 }
 
-
-#ifdef BAKING_APP
-UX_STEP_NOCB(
-    ux_idle_flow_1_step,
-    nnn,
+UX_STEP_INIT(
+    ux_init_upper_border,
+    NULL,
+    NULL,
     {
-      global.ui.baking_idle_screens.chain,
-      global.ui.baking_idle_screens.pkh,
-      global.ui.baking_idle_screens.hwm
+        display_next_state(true);
     });
 UX_STEP_NOCB(
-    ux_idle_flow_2_step,
-    bnn,
+    ux_variable_display, 
+    bnnn_paging,
     {
-      "Tezos Baking",
-      VERSION,
-      COMMIT
+      .title = global.dynamic_display.screen_title,
+      .text = global.dynamic_display.screen_value,
     });
-UX_STEP_CB(
-    ux_idle_flow_3_step,
-    pb,
-    exit_app(),
+UX_STEP_INIT(
+    ux_init_lower_border,
+    NULL,
+    NULL,
     {
-      &C_icon_dashboard,
-      "Quit",
+        display_next_state(false);
     });
 
-UX_FLOW(ux_idle_flow,
-    &ux_idle_flow_1_step,
-    &ux_idle_flow_2_step,
-    &ux_idle_flow_3_step
-);
-#else
 UX_STEP_NOCB(
-    ux_idle_flow_1_step,
-    bn,
+    ux_app_is_ready_step,
+    nn,
     {
-      "Tezos Wallet",
-      VERSION
+      "Application",
+      "is ready",
     });
+
 UX_STEP_CB(
-    ux_idle_flow_2_step,
+    ux_idle_quit_step,
     pb,
     exit_app(),
     {
@@ -122,37 +112,22 @@ UX_STEP_CB(
     });
 
 UX_FLOW(ux_idle_flow,
-    &ux_idle_flow_1_step,
-    &ux_idle_flow_2_step
+    &ux_app_is_ready_step,
+
+    &ux_init_upper_border,
+    &ux_variable_display,
+    &ux_init_lower_border,
+
+    &ux_idle_quit_step,
+    FLOW_LOOP
 );
-#endif
-
-
-// prompt
-#define PROMPT_SCREEN_NAME(idx) ux_prompt_flow_ ## idx ## _step
-#define PROMPT_SCREEN_TPL(idx) \
-    UX_STEP_NOCB( \
-        PROMPT_SCREEN_NAME(idx), \
-        bnnn_paging, \
-        { \
-            .title = G.prompt.screen[idx].prompt, \
-            .text = G.prompt.screen[idx].value, \
-        })
-
-PROMPT_SCREEN_TPL(0);
-PROMPT_SCREEN_TPL(1);
-PROMPT_SCREEN_TPL(2);
-PROMPT_SCREEN_TPL(3);
-PROMPT_SCREEN_TPL(4);
-PROMPT_SCREEN_TPL(5);
-PROMPT_SCREEN_TPL(6);
 
 static void prompt_response(bool const accepted) {
     ui_initial_screen();
     if (accepted) {
-        G.ok_callback();
+        global.dynamic_display.ok_callback();
     } else {
-        G.cxl_callback();
+        global.dynamic_display.cxl_callback();
     }
 }
 
@@ -174,57 +149,150 @@ UX_STEP_CB(
         "Reject"
     });
 
-UX_FLOW(ux_prompts_flow,
-    &PROMPT_SCREEN_NAME(0),
-    &PROMPT_SCREEN_NAME(1),
-    &PROMPT_SCREEN_NAME(2),
-    &PROMPT_SCREEN_NAME(3),
-    &PROMPT_SCREEN_NAME(4),
-    &PROMPT_SCREEN_NAME(5),
-    &PROMPT_SCREEN_NAME(6),
-    &ux_prompt_flow_reject_step,
-    &ux_prompt_flow_accept_step
-);
-_Static_assert(NUM_ELEMENTS(ux_prompts_flow) - 3 /*reject + accept + end*/ == MAX_SCREEN_COUNT, "ux_prompts_flow doesn't have the same number of screens as MAX_SCREEN_COUNT");
+UX_STEP_NOCB(
+    ux_eye_step,
+    nn,
+    {
+      "Review",
+      "Request",
+    });
 
+UX_FLOW(ux_confirm_flow,
+  &ux_eye_step,
+
+  &ux_init_upper_border,
+  &ux_variable_display,
+  &ux_init_lower_border,
+
+  &ux_prompt_flow_reject_step,
+  &ux_prompt_flow_accept_step
+);
+
+#define G_display global.dynamic_display
+
+void clear_data() {
+    explicit_bzero(&G_display.screen_title, sizeof(G_display.screen_title));
+    explicit_bzero(&G_display.screen_value, sizeof(G_display.screen_value));
+}
+
+// Fills the screen with the data in the `screen_stack` pointed by the index `G_display.formatter_index`.
+// Fills the `screen_title` by copying the `.title` field and fills the `screen_value` by 
+// computing `callback_fn` with the `.data` field as a parameter
+void set_screen_data() {
+    struct screen_data *fmt = &G_display.screen_stack[G_display.formatter_index];
+    clear_data();
+    copy_string((char *)G_display.screen_title, sizeof(G_display.screen_title), fmt->title);
+    fmt->callback_fn(G_display.screen_value, sizeof(G_display.screen_value), fmt->data);
+}
+
+/*
+* Enables coherent behavior on bnnn_paging when there are multiple
+* screens.
+*/
+void update_layout() {
+    G_ux.flow_stack[G_ux.stack_count - 1].prev_index =
+    G_ux.flow_stack[G_ux.stack_count - 1].index - 2;
+    G_ux.flow_stack[G_ux.stack_count - 1].index--;
+    ux_flow_relayout();
+}
+
+void display_next_state(bool is_left_ux_step) {
+    if (is_left_ux_step) { // We're called from the LEFT ux step
+        if (G_display.current_state == STATIC_SCREEN) {
+            // The previous screen was a static screen, so we're now entering the stack (from the start of the stack).
+
+            // Since we're in the stack, set the state to DYNAMIC_SCREEN.
+            G_display.current_state = DYNAMIC_SCREEN;
+            // We're just entering the stack so the `formatter_index` is set to 0.
+            G_display.formatter_index = 0;
+            // Update the screen data.
+            set_screen_data();
+            // Move to the next step, which will display the screen.
+            ux_flow_next();
+        } else {
+            // The previous screen was NOT a static screen, so we were already in the stack.
+            if (G_display.formatter_index == 0) {
+                // If `formatter_index` is 0 then we need to exit the dynamic display.
+
+                // Update the current_state accordingly.
+                G_display.current_state = STATIC_SCREEN;
+                // Don't need to update the screen data, simply display the ux_flow_prev() which will be a static screen.
+                ux_flow_prev();
+            } else {
+                // The user is still browsing the stack: simply decrement `formatter_index` and update `screen_data`.
+                G_display.formatter_index--;
+                set_screen_data();
+                ux_flow_next();
+            }
+        }
+    } else {
+        // We're called from the RIGHT ux step.
+        if (G_display.current_state == STATIC_SCREEN) {
+            // We're called from a static screen, so we're now entering the stack (from the end of the stack).
+
+            // Update the current_state.
+            G_display.current_state = DYNAMIC_SCREEN;
+            // We're starting the stack from the end, so the index is the size - 1.
+            G_display.formatter_index = G_display.screen_stack_size - 1;
+            // Update the screen data.
+            set_screen_data();
+            // Since we're called from the RIGHT ux step, if we wish to display
+            // the data we need to call ux_flow_PREV and not `ux_flow_NEXT`.
+            ux_flow_prev();
+        } else {
+            // We're being called from a dynamic screen, so the user was already browsing the stack.
+            // The user wants to go to the next screen so increment the index.
+            G_display.formatter_index++;
+            if (G_display.formatter_index == G_display.screen_stack_size) {
+                // Index is equal to stack size, so time to exit the stack and display the static screens.
+
+                // Make sure we update the state accordingly.
+                G_display.current_state = STATIC_SCREEN;
+                ux_flow_next();
+            } else {
+                // We're just browsing the stack so update the screen and display it.
+                set_screen_data();
+                // Similar to `ux_flow_prev()` but updates layout to account for `bnnn_paging`'s weird behaviour.
+                update_layout();
+            }
+        }
+    }
+}
 
 void ui_initial_screen(void) {
-#   ifdef BAKING_APP
-        calculate_baking_idle_screens_data();
-#   endif
-
     // reserve a display stack slot if none yet
     if(G_ux.stack_count == 0) {
         ux_stack_push();
     }
-    ux_flow_init(0, ux_idle_flow, NULL);
+
+    init_screen_stack();
+#   ifdef BAKING_APP
+        calculate_baking_idle_screens_data();
+#   else
+        push_ui_callback("Tezos Wallet", copy_string, VERSION);
+#   endif
+
+    ux_idle_screen(NULL, NULL);
 }
 
-__attribute__((noreturn))
-void ui_prompt(const char *const *labels, ui_callback_t ok_c, ui_callback_t cxl_c) {
-    check_null(labels);
+void ux_prepare_display(ui_callback_t ok_c, ui_callback_t cxl_c) {
+    global.dynamic_display.screen_stack_size = global.dynamic_display.formatter_index;
+    global.dynamic_display.formatter_index = 0;
+    global.dynamic_display.current_state = STATIC_SCREEN;
 
-    size_t const screen_count = ({
-        size_t i = 0;
-        while (i < MAX_SCREEN_COUNT && labels[i] != NULL) { i++; }
-        i;
-    });
+    if (ok_c)
+        global.dynamic_display.ok_callback = ok_c;
+    if (cxl_c)
+        global.dynamic_display.cxl_callback = cxl_c;
+}
 
-    // We fill the destination buffers at the end instead of the beginning so we can
-    // use the same array for any number of screens.
-    size_t const offset = MAX_SCREEN_COUNT - screen_count;
-    for (size_t i = 0; labels[i] != NULL; i++) {
-        const char *const label = (const char *)PIC(labels[i]);
-        if (strlen(label) > sizeof(G.prompt.screen[i].prompt)) THROW(EXC_MEMORY_ERROR);
-        strcpy(G.prompt.screen[offset + i].prompt, label);
-        memset(G.prompt.screen[offset + i].value, 0, sizeof(G.prompt.screen[offset + 1].value));
-        G.prompt.callbacks[i](G.prompt.screen[offset + i].value, sizeof(G.prompt.screen[offset + i].value), G.prompt.callback_data[i]);
-    }
-
-    G.ok_callback = ok_c;
-    G.cxl_callback = cxl_c;
-    ux_flow_init(0, &ux_prompts_flow[offset], NULL);
+void ux_confirm_screen(ui_callback_t ok_c, ui_callback_t cxl_c) {
+    ux_prepare_display(ok_c, cxl_c);
+    ux_flow_init(0, ux_confirm_flow, NULL);
     THROW(ASYNC_EXCEPTION);
 }
 
-#endif // #ifdef TARGET_NANOX
+void ux_idle_screen(ui_callback_t ok_c, ui_callback_t cxl_c) {
+    ux_prepare_display(ok_c, cxl_c);
+    ux_flow_init(0, ux_idle_flow, NULL);
+}

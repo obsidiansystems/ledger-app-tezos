@@ -156,7 +156,7 @@ typedef struct {
 #define PKH_STRING_SIZE 40 // includes null byte // TODO: use sizeof for this.
 #define PROTOCOL_HASH_BASE58_STRING_SIZE sizeof("ProtoBetaBetaBetaBetaBetaBetaBetaBetaBet11111a5ug96")
 
-#define MAX_SCREEN_COUNT 7 // Current maximum usage
+#define MAX_SCREEN_STACK_SIZE 7 // Maximum number of screens in a flow.
 #define PROMPT_WIDTH 16
 #define VALUE_WIDTH PROTOCOL_HASH_BASE58_STRING_SIZE
 
@@ -273,15 +273,13 @@ struct parsed_operation_group {
     strcpy(buff, x); \
 })
 
-#undef MAX
-#define MAX(a, b) ({ \
+#define CUSTOM_MAX(a, b) ({ \
     __typeof__(a) ____a_ = (a); \
     __typeof__(b) ____b_ = (b); \
     ____a_ > ____b_ ? ____a_ : ____b_; \
 })
 
-#undef MIN
-#define MIN(a, b) ({ \
+#define CUSTOM_MIN(a, b) ({ \
     __typeof__(a) ____a_ = (a); \
     __typeof__(b) ____b_ = (b); \
     ____a_ < ____b_ ? ____a_ : ____b_; \

@@ -24,7 +24,7 @@ void write_high_water_mark(parsed_baking_data_t const *const in) {
     UPDATE_NVRAM(ram, {
         // If the chain matches the main chain *or* the main chain is not set, then use 'main' HWM.
         high_watermark_t volatile *const dest = select_hwm_by_chain(in->chain_id, ram);
-        dest->highest_level = MAX(in->level, dest->highest_level);
+        dest->highest_level = CUSTOM_MAX(in->level, dest->highest_level);
         dest->had_endorsement = in->is_endorsement;
     });
 }

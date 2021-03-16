@@ -24,7 +24,7 @@ struct setup_wire {
 
 static bool ok(void) {
     UPDATE_NVRAM(ram, {
-        copy_bip32_path_with_curve(&ram->baking_key, &G.key);
+        copy_bip32_path_with_curve(&ram->baking_key, &global.path_with_curve);
         ram->main_chain_id = G.main_chain_id;
         ram->hwm.main.highest_level = G.hwm.main;
         ram->hwm.main.had_endorsement = false;
@@ -32,9 +32,11 @@ static bool ok(void) {
         ram->hwm.test.had_endorsement = false;
     });
 
-    cx_ecfp_public_key_t const *const pubkey = generate_public_key_return_global(
-        G.key.derivation_type, &G.key.bip32_path);
-    delayed_send(provide_pubkey(G_io_apdu_buffer, pubkey));
+    cx_ecfp_public_key_t pubkey = {0};
+    generate_public_key(
+        &pubkey,
+        global.path_with_curve.derivation_type, &global.path_with_curve.bip32_path);
+    delayed_send(provide_pubkey(G_io_apdu_buffer, &pubkey));
     return true;
 }
 
@@ -42,28 +44,14 @@ __attribute__((noreturn)) static void prompt_setup(
     ui_callback_t const ok_cb,
     ui_callback_t const cxl_cb)
 {
-    static const size_t TYPE_INDEX = 0;
-    static const size_t ADDRESS_INDEX = 1;
-    static const size_t CHAIN_INDEX = 2;
-    static const size_t MAIN_HWM_INDEX = 3;
-    static const size_t TEST_HWM_INDEX = 4;
+    init_screen_stack();
+    push_ui_callback("Setup", copy_string, "Baking?");
+    push_ui_callback("Address", bip32_path_with_curve_to_pkh_string, &global.path_with_curve);
+    push_ui_callback("Chain", chain_id_to_string_with_aliases, &G.main_chain_id);
+    push_ui_callback("Main Chain HWM", number_to_string_indirect32, &G.hwm.main);
+    push_ui_callback("Test Chain HWM", number_to_string_indirect32, &G.hwm.test);
 
-    static const char *const prompts[] = {
-        PROMPT("Setup"),
-        PROMPT("Address"),
-        PROMPT("Chain"),
-        PROMPT("Main Chain HWM"),
-        PROMPT("Test Chain HWM"),
-        NULL,
-    };
-
-    REGISTER_STATIC_UI_VALUE(TYPE_INDEX, "Baking?");
-    register_ui_callback(ADDRESS_INDEX, bip32_path_with_curve_to_pkh_string, &G.key);
-    register_ui_callback(CHAIN_INDEX, chain_id_to_string_with_aliases, &G.main_chain_id);
-    register_ui_callback(MAIN_HWM_INDEX, number_to_string_indirect32, &G.hwm.main);
-    register_ui_callback(TEST_HWM_INDEX, number_to_string_indirect32, &G.hwm.test);
-
-    ui_prompt(prompts, ok_cb, cxl_cb);
+    ux_confirm_screen(ok_cb, cxl_cb);
 }
 
 __attribute__((noreturn)) size_t handle_apdu_setup(__attribute__((unused)) uint8_t instruction) {
@@ -72,7 +60,7 @@ __attribute__((noreturn)) size_t handle_apdu_setup(__attribute__((unused)) uint8
     uint32_t const buff_size = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]);
     if (buff_size < sizeof(struct setup_wire)) THROW(EXC_WRONG_LENGTH_FOR_INS);
 
-    G.key.derivation_type = parse_derivation_type(READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
+    global.path_with_curve.derivation_type = parse_derivation_type(READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
 
     {
         struct setup_wire const *const buff_as_setup = (struct setup_wire const *)&G_io_apdu_buffer[OFFSET_CDATA];
@@ -81,7 +69,7 @@ __attribute__((noreturn)) size_t handle_apdu_setup(__attribute__((unused)) uint8
         G.main_chain_id.v = CONSUME_UNALIGNED_BIG_ENDIAN(consumed, uint32_t, (uint8_t const *)&buff_as_setup->main_chain_id);
         G.hwm.main = CONSUME_UNALIGNED_BIG_ENDIAN(consumed, uint32_t, (uint8_t const *)&buff_as_setup->hwm.main);
         G.hwm.test = CONSUME_UNALIGNED_BIG_ENDIAN(consumed, uint32_t, (uint8_t const *)&buff_as_setup->hwm.test);
-        consumed += read_bip32_path(&G.key.bip32_path, (uint8_t const *)&buff_as_setup->bip32_path, buff_size - consumed);
+        consumed += read_bip32_path(&global.path_with_curve.bip32_path, (uint8_t const *)&buff_as_setup->bip32_path, buff_size - consumed);
 
         if (consumed != buff_size) THROW(EXC_WRONG_LENGTH);
     }

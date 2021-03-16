@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "ux.h"
 
 #include "globals.h"
 #include "os.h"
@@ -13,10 +14,24 @@ void ui_init(void) {
     UX_INIT();
 }
 
-void register_ui_callback(uint32_t which, string_generation_callback cb, const void *data) {
-    if (which >= MAX_SCREEN_COUNT) THROW(EXC_MEMORY_ERROR);
-    global.ui.prompt.callbacks[which] = cb;
-    global.ui.prompt.callback_data[which] = data;
+// User MUST call `init_screen_stack()` before the first call to this function.
+void push_ui_callback(char *title, string_generation_callback cb, void *data) {
+    if (global.dynamic_display.formatter_index + 1 >= MAX_SCREEN_STACK_SIZE) {
+        THROW(0x6124);
+    }
+    struct screen_data *fmt = &global.dynamic_display.screen_stack[global.dynamic_display.formatter_index];
+
+    fmt->title = title;
+    fmt->callback_fn = cb;
+    fmt->data = data;
+    global.dynamic_display.formatter_index++;
+}
+
+void init_screen_stack() {
+    explicit_bzero(&global.dynamic_display.screen_stack, sizeof(global.dynamic_display.screen_stack));
+    global.dynamic_display.formatter_index = 0;
+    global.dynamic_display.screen_stack_size = 0;
+    global.dynamic_display.current_state = STATIC_SCREEN;
 }
 
 void require_pin(void) {
@@ -28,11 +43,9 @@ void require_pin(void) {
 
 __attribute__((noreturn))
 bool exit_app(void) {
-#   ifdef BAKING_APP
-#       ifndef TARGET_NANOX
-            require_pin();
-#       endif
-#   endif
+    #ifdef BAKING_APP
+      require_pin();
+    #endif
     BEGIN_TRY_L(exit) {
         TRY_L(exit) {
             os_sched_exit(-1);
