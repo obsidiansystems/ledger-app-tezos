@@ -115,17 +115,21 @@ int generate_key_pair(key_pair_t *key_pair,
     return (0);
 }
 
+#include "debug_write.h"
 int generate_public_key(cx_ecfp_public_key_t *public_key,
                     derivation_type_t const derivation_type,
                     bip32_path_t const *const bip32_path
                     ) {
     cx_ecfp_private_key_t private_key = {0};
     int error;
+    debug_write("in generate key\n");
 
     error = crypto_derive_private_key(&private_key, derivation_type, bip32_path);
     if (error) {
+        debug_write("first\n");
         return (error);
     }
+    debug_write("second\n");
     error = crypto_init_public_key(derivation_type, &private_key, public_key);
     return (error);   
 }
