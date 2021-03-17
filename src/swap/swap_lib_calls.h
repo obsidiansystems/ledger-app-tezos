@@ -4,12 +4,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "types.h"
+// #include "debug_write.h"
 
 #define SIGN_TRANSACTION        2 
 #define CHECK_ADDRESS           3
 #define GET_PRINTABLE_AMOUNT    4
-
-
 
 // structure that should be sent to specific coin application to get address
 typedef struct check_address_parameters_s {
@@ -59,6 +58,8 @@ struct libargs_s {
         get_printable_amount_parameters_t *get_printable_amount;
     };
 };
+
+int handle_check_address(const check_address_parameters_t* params);
 
 void app_main(void);
 void library_main(struct libargs_s *args);
