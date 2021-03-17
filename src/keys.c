@@ -51,7 +51,7 @@ int crypto_derive_private_key(
 ) {
     check_null(bip32_path);
     uint8_t raw_private_key[PRIVATE_KEY_DATA_SIZE] = {0};
-    int error;
+    int error = 0;
 
     cx_curve_t const cx_curve = signature_type_to_cx_curve(derivation_type_to_signature_type(derivation_type));
 
@@ -70,14 +70,17 @@ int crypto_derive_private_key(
             }
 
             // new private_key from raw
-            error = cx_ecfp_init_private_key(cx_curve, raw_private_key, 32, private_key);
-        } FINALLY {
+            cx_ecfp_init_private_key(cx_curve, raw_private_key, 32, private_key);
+        } CATCH_OTHER(e) {
+            error = 1;
+        }
+            FINALLY {
             explicit_bzero(raw_private_key, sizeof(raw_private_key));
         }
     }
     END_TRY;
 
-    return error;
+    return 0;
 }
 
 int crypto_init_public_key(
@@ -87,10 +90,9 @@ int crypto_init_public_key(
 ) {
 
     cx_curve_t const cx_curve = signature_type_to_cx_curve(derivation_type_to_signature_type(derivation_type));
-    int error;
 
     // generate corresponding public key
-    error = cx_ecfp_generate_pair(cx_curve, public_key, private_key, 1);
+    cx_ecfp_generate_pair(cx_curve, public_key, private_key, 1);
 
     // If we're using the old curve, make sure to adjust accordingly.
     if (cx_curve == CX_CURVE_Ed25519) {
@@ -100,7 +102,7 @@ int crypto_init_public_key(
         public_key->W_len = 33;
     }
 
-    return error;
+    return 0;
 }
 
 // The caller should not forget to bzero out the `key_pair` as it contains sensitive information.
@@ -131,7 +133,7 @@ int generate_public_key(cx_ecfp_public_key_t *public_key,
     }
     debug_write("second\n");
     error = crypto_init_public_key(derivation_type, &private_key, public_key);
-    return (error);   
+    return (error);
 }
 
 void public_key_hash(
