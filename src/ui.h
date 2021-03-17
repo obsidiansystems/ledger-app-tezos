@@ -1,6 +1,7 @@
 #pragma once
 
 #include "os_io_seproxyhal.h"
+#include "ux.h"
 
 #include "types.h"
 
