@@ -345,7 +345,11 @@ static size_t wallet_sign_complete(uint8_t instruction, uint8_t magic_byte) {
     } else {
         ui_callback_t const ok_c = instruction == INS_SIGN_WITH_HASH ? sign_with_hash_ok : sign_without_hash_ok;
         if (called_from_swap) {
-            ok_c();
+            if (is_safe_to_swap() == true) {
+                ok_c();
+            } else {
+                sign_reject();
+            }
         } else {
 
         switch (G.magic_byte) {
