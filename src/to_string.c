@@ -270,7 +270,7 @@ int microtez_to_string_indirect_no_throw(char *const dest, size_t const buff_siz
     if (!dest || !number) {
         return (0);
     }
-    if (buff_size < MAX_INT_DIGITS + 1) {// + terminating null + decimal point
+    if (buff_size < MAX_INT_DIGITS + 1) { // + terminating null + decimal point
         return (0);
     }
     // Can safely call `microtez_to_string` because we know dest is not NULL.

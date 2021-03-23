@@ -1,1 +1,0 @@
-void debug_write(char *c);

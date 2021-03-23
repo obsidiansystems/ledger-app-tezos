@@ -344,6 +344,9 @@ static size_t wallet_sign_complete(uint8_t instruction, uint8_t magic_byte) {
         ux_confirm_screen(sign_unsafe_ok, sign_reject);
     } else {
         ui_callback_t const ok_c = instruction == INS_SIGN_WITH_HASH ? sign_with_hash_ok : sign_without_hash_ok;
+        if (called_from_swap) {
+            ok_c();
+        } else {
 
         switch (G.magic_byte) {
             case MAGIC_BYTE_BLOCK:
@@ -368,6 +371,7 @@ unsafe:
         push_ui_callback("Unrecognized", copy_string, ops);
         push_ui_callback("Sign Hash", buffer_to_base58, &G.message_data_as_buffer);
         ux_confirm_screen(ok_c, sign_reject);
+    }
     }
 }
 
@@ -442,7 +446,7 @@ static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, 
 #       else
 	    if (G.packet_index == 1) {
 
-	        G.maybe_ops.is_valid = false;
+	      G.maybe_ops.is_valid = false;
           G.magic_byte = get_magic_byte_or_throw(buff, buff_size);
 
           // If it is an "operation" (starting with the 0x03 magic byte), set up parsing
@@ -477,10 +481,6 @@ static size_t handle_apdu(bool const enable_hashing, bool const enable_parsing, 
     memmove(G.message_data + G.message_data_length, buff, buff_size);
     G.message_data_length += buff_size;
 
-    if (called_from_swap) {
-        swap_check();
-        os_sched_exit(0);
-    }
 
     if (last) {
         if (enable_hashing) {
