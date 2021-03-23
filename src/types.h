@@ -289,7 +289,6 @@ typedef struct {
     uint64_t amount;
     uint64_t fees;
     char destination[57];
-    char memo[20];
 } swap_values_t;
 
 extern bool called_from_swap;
