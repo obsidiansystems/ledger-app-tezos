@@ -36,6 +36,7 @@ __attribute__((section(".boot"))) int main(arg0)
         uint8_t tag;
         init_globals();
         global.stack_root = &tag;
+        called_from_swap = false;
 
         for (;;)
         {
