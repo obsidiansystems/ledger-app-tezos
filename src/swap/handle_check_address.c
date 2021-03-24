@@ -13,7 +13,7 @@ int handle_check_address(const check_address_parameters_t* params) {
         return 0;
     }
 
-    bip32_path_t bip32_path = {0};// = (bip32_path_t *)params->address_parameters; // parse bip32 necessary ?
+    bip32_path_t bip32_path = {0};
     size_t const s = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &params->address_parameters_length);
 
     read_bip32_path(&bip32_path, params->address_parameters, s);

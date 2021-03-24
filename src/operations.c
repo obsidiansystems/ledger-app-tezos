@@ -864,7 +864,6 @@ bool parse_operations_packet(
                 PRINTF("Byte: %x - Next op_step state: %d\n", byte, G.parse_state.op_step);
                 ix++;
             }
-            // PRINTF("data: 0x%.*H\n", length, data);
         }
         CATCH(EXC_PARSE_ERROR) {
             return false;
