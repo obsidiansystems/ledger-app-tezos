@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "*.h": "c",
+        "vector": "c",
+        "memory": "c",
+        "thread": "c",
+        "string": "c"
+    },
+    "editor.formatOnSave": true
+}
