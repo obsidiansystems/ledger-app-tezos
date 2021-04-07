@@ -74,7 +74,6 @@ size_t handle_apdu_main_hwm(__attribute__((unused)) uint8_t instruction) {
     return finalize_successful_send(tx);
 }
 
-
 size_t handle_apdu_query_auth_key(__attribute__((unused)) uint8_t instruction) {
     uint8_t const length = N_data.baking_key.bip32_path.length;
 
@@ -102,13 +101,13 @@ size_t handle_apdu_query_auth_key_with_curve(__attribute__((unused)) uint8_t ins
 }
 
 size_t handle_apdu_deauthorize(__attribute__((unused)) uint8_t instruction) {
-    if (READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_P1]) != 0) THROW(EXC_WRONG_PARAM);
-    if (READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]) != 0) THROW(EXC_PARSE_ERROR);
-    UPDATE_NVRAM(ram, {
-        memset(&ram->baking_key, 0, sizeof(ram->baking_key));
-    });
+    if (READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_P1]) != 0)
+        THROW(EXC_WRONG_PARAM);
+    if (READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]) != 0)
+        THROW(EXC_PARSE_ERROR);
+    UPDATE_NVRAM(ram, { memset(&ram->baking_key, 0, sizeof(ram->baking_key)); });
 
     return finalize_successful_send(0);
 }
 
-#endif // #ifdef BAKING_APP
+#endif  // #ifdef BAKING_APP
