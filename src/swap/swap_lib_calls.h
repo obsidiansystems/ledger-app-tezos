@@ -5,9 +5,9 @@
 #include <stdint.h>
 #include "types.h"
 
-#define SIGN_TRANSACTION        2 
-#define CHECK_ADDRESS           3
-#define GET_PRINTABLE_AMOUNT    4
+#define SIGN_TRANSACTION     2
+#define CHECK_ADDRESS        3
+#define GET_PRINTABLE_AMOUNT 4
 
 // structure that should be sent to specific coin application to get address
 typedef struct check_address_parameters_s {
@@ -58,12 +58,12 @@ struct libargs_s {
     };
 };
 
-int handle_check_address(const check_address_parameters_t* params);
-int handle_get_printable_amount(get_printable_amount_parameters_t* params);
-bool copy_transaction_parameters(const create_transaction_parameters_t* params);
+int handle_check_address(const check_address_parameters_t *params);
+int handle_get_printable_amount(get_printable_amount_parameters_t *params);
+bool copy_transaction_parameters(const create_transaction_parameters_t *params);
 void handle_swap_sign_transaction(void);
 bool is_safe_to_swap();
-bool swap_str_to_u64(const uint8_t* src, size_t length, uint64_t* result);
+bool swap_str_to_u64(const uint8_t *src, size_t length, uint64_t *result);
 
 void app_main(void);
 void library_main(struct libargs_s *args);

@@ -12,31 +12,25 @@ bool is_safe_to_swap() {
     if (op->has_reveal == false) {
         PRINTF("Should have reveal set to true\n");
         return false;
-    }
-    else if (op->signing.originated != 0) {
+    } else if (op->signing.originated != 0) {
         PRINTF("Should not be originated\n");
         return false;
-    }
-    else if (op->operation.tag != OPERATION_TAG_BABYLON_TRANSACTION) {
+    } else if (op->operation.tag != OPERATION_TAG_BABYLON_TRANSACTION) {
         PRINTF("Should be of type babylon transaction\n");
         return false;
-    }
-    else if (op->signing.signature_type != SIGNATURE_TYPE_ED25519)  {
+    } else if (op->signing.signature_type != SIGNATURE_TYPE_ED25519) {
         PRINTF("Signature type is not ED25519\n");
         return false;
-    }
-    else if (op->total_storage_limit != 257) {
+    } else if (op->total_storage_limit != 257) {
         PRINTF("Storage Limit incorrect\n");
         return false;
-    }
-    else if (op->total_fee != swap_values.fees) {
+    } else if (op->total_fee != swap_values.fees) {
         PRINTF("Fees differ\n");
         return false;
-    }
-    else if (op->operation.amount != swap_values.amount) {
+    } else if (op->operation.amount != swap_values.amount) {
         PRINTF("Amounts differ\n");
         return false;
-    } else if (strncmp((const char *)&tmp_dest, swap_values.destination, sizeof(tmp_dest))) {
+    } else if (strncmp((const char *) &tmp_dest, swap_values.destination, sizeof(tmp_dest))) {
         PRINTF("Addresses differ\n");
         return false;
     }
