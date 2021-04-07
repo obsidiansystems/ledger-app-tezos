@@ -39,31 +39,18 @@ __attribute__((section(".boot"))) int main(arg0) {
                     io_seproxyhal_init();
 
 #ifdef TARGET_NANOX
-<<<<<<< HEAD
                     // grab the current plane mode setting
                     // requires "--appFlag 0x240" to be set in makefile
                     G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
 #endif  // TARGET_NANOX
-=======
-                    // grab the current plane mode setting
-                    // requires "--appFlag 0x240" to be set in makefile
-                    G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
-#endif  // TARGET_NANOX
->>>>>>> master
 
                     USB_power(0);
                     USB_power(1);
 
 #ifdef HAVE_BLE
-<<<<<<< HEAD
                     BLE_power(0, NULL);
                     BLE_power(1, "Nano X");
 #endif  // HAVE_BLE
-=======
-                    BLE_power(0, NULL);
-                    BLE_power(1, "Nano X");
-#endif  // HAVE_BLE
->>>>>>> master
 
                     ui_initial_screen();
 
