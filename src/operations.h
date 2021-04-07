@@ -60,92 +60,86 @@ typedef struct {
 } __attribute__((packed)) hash_t;
 
 struct int_subparser_state {
-	uint32_t lineno; // Has to be in _all_ members of the subparser union.
-	uint64_t value; // Still need to fix this.
-	uint8_t shift;
+    uint32_t lineno;  // Has to be in _all_ members of the subparser union.
+    uint64_t value;   // Still need to fix this.
+    uint8_t shift;
 };
 
 struct nexttype_subparser_state {
-  uint32_t lineno;
-  union {
-    raw_tezos_header_signature_type_t sigtype;
+    uint32_t lineno;
+    union {
+        raw_tezos_header_signature_type_t sigtype;
 
-    struct operation_group_header ogh;
+        struct operation_group_header ogh;
 
-    struct implicit_contract ic;
-    struct contract c;
+        struct implicit_contract ic;
+        struct contract c;
 
-    struct delegation_contents dc;
-    struct proposal_contents pc;
-    struct ballot_contents bc;
+        struct delegation_contents dc;
+        struct proposal_contents pc;
+        struct ballot_contents bc;
 
-    hash_t ht;
+        hash_t ht;
 
-    uint16_t i16;
-    uint32_t i32;
-    uint64_t i64;
+        uint16_t i16;
+        uint32_t i32;
+        uint64_t i64;
 
-    uint8_t raw[1];
-    uint8_t key[64]; // FIXME: check key length for non-tz1.
-    uint8_t text_pkh[HASH_SIZE_B58];
-  } body;
-  uint32_t fill_idx;
+        uint8_t raw[1];
+        uint8_t key[64];  // FIXME: check key length for non-tz1.
+        uint8_t text_pkh[HASH_SIZE_B58];
+    } body;
+    uint32_t fill_idx;
 };
 
 struct michelson_address_subparser_state {
-  uint32_t lineno;
-  uint8_t address_step;
-  uint8_t micheline_type;
-  uint32_t addr_length;
-  hash_t key_hash;
-  parsed_contract_t result; // Not neccessarily optimal, but easy.
-  struct nexttype_subparser_state subsub_state;
-  raw_tezos_header_signature_type_t signature_type;
-
+    uint32_t lineno;
+    uint8_t address_step;
+    uint8_t micheline_type;
+    uint32_t addr_length;
+    hash_t key_hash;
+    parsed_contract_t result;  // Not neccessarily optimal, but easy.
+    struct nexttype_subparser_state subsub_state;
+    raw_tezos_header_signature_type_t signature_type;
 };
 
 union subparser_state {
-	struct int_subparser_state integer;
-	struct nexttype_subparser_state nexttype;
-        struct michelson_address_subparser_state michelson_address;
+    struct int_subparser_state integer;
+    struct nexttype_subparser_state nexttype;
+    struct michelson_address_subparser_state michelson_address;
 };
 
 struct parse_state {
-	int16_t op_step;
-	union subparser_state subparser_state;
-	enum operation_tag tag;
-        uint32_t argument_length;
-        uint16_t michelson_op;
-        uint16_t contract_code;
+    int16_t op_step;
+    union subparser_state subparser_state;
+    enum operation_tag tag;
+    uint32_t argument_length;
+    uint16_t michelson_op;
+    uint16_t contract_code;
 
-        // Places to stash textual base58-encoded PKHes.
-        char base58_pkh1[HASH_SIZE_B58];
-        char base58_pkh2[HASH_SIZE_B58];
+    // Places to stash textual base58-encoded PKHes.
+    char base58_pkh1[HASH_SIZE_B58];
+    char base58_pkh2[HASH_SIZE_B58];
 };
 
 // Allows arbitrarily many "REVEAL" operations but only one operation of any other type,
 // which is the one it puts into the group.
-bool parse_operations(
-    struct parsed_operation_group *const out,
-    uint8_t const *const data,
-    size_t length,
-    derivation_type_t curve,
-    bip32_path_t const *const bip32_path,
-    is_operation_allowed_t is_operation_allowed
-);
+bool parse_operations(struct parsed_operation_group *const out,
+                      uint8_t const *const data,
+                      size_t length,
+                      derivation_type_t curve,
+                      bip32_path_t const *const bip32_path,
+                      is_operation_allowed_t is_operation_allowed);
 
-void parse_operations_init(
-    struct parsed_operation_group *const out,
-    derivation_type_t derivation_type,
-    bip32_path_t const *const bip32_path,
-    struct parse_state *const state
-    );
+void parse_operations_init(struct parsed_operation_group *const out,
+                           derivation_type_t derivation_type,
+                           bip32_path_t const *const bip32_path,
+                           struct parse_state *const state);
 
-bool parse_operations_final(struct parse_state *const state, struct parsed_operation_group *const out);
+bool parse_operations_final(struct parse_state *const state,
+                            struct parsed_operation_group *const out);
 
-bool parse_operations_packet(
-    struct parsed_operation_group *const out,
-    uint8_t const *const data,
-    size_t length,
-    is_operation_allowed_t is_operation_allowed
-);
+bool parse_operations_packet(struct parsed_operation_group *const out,
+                             uint8_t const *const data,
+                             size_t length,
+                             is_operation_allowed_t is_operation_allowed);

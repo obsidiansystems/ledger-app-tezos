@@ -15,4 +15,4 @@ typedef struct version {
     uint8_t patch;
 } version_t;
 
-const version_t version = { CLASS, MAJOR, MINOR, PATCH };
+const version_t version = {CLASS, MAJOR, MINOR, PATCH};
