@@ -6,8 +6,7 @@
 
 #include "globals.h"
 
-__attribute__((noreturn))
-void app_main(void);
+__attribute__((noreturn)) void app_main(void);
 
 __attribute__((section(".boot"))) int main(void) {
     // exit critical section
@@ -31,7 +30,7 @@ __attribute__((section(".boot"))) int main(void) {
                 // grab the current plane mode setting
                 // requires "--appFlag 0x240" to be set in makefile
                 G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
-#endif // TARGET_NANOX
+#endif  // TARGET_NANOX
 
                 USB_power(0);
                 USB_power(1);
@@ -39,7 +38,7 @@ __attribute__((section(".boot"))) int main(void) {
 #ifdef HAVE_BLE
                 BLE_power(0, NULL);
                 BLE_power(1, "Nano X");
-#endif // HAVE_BLE
+#endif  // HAVE_BLE
 
                 ui_initial_screen();
 
@@ -60,7 +59,7 @@ __attribute__((section(".boot"))) int main(void) {
 
     // Only reached in case of uncaught exception
 #ifdef BAKING_APP
-    io_seproxyhal_power_off(); // Should not be allowed dashboard access
+    io_seproxyhal_power_off();  // Should not be allowed dashboard access
 #else
     exit_app();
 #endif

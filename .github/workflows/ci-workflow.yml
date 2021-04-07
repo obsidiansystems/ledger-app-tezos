@@ -1,0 +1,39 @@
+name: Compilation & tests
+
+on: [push, pull_request]
+
+jobs:
+  job_build_debug:
+    name: Build debug
+    runs-on: ubuntu-latest
+
+    container:
+      image: docker://ledgerhq/ledger-app-builder:1.6.1-2
+
+    steps:
+      - name: Clone
+        uses: actions/checkout@v2
+
+      - name: Build Tezos wallet
+        run: |
+          make DEBUG=1
+
+      - name: Upload app binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: tezos-wallet-app-debug
+          path: bin
+
+      - name: Clone
+        uses: actions/checkout@v2
+
+      - name: Build Tezos baking
+        run: |
+          make clean
+          make DEBUG=1 APP=tezos_baking
+
+      - name: Upload app binary
+        uses: actions/upload-artifact@v2
+        with:
+          name: tezos-baking-app-debug
+          path: bin
