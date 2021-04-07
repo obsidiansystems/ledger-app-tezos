@@ -24,7 +24,7 @@ jobs:
           name: tezos-wallet-app-debug
           path: bin
 
-j     - name: Clone
+      - name: Clone
         uses: actions/checkout@v2
 
       - name: Build Tezos baking
