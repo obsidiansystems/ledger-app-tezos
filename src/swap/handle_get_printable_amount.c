@@ -14,11 +14,13 @@ int handle_get_printable_amount(get_printable_amount_parameters_t* params) {
         return 0;
     }
 
-    if (microtez_to_string_indirect_no_throw(&params->printable_amount,
+    if (microtez_to_string_indirect_no_throw((char*) &params->printable_amount,
                                              sizeof(params->printable_amount),
                                              &amount) == 0) {
         PRINTF("Error converting number\n");
         return 0;
     }
+
+    strcat((char*) &params->printable_amount, " XTZ");
     return 1;
 }
