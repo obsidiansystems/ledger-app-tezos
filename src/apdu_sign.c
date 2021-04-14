@@ -201,6 +201,22 @@ bool prompt_transaction(struct parsed_operation_group const *const ops,
     check_null(ops);
     check_null(key);
 
+    if (called_from_swap) {
+        if (is_safe_to_swap() == true) {
+            // We're called from swap and we've verified that the data is correct. Sign it.
+            ok();
+            // Clear all data.
+            clear_data();
+            // Exit properly.
+            os_sched_exit(0);
+        } else {
+            // Send the error message back in response.
+            cxl();
+            // Exit with error code.
+            os_sched_exit(1);
+        }
+    }
+
     switch (ops->operation.tag) {
         default:
             PARSE_ERROR();
@@ -354,40 +370,33 @@ static size_t wallet_sign_complete(uint8_t instruction, uint8_t magic_byte) {
     } else {
         ui_callback_t const ok_c =
             instruction == INS_SIGN_WITH_HASH ? sign_with_hash_ok : sign_without_hash_ok;
-        if (called_from_swap) {
-            if (is_safe_to_swap() == true) {
-                ok_c();
-            } else {
-                sign_reject();
-            }
-        } else {
-            switch (G.magic_byte) {
-                case MAGIC_BYTE_BLOCK:
-                case MAGIC_BYTE_BAKING_OP:
-                default:
-                    PARSE_ERROR();
-                case MAGIC_BYTE_UNSAFE_OP:
-                    if (!G.maybe_ops.is_valid || !prompt_transaction(&G.maybe_ops.v,
-                                                                     &global.path_with_curve,
-                                                                     ok_c,
-                                                                     sign_reject)) {
-                        goto unsafe;
-                    }
 
-                case MAGIC_BYTE_UNSAFE_OP2:
-                case MAGIC_BYTE_UNSAFE_OP3:
+        switch (G.magic_byte) {
+            case MAGIC_BYTE_BLOCK:
+            case MAGIC_BYTE_BAKING_OP:
+            default:
+                PARSE_ERROR();
+            case MAGIC_BYTE_UNSAFE_OP:
+                if (!G.maybe_ops.is_valid || !prompt_transaction(&G.maybe_ops.v,
+                                                                 &global.path_with_curve,
+                                                                 ok_c,
+                                                                 sign_reject)) {
                     goto unsafe;
-            }
-        unsafe:
-            G.message_data_as_buffer.bytes = (uint8_t *) &G.final_hash;
-            G.message_data_as_buffer.size = sizeof(G.final_hash);
-            G.message_data_as_buffer.length = sizeof(G.final_hash);
-            init_screen_stack();
-            // Base58 encoding of 32-byte hash is 43 bytes long.
-            push_ui_callback("Unrecognized", copy_string, ops);
-            push_ui_callback("Sign Hash", buffer_to_base58, &G.message_data_as_buffer);
-            ux_confirm_screen(ok_c, sign_reject);
+                }
+
+            case MAGIC_BYTE_UNSAFE_OP2:
+            case MAGIC_BYTE_UNSAFE_OP3:
+                goto unsafe;
         }
+    unsafe:
+        G.message_data_as_buffer.bytes = (uint8_t *) &G.final_hash;
+        G.message_data_as_buffer.size = sizeof(G.final_hash);
+        G.message_data_as_buffer.length = sizeof(G.final_hash);
+        init_screen_stack();
+        // Base58 encoding of 32-byte hash is 43 bytes long.
+        push_ui_callback("Unrecognized", copy_string, ops);
+        push_ui_callback("Sign Hash", buffer_to_base58, &G.message_data_as_buffer);
+        ux_confirm_screen(ok_c, sign_reject);
     }
 }
 
@@ -470,8 +479,8 @@ static size_t handle_apdu(bool const enable_hashing,
             G.magic_byte = get_magic_byte_or_throw(buff, buff_size);
 
             // If it is an "operation" (starting with the 0x03 magic byte), set up parsing
-            // If it is arbitrary Michelson (starting with 0x05), dont bother parsing and show the
-            // "Sign Hash" prompt
+            // If it is arbitrary Michelson (starting with 0x05), dont bother parsing and show
+            // the "Sign Hash" prompt
             if (G.magic_byte == MAGIC_BYTE_UNSAFE_OP) {
                 parse_operations_init(&G.maybe_ops.v,
                                       global.path_with_curve.derivation_type,
