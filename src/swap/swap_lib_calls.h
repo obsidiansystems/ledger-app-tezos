@@ -9,6 +9,8 @@
 #define CHECK_ADDRESS        3
 #define GET_PRINTABLE_AMOUNT 4
 
+#define TICKER_WITH_SPACE " XTZ"
+
 // structure that should be sent to specific coin application to get address
 typedef struct check_address_parameters_s {
     // IN

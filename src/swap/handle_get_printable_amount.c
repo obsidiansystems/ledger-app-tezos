@@ -21,6 +21,16 @@ int handle_get_printable_amount(get_printable_amount_parameters_t* params) {
         return 0;
     }
 
-    strcat((char*) &params->printable_amount, " XTZ");
+    size_t amount_len = strlen((char*) &params->printable_amount);
+    size_t remaining_len = sizeof(params->printable_amount) - amount_len;
+
+    // Check that we have enough space left to append ticker.
+    if (remaining_len < sizeof(TICKER_WITH_SPACE)) {
+        return 0;
+    }
+
+    // Append the ticker at the end of the amount.
+    strcat((char*) &params->printable_amount, TICKER_WITH_SPACE);
+
     return 1;
 }
