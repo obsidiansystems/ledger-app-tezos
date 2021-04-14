@@ -12,7 +12,13 @@ APPNAME = "Tezos Baking"
 else ifeq ($(APP),tezos_wallet)
 APPNAME = "Tezos Wallet"
 endif
-APP_LOAD_PARAMS= --appFlags 0 --curve ed25519 --curve secp256k1 --curve prime256r1 --path "44'/1729'" $(COMMON_LOAD_PARAMS)
+
+ifeq ($(TARGET_NAME), TARGET_NANOX)
+APP_LOAD_FLAGS=--appFlags 0xa40  # APPLICATION_FLAG_LIBRARY + APPLICATION_FLAG_BOLOS_SETTINGS + BLE SUPPORT
+else
+APP_LOAD_FLAGS=--appFlags 0x800  # APPLICATION_FLAG_LIBRARY
+endif
+APP_LOAD_PARAMS=$(APP_LOAD_FLAGS) --curve ed25519 --curve secp256k1 --curve prime256r1 --path "44'/1729'" $(COMMON_LOAD_PARAMS)
 
 GIT_DESCRIBE ?= $(shell git describe --tags --abbrev=8 --always --long --dirty 2>/dev/null)
 
@@ -68,7 +74,6 @@ DEFINES   += COMMIT=\"$(COMMIT)\" APPVERSION_N=$(APPVERSION_N) APPVERSION_P=$(AP
 # DEFINES   += _Static_assert\(...\)=
 
 ifeq ($(TARGET_NAME),TARGET_NANOX)
-APP_LOAD_PARAMS += --appFlags 0x240 # with BLE support
 DEFINES   += IO_SEPROXYHAL_BUFFER_SIZE_B=300
 DEFINES   += HAVE_BLE BLE_COMMAND_TIMEOUT_MS=2000
 DEFINES   += HAVE_BLE_APDU # basic ledger apdu transport over BLE
