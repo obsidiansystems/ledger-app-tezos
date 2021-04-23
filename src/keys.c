@@ -18,83 +18,168 @@
 #include "keys.h"
 
 #include "apdu.h"
-#include "os.h"
-#include "blake2.h"
+#include "globals.h"
+#include "memory.h"
 #include "protocol.h"
+#include "types.h"
 
 #include <stdbool.h>
 #include <string.h>
 
-// The following need to be persisted for baking app
-uint8_t bip32_path_length;
-uint32_t bip32_path[MAX_BIP32_PATH];
+size_t read_bip32_path(bip32_path_t *const out, uint8_t const *const in, size_t const in_size) {
+    struct bip32_path_wire const *const buf_as_bip32 = (struct bip32_path_wire const *)in;
 
-uint32_t read_bip32_path(uint32_t bytes, uint32_t *bip32_path, const uint8_t *buf) {
-    uint32_t path_length = *buf;
-    if (bytes < path_length * sizeof(uint32_t) + 1) THROW(EXC_WRONG_LENGTH_FOR_INS);
+    if (in_size < sizeof(buf_as_bip32->length)) THROW(EXC_WRONG_LENGTH_FOR_INS);
 
-    buf++;
+    size_t ix = 0;
+    out->length = CONSUME_UNALIGNED_BIG_ENDIAN(ix, uint8_t, &buf_as_bip32->length);
 
-    if (path_length == 0 || path_length > MAX_BIP32_PATH) {
-        screen_printf("Invalid path\n");
-        THROW(EXC_WRONG_VALUES);
+    if (in_size - ix < out->length * sizeof(*buf_as_bip32->components)) THROW(EXC_WRONG_LENGTH_FOR_INS);
+    if (out->length == 0 || out->length > NUM_ELEMENTS(out->components)) THROW(EXC_WRONG_VALUES);
+
+    for (size_t i = 0; i < out->length; i++) {
+        out->components[i] = CONSUME_UNALIGNED_BIG_ENDIAN(ix, uint32_t, &buf_as_bip32->components[i]);
     }
 
-    for (size_t i = 0; i < path_length; i++) {
-        bip32_path[i] = READ_UNALIGNED_BIG_ENDIAN(uint32_t, (uint32_t*)buf);
-        buf += 4;
-    }
-
-    return path_length;
+    return ix;
 }
 
-struct key_pair *generate_key_pair(cx_curve_t curve, uint32_t path_length, uint32_t *bip32_path) {
-    static uint8_t privateKeyData[32];
-    static struct key_pair res;
-#if CX_APILEVEL > 8
-    if (curve == CX_CURVE_Ed25519) {
-        os_perso_derive_node_bip32_seed_key(HDW_ED25519_SLIP10, curve, bip32_path, path_length,
-                                            privateKeyData, NULL, NULL, 0);
+key_pair_t *generate_key_pair_return_global(
+    derivation_type_t const derivation_type,
+    bip32_path_t const *const bip32_path
+) {
+    check_null(bip32_path);
+    struct priv_generate_key_pair *const priv = &global.apdu.priv.generate_key_pair;
+
+    cx_curve_t const cx_curve = signature_type_to_cx_curve(derivation_type_to_signature_type(derivation_type));
+
+    if (derivation_type == DERIVATION_TYPE_ED25519) {
+        // Old, non BIP32_Ed25519 way...
+        os_perso_derive_node_bip32_seed_key(
+            HDW_ED25519_SLIP10, CX_CURVE_Ed25519, bip32_path->components, bip32_path->length,
+            priv->private_key_data, NULL, NULL, 0);
     } else {
-#endif
-        os_perso_derive_node_bip32(curve, bip32_path, path_length, privateKeyData, NULL);
-#if CX_APILEVEL > 8
+        os_perso_derive_node_bip32(
+            cx_curve, bip32_path->components, bip32_path->length,
+            priv->private_key_data, NULL);
     }
-#endif
-    cx_ecfp_init_private_key(curve, privateKeyData, 32, &res.private_key);
-    cx_ecfp_generate_pair(curve, &res.public_key, &res.private_key, 1);
 
-    if (curve == CX_CURVE_Ed25519) {
-        cx_edward_compress_point(curve, res.public_key.W, res.public_key.W_len);
-        res.public_key.W_len = 33;
+    BEGIN_TRY {
+        TRY {
+            cx_ecfp_init_private_key(cx_curve, priv->private_key_data, sizeof(priv->private_key_data), &priv->res.private_key);
+            cx_ecfp_generate_pair(cx_curve, &priv->res.public_key, &priv->res.private_key, 1);
+
+            if (cx_curve == CX_CURVE_Ed25519) {
+                cx_edward_compress_point(CX_CURVE_Ed25519,
+                                         priv->res.public_key.W,
+                                         priv->res.public_key.W_len);
+                priv->res.public_key.W_len = 33;
+            }
+        } FINALLY {
+            explicit_bzero(priv->private_key_data, sizeof(priv->private_key_data));
+        }
     }
-    os_memset(privateKeyData, 0, sizeof(privateKeyData));
-    return &res;
+    END_TRY;
+
+    return &priv->res;
 }
 
-cx_ecfp_public_key_t *public_key_hash(uint8_t output[HASH_SIZE], cx_curve_t curve,
-                                      const cx_ecfp_public_key_t *restrict public_key) {
-    static cx_ecfp_public_key_t compressed;
-    switch (curve) {
-        case CX_CURVE_Ed25519:
+cx_ecfp_public_key_t const *generate_public_key_return_global(
+    derivation_type_t const curve,
+    bip32_path_t const *const bip32_path
+) {
+    check_null(bip32_path);
+    key_pair_t *const pair = generate_key_pair_return_global(curve, bip32_path);
+    explicit_bzero(&pair->private_key, sizeof(pair->private_key));
+    return &pair->public_key;
+}
+
+cx_ecfp_public_key_t const *public_key_hash_return_global(
+    uint8_t *const out, size_t const out_size,
+    derivation_type_t const curve,
+    cx_ecfp_public_key_t const *const restrict public_key)
+{
+    check_null(out);
+    check_null(public_key);
+    if (out_size < HASH_SIZE) THROW(EXC_WRONG_LENGTH);
+
+    cx_ecfp_public_key_t *const compressed = &global.apdu.priv.public_key_hash.compressed;
+    switch (derivation_type_to_signature_type(curve)) {
+        case SIGNATURE_TYPE_ED25519:
             {
-                compressed.W_len = public_key->W_len - 1;
-                memcpy(compressed.W, public_key->W + 1, compressed.W_len);
+                compressed->W_len = public_key->W_len - 1;
+                memcpy(compressed->W, public_key->W + 1, compressed->W_len);
                 break;
             }
-        case CX_CURVE_SECP256K1:
-        case CX_CURVE_SECP256R1:
+        case SIGNATURE_TYPE_SECP256K1:
+        case SIGNATURE_TYPE_SECP256R1:
             {
-                memcpy(compressed.W, public_key->W, public_key->W_len);
-                compressed.W[0] = 0x02 + (public_key->W[64] & 0x01);
-                compressed.W_len = 33;
+                memcpy(compressed->W, public_key->W, public_key->W_len);
+                compressed->W[0] = 0x02 + (public_key->W[64] & 0x01);
+                compressed->W_len = 33;
                 break;
             }
         default:
             THROW(EXC_WRONG_PARAM);
     }
-    b2b_init(&hash_state, HASH_SIZE);
-    b2b_update(&hash_state, compressed.W, compressed.W_len);
-    b2b_final(&hash_state, output, HASH_SIZE);
-    return &compressed;
+
+    cx_blake2b_t hash_state;
+    cx_blake2b_init(&hash_state, HASH_SIZE*8); // cx_blake2b_init takes size in bits.
+    cx_hash((cx_hash_t *) &hash_state, CX_LAST, compressed->W, compressed->W_len, out, HASH_SIZE);
+    return compressed;
+}
+
+size_t sign(
+    uint8_t *const out, size_t const out_size,
+    derivation_type_t const derivation_type,
+    key_pair_t const *const pair,
+    uint8_t const *const in, size_t const in_size
+) {
+    check_null(out);
+    check_null(pair);
+    check_null(in);
+
+    size_t tx = 0;
+    switch (derivation_type_to_signature_type(derivation_type)) {
+    case SIGNATURE_TYPE_ED25519: {
+        static size_t const SIG_SIZE = 64;
+        if (out_size < SIG_SIZE) THROW(EXC_WRONG_LENGTH);
+        tx += cx_eddsa_sign(
+            &pair->private_key,
+            0,
+            CX_SHA512,
+            (uint8_t const *)PIC(in),
+            in_size,
+            NULL,
+            0,
+            out,
+            SIG_SIZE,
+            NULL);
+    }
+        break;
+    case SIGNATURE_TYPE_SECP256K1:
+    case SIGNATURE_TYPE_SECP256R1:
+    {
+        static size_t const SIG_SIZE = 100;
+        if (out_size < SIG_SIZE) THROW(EXC_WRONG_LENGTH);
+        unsigned int info;
+        tx += cx_ecdsa_sign(
+            &pair->private_key,
+            CX_LAST | CX_RND_RFC6979,
+            CX_SHA256,  // historical reasons...semantically CX_NONE
+            (uint8_t const *)PIC(in),
+            in_size,
+            out,
+            SIG_SIZE,
+            &info);
+        if (info & CX_ECCINFO_PARITY_ODD) {
+            out[0] |= 0x01;
+        }
+    }
+        break;
+    default:
+        THROW(EXC_WRONG_PARAM); // This should not be able to happen.
+    }
+
+    return tx;
 }

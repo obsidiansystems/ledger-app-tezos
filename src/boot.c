@@ -1,24 +1,10 @@
-/*******************************************************************************
-*   Ledger Blue
-*   (c) 2016 Ledger
-*
-*  Licensed under the Apache License, Version 2.0 (the "License");
-*  you may not use this file except in compliance with the License.
-*  You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
-********************************************************************************/
-
 #include "ui.h"
 
+// Order matters
 #include "os.h"
 #include "cx.h"
+
+#include "globals.h"
 
 __attribute__((noreturn))
 void app_main(void);
@@ -30,6 +16,10 @@ __attribute__((section(".boot"))) int main(void) {
     // ensure exception will work as planned
     os_boot();
 
+    uint8_t tag;
+    init_globals();
+    global.stack_root = &tag;
+
     for (;;) {
         BEGIN_TRY {
             TRY {
@@ -37,8 +27,19 @@ __attribute__((section(".boot"))) int main(void) {
 
                 io_seproxyhal_init();
 
+#ifdef TARGET_NANOX
+                // grab the current plane mode setting
+                // requires "--appFlag 0x240" to be set in makefile
+                G_io_app.plane_mode = os_setting_get(OS_SETTING_PLANEMODE, NULL, 0);
+#endif // TARGET_NANOX
+
                 USB_power(0);
                 USB_power(1);
+
+#ifdef HAVE_BLE
+                BLE_power(0, NULL);
+                BLE_power(1, "Nano X");
+#endif // HAVE_BLE
 
                 ui_initial_screen();
 

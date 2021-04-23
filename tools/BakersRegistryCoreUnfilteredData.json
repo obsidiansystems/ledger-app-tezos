@@ -1,0 +1,498 @@
+[
+  {
+    "bakerName": "Obsidian",
+    "bakerAccount": "tz1eY5Aqa1kXDFoiebL28emyXFoneAoVg1zh"
+  },
+  {
+    "bakerName": "Tezos Capital Legacy",
+    "bakerAccount": "tz1TDSmoZXwVevLTEvKCTHWpomG76oC9S2fJ"
+  },
+  {
+    "bakerName": "Crypto Delegate",
+    "bakerAccount": "tz1Tnjaxk6tbAeC2TmMApPh8UsrEVQvhHvx5"
+  },
+  {
+    "bakerName": "Happy Tezos",
+    "bakerAccount": "tz1WCd2jm4uSt4vntk4vSuUWoZQGhLcDuR9q"
+  },
+  {
+    "bakerName": "At James",
+    "bakerAccount": "tz3e75hU4EhDU3ukyJueh5v6UvEHzGwkg3yC"
+  },
+  {
+    "bakerName": "Lucid Mining",
+    "bakerAccount": "tz1VmiY38m3y95HqQLjMwqnMS7sdMfGomzKi"
+  },
+  {
+    "bakerName": "P2P Validator",
+    "bakerAccount": "tz1P2Po7YM526ughEsRbY4oR9zaUPDZjxFrb"
+  },
+  {
+    "bakerName": "Bake'n'Rolls",
+    "bakerAccount": "tz1NortRftucvAkD1J58L32EhSVrQEWJCEnB"
+  },
+  {
+    "bakerName": "StakeNow",
+    "bakerAccount": "tz1g8vkmcde6sWKaG2NN9WKzCkDM6Rziq194"
+  },
+  {
+    "bakerName": "TezosBC",
+    "bakerAccount": "tz1c3Wh8gNMMsYwZd67JndQpYxdaaPUV27E7"
+  },
+  {
+    "bakerName": "XTZ Delegate",
+    "bakerAccount": "tz1Xek93iSXXckyQ6aYLVS5Rr2tge2en7ZxS"
+  },
+  {
+    "bakerName": "PayTezos",
+    "bakerAccount": "tz1Ldzz6k1BHdhuKvAtMRX7h5kJSMHESMHLC"
+  },
+  {
+    "bakerName": "Tezzigator",
+    "bakerAccount": "tz3adcvQaKXTCg12zbninqo3q8ptKKtDFTLv"
+  },
+  {
+    "bakerName": "My Tezos Baking",
+    "bakerAccount": "tz1d6Fx42mYgVFnHUW8T8A7WBfJ6nD9pVok8"
+  },
+  {
+    "bakerName": "LetzBake!",
+    "bakerAccount": "tz1aqcYgG6NuViML5vdWhohHJBYxcDVLNUsE"
+  },
+  {
+    "bakerName": "Bakednode",
+    "bakerAccount": "tz1KksC8RvjUWAbXYJuNrUbontHGor26Cztk"
+  },
+  {
+    "bakerName": "Tezgate",
+    "bakerAccount": "tz1W5VkdB5s7ENMESVBtwyt9kyvLqPcUczRT"
+  },
+  {
+    "bakerName": "BAKER-IL",
+    "bakerAccount": "tz1cYufsxHXJcvANhvS55h3aY32a9BAFB494"
+  },
+  {
+    "bakerName": "Stack Tezos",
+    "bakerAccount": "tz1MDKr36woXfVtrtXfV1ppPJERxPcm2wU6V"
+  },
+  {
+    "bakerName": "Stake.fish",
+    "bakerAccount": "tz2FCNBrERXtaTtNX6iimR1UJ5JSDxvdHM93"
+  },
+  {
+    "bakerName": "Everstake Legacy",
+    "bakerAccount": "tz1MXFrtZoaXckE41bjUCSjAjAap3AFDSr3N"
+  },
+  {
+    "bakerName": "Anonstake",
+    "bakerAccount": "tz1XhnCdVENzgko5x1MMswLHSoQbJ5NPwLZ6"
+  },
+  {
+    "bakerName": "Tezos Capital",
+    "bakerAccount": "tz2PdGc7U5tiyqPgTSgqCDct94qd6ovQwP6u"
+  },
+  {
+    "bakerName": "Ø Crypto Pool",
+    "bakerAccount": "tz1KtvGSYU5hdKD288a1koTBURWYuADJGrLE"
+  },
+  {
+    "bakerName": "Bake Tz",
+    "bakerAccount": "tz1ei4WtWEMEJekSv8qDnu9PExG6Q8HgRGr3"
+  },
+  {
+    "bakerName": "XTZ Antipodes",
+    "bakerAccount": "tz1TcH4Nb3aHNDJ7CGZhU7jgAK1BkSP4Lxds"
+  },
+  {
+    "bakerName": "Tezos Bakery",
+    "bakerAccount": "tz1fZ767VDbqx4DeKiFswPSHh513f51mKEUZ"
+  },
+  {
+    "bakerName": "Hayek Lab",
+    "bakerAccount": "tz1SohptP53wDPZhzTWzDUFAUcWF6DMBpaJV"
+  },
+  {
+    "bakerName": "Stakery",
+    "bakerAccount": "tz1go7f6mEQfT2xX2LuHAqgnRGN6c2zHPf5c"
+  },
+  {
+    "bakerName": "Gate.io",
+    "bakerAccount": "tz1NpWrAyDL9k2Lmnyxcgr9xuJakbBxdq7FB"
+  },
+  {
+    "bakerName": "Bake ꜩ For Me",
+    "bakerAccount": "tz1NRGxXV9h6SdNaZLcgmjuLx3hyy2f8YoGN"
+  },
+  {
+    "bakerName": "Mint Capital",
+    "bakerAccount": "tz1cb8xcmJWcdVU7cNAd93MfEReorvP52P8x"
+  },
+  {
+    "bakerName": "Tezmania",
+    "bakerAccount": "tz1MQJPGNMijnXnVoBENFz9rUhaPt3S7rWoz"
+  },
+  {
+    "bakerName": "XTZ Land",
+    "bakerAccount": "tz1Z1tMai15JWUWeN2PKL9faXXVPMuWamzJj"
+  },
+  {
+    "bakerName": "TezosBr",
+    "bakerAccount": "tz1YKh8T79LAtWxX29N5VedCSmaZGw9LNVxQ"
+  },
+  {
+    "bakerName": "Tezos Mars",
+    "bakerAccount": "tz1S1Aew75hMrPUymqenKfHo8FspppXKpW7h"
+  },
+  {
+    "bakerName": "View Nodes",
+    "bakerAccount": "tz1aiYKXmSRckyJ9EybKmpVry373rfyngJU8"
+  },
+  {
+    "bakerName": "Tezos Seoul",
+    "bakerAccount": "tz1Kf25fX1VdmYGSEzwFy1wNmkbSEZ2V83sY"
+  },
+  {
+    "bakerName": "AirGap",
+    "bakerAccount": "tz1MJx9vhaNRSimcuXPK2rW4fLccQnDAnVKJ"
+  },
+  {
+    "bakerName": "TezosRUs",
+    "bakerAccount": "tz1b9MYGrbN1NAxphLEsPPNT9JC7aNFc5nA4"
+  },
+  {
+    "bakerName": "Tezos Hot Bakery",
+    "bakerAccount": "tz1bLwpPfr3xqy1gWBF4sGvv8bLJyPHR11kx"
+  },
+  {
+    "bakerName": "TezoSteam",
+    "bakerAccount": "tz1LLNkQK4UQV6QcFShiXJ2vT2ELw449MzAA"
+  },
+  {
+    "bakerName": "Tezos Chef",
+    "bakerAccount": "tz1hThMBD8jQjFt78heuCnKxJnJtQo9Ao25X"
+  },
+  {
+    "bakerName": "Tz Bank",
+    "bakerAccount": "tz1bkg7rynMXVcjomoe3diB4URfv8GU2GAcw"
+  },
+  {
+    "bakerName": "HashQuark",
+    "bakerAccount": "tz1KzSC1J9aBxKp7u8TUnpN8L7S65PBRkgdF"
+  },
+  {
+    "bakerName": "Wetez",
+    "bakerAccount": "tz1iMAHAVpkCVegF9FLGWUpQQeiAHh4ffdLQ"
+  },
+  {
+    "bakerName": "Tez Baguette",
+    "bakerAccount": "tz1YhNsiRRU8aHNGg7NK3uuP6UDAyacJernB"
+  },
+  {
+    "bakerName": "Tezos Tacos",
+    "bakerAccount": "tz1bkKTY9Y3rTsHbpr2fbGUCRm736LLquQfM"
+  },
+  {
+    "bakerName": "Tz Bakery",
+    "bakerAccount": "tz1cX93Q3KsiTADpCC4f12TBvAmS5tw7CW19"
+  },
+  {
+    "bakerName": "Tez Baker",
+    "bakerAccount": "tz1Lhf4J9Qxoe3DZ2nfe8FGDnvVj7oKjnMY6"
+  },
+  {
+    "bakerName": "XTZ Master",
+    "bakerAccount": "tz1KfEsrtDaA1sX7vdM4qmEPWuSytuqCDp5j"
+  },
+  {
+    "bakerName": "Validators.com",
+    "bakerAccount": "tz1Pwgj6j55akKCyvTwwr9X4np1RskSXpQY4"
+  },
+  {
+    "bakerName": "Tezos Canada",
+    "bakerAccount": "tz1aKxnrzx5PXZJe7unufEswVRCMU9yafmfb"
+  },
+  {
+    "bakerName": "ownBLOCK (OLD)",
+    "bakerAccount": "tz1X1fpAZtwQk94QXUgZwfgsvkQgyc2KHp9d"
+  },
+  {
+    "bakerName": "Melange",
+    "bakerAccount": "tz1PWCDnz783NNGGQjEFFsHtrcK5yBW4E2rm"
+  },
+  {
+    "bakerName": "Airfoil",
+    "bakerAccount": "tz1gk3TDbU7cJuiBRMhwQXVvgDnjsxuWhcEA"
+  },
+  {
+    "bakerName": "XTZ Bakery I",
+    "bakerAccount": "tz1P9GwUWeAyPoT3ZwBc6gWCTP9exEPaVU3w"
+  },
+  {
+    "bakerName": "Tezzigator Legacy",
+    "bakerAccount": "tz1iZEKy4LaAjnTmn2RuGDf2iqdAQKnRi8kY"
+  },
+  {
+    "bakerName": "Tezocracy",
+    "bakerAccount": "tz1TaLYBeGZD3yKVHQGBM857CcNnFFNceLYh"
+  },
+  {
+    "bakerName": "MyBakerSpace",
+    "bakerAccount": "tz1c7pVR4w3KSQarJdBeh4NS2WxMUFBy1rHQ"
+  },
+  {
+    "bakerName": "Elite Tezos",
+    "bakerAccount": "tz1W1f1JrE7VsqgpUpj1iiDobqP5TixgZhDk"
+  },
+  {
+    "bakerName": "Tezzieland",
+    "bakerAccount": "tz1fUjvVhJrHLZCbhPNvDRckxApqbkievJHN"
+  },
+  {
+    "bakerName": "Tezos Bay",
+    "bakerAccount": "tz1Z7bxn1M4ewEWUekPaZfiwtKQRFroezUjY"
+  },
+  {
+    "bakerName": "888 XTZ",
+    "bakerAccount": "tz1WBfwbT66FC6BTLexc2BoyCCBM9LG7pnVW"
+  },
+  {
+    "bakerName": "Cryptium Labs",
+    "bakerAccount": "tz1eEnQhbwf6trb8Q8mPb2RaPkNk2rN7BKi8"
+  },
+  {
+    "bakerName": "Staked",
+    "bakerAccount": "tz1RCFbB9GpALpsZtu6J58sb74dm8qe6XBzv"
+  },
+  {
+    "bakerName": "Dash Master",
+    "bakerAccount": "tz1Lc87p6zRaDwzJs9kHvdpm7XzeWE8QTwVB"
+  },
+  {
+    "bakerName": "Tezos.nu",
+    "bakerAccount": "tz1fb7c66UwePkkfDXz4ajFaBP9hVNLdS7JJ"
+  },
+  {
+    "bakerName": "Tezos Japan",
+    "bakerAccount": "tz1b7YSEeNRqgmjuX4d4aiai2sQTF4A7WBZf"
+  },
+  {
+    "bakerName": "Blockpower",
+    "bakerAccount": "tz1LmaFsWRkjr7QMCx5PtV6xTUz3AmEpKQiF"
+  },
+  {
+    "bakerName": "Tez Patisserie",
+    "bakerAccount": "tz1UUgPwikRHW1mEyVZfGYy6QaxrY6Y7WaG5"
+  },
+  {
+    "bakerName": "TZ Bake",
+    "bakerAccount": "tz1Zhv3RkfU2pHrmaiDyxp7kFZpZrUCu1CiF"
+  },
+  {
+    "bakerName": "Coinbase Custody",
+    "bakerAccount": "tz1irJKkXS2DBWkU1NnmFQx1c1L7pbGg4yhk"
+  },
+  {
+    "bakerName": "TezosSEAsia",
+    "bakerAccount": "tz1R6Ej25VSerE3MkSoEEeBjKHCDTFbpKuSX"
+  },
+  {
+    "bakerName": "Tezzz",
+    "bakerAccount": "tz1dhwJY5B1jKdkF7zcyu1v6EBEQjpGmAp1E"
+  },
+  {
+    "bakerName": "Tezz City",
+    "bakerAccount": "tz1Zcxkfa5jKrRbBThG765GP29bUCU3C4ok5"
+  },
+  {
+    "bakerName": "Tezos Tokyo",
+    "bakerAccount": "tz1VYQpZvjVhv1CdcENuCNWJQXu1TWBJ8KTD"
+  },
+  {
+    "bakerName": "Tez Milk",
+    "bakerAccount": "tz1bakeKFwqmtLBzghw8CFnqFvRxLj849Vfg"
+  },
+  {
+    "bakerName": "Norn Delegate",
+    "bakerAccount": "tz1YdCPrYbksK7HCoYKDyzgfXwY16Fy9rrGa"
+  },
+  {
+    "bakerName": "Tezos Panda",
+    "bakerAccount": "tz1PeZx7FXy7QRuMREGXGxeipb24RsMMzUNe"
+  },
+  {
+    "bakerName": "Steaker",
+    "bakerAccount": "tz1fvBC1cHJzPtUW3ZKd2GZDj7P4XVuLk9vW"
+  },
+  {
+    "bakerName": "TezTech Labs",
+    "bakerAccount": "tz1Vtimi84kLh9RANfRVX2JvYtP4NPCT1aFm"
+  },
+  {
+    "bakerName": "Fresh Tezos",
+    "bakerAccount": "tz1QLXqnfN51dkjeghXvKHkJfhvGiM5gK4tc"
+  },
+  {
+    "bakerName": "SNZ Holding",
+    "bakerAccount": "tz1ZuxNqUk7odhMC4Bfx2NXXeej9ReXKewa8"
+  },
+  {
+    "bakerName": "Tezry",
+    "bakerAccount": "tz1UJvHTgpVzcKWhTazGxVcn5wsHru5Gietg"
+  },
+  {
+    "bakerName": "Ceibo XTZ",
+    "bakerAccount": "tz3bEQoFCZEEfZMskefZ8q8e4eiHH1pssRax"
+  },
+  {
+    "bakerName": "Hyperblocks",
+    "bakerAccount": "tz1VHFxUuBhwopxC9YC9gm5s2MHBHLyCtvN1"
+  },
+  {
+    "bakerName": "Coinone",
+    "bakerAccount": "tz1SYq214SCBy9naR6cvycQsYcUGpBqQAE8d"
+  },
+  {
+    "bakerName": "Stake House",
+    "bakerAccount": "tz1V2FYediKBAEaTpXXJBSjuQpjkyCzrTSiE"
+  },
+  {
+    "bakerName": "Imma Baker",
+    "bakerAccount": "tz1bRaSjKZrSrSeQHBDiCqjKXqtZYZM1t8FW"
+  },
+  {
+    "bakerName": "POS Bakerz",
+    "bakerAccount": "tz1Vyuu4EJ5Nym4JcrfRLnp3hpaq1DSEp1Ke"
+  },
+  {
+    "bakerName": "Tezos Suisse",
+    "bakerAccount": "tz1hAYfexyzPGG6RhZZMpDvAHifubsbb6kgn"
+  },
+  {
+    "bakerName": "Baking Tacos",
+    "bakerAccount": "tz1RV1MBbZMR68tacosb7Mwj6LkbPSUS1er1"
+  },
+  {
+    "bakerName": "Hodl.farm",
+    "bakerAccount": "tz1gg5bjopPcr9agjamyu9BbXKLibNc2rbAq"
+  },
+  {
+    "bakerName": "Tezos Ninja",
+    "bakerAccount": "tz1djEKk6j1FqigTgbRsunbnY9BB7qsn1aAQ"
+  },
+  {
+    "bakerName": "Clutch Oven",
+    "bakerAccount": "tz1coHzgoQYRu1Ezn5QChfFEjwTrBzGNQT6U"
+  },
+  {
+    "bakerName": "Tezetetic",
+    "bakerAccount": "tz1VceyYUpq1gk5dtp6jXQRtCtY8hm5DKt72"
+  },
+  {
+    "bakerName": "Tezos Vote",
+    "bakerAccount": "tz1bHzftcTKZMTZgLLtnrXydCm6UEqf4ivca"
+  },
+  {
+    "bakerName": "Tez-Baking",
+    "bakerAccount": "tz1LBEKXaxQbd5Gtzbc1ATCwc3pppu81aWGc"
+  },
+  {
+    "bakerName": "XTZ Bakery II",
+    "bakerAccount": "tz1TnYeuR4HhUTapQiXvzcjmcpvZYwR1B5S3"
+  },
+  {
+    "bakerName": "Tz Envoy",
+    "bakerAccount": "tz1iJ4qgGTzyhaYEzd1RnC6duEkLBd1nzexh"
+  },
+  {
+    "bakerName": "Tezos Kitchen",
+    "bakerAccount": "tz1Nn14BBsDULrPXtkM9UQeXaE4iqJhmqmK5"
+  },
+  {
+    "bakerName": "Shake 'n Bake",
+    "bakerAccount": "tz1V4qCyvPKZ5UeqdH14HN42rxvNPQfc9UZg"
+  },
+  {
+    "bakerName": "Stir Delegate",
+    "bakerAccount": "tz1LH4L6XYT2JNPhvWYC4Zq3XEiGgEwzNRvo"
+  },
+  {
+    "bakerName": "Stake Capital",
+    "bakerAccount": "tz1Z3KCf8CLGAYfvVWPEr562jDDyWkwNF7sT"
+  },
+  {
+    "bakerName": "Figment Networks",
+    "bakerAccount": "tz1Scdr2HsZiQjc7bHMeBbmDRXYVvdhjJbBh"
+  },
+  {
+    "bakerName": "TEZWHALE",
+    "bakerAccount": "tz1isXamBXpTUgbByQ6gXgZQg4GWNW7r6rKE"
+  },
+  {
+    "bakerName": "Money every 3 days (OLD)",
+    "bakerAccount": "tz1egbN6RK2bM5vt4aAZw6r9j4nL8z49bPdS"
+  },
+  {
+    "bakerName": "Money every 3 days",
+    "bakerAccount": "tz1NEKxGEHsFufk87CVZcrqWu8o22qh46GK6"
+  },
+  {
+    "bakerName": "mamabaker",
+    "bakerAccount": "tz1aEsrxrhTYNcg897HjSWnJ5yjR95pxVD1d"
+  },
+  {
+    "bakerName": "TezoShop",
+    "bakerAccount": "tz1V3yg82mcrPJbegqVCPn6bC8w1CSTRp3f8"
+  },
+  {
+    "bakerName": "Tezos Alliance",
+    "bakerAccount": "tz1RSWMYKGAykpizFteowByYMueCYv9TMn1L"
+  },
+  {
+    "bakerName": "Coinhouse Staking Services",
+    "bakerAccount": "tz1dbfppLAAxXZNtf2SDps7rch3qfUznKSoK"
+  },
+  {
+    "bakerName": "Steak.and.Bake",
+    "bakerAccount": "tz1dNVDWPf3Q59SdJqnjdnu277iyvReiRS9M"
+  },
+  {
+    "bakerName": "AlphaTezos",
+    "bakerAccount": "tz1UdeKoMJivgqRgRUNzroMwRJYmJY8BtaWe"
+  },
+  {
+    "bakerName": "Tezos Japan",
+    "bakerAccount": "tz1ijdEfmUoQXJfSiKCLRioeCfSrKP3sVsff"
+  },
+  {
+    "bakerName": "Tez Dispensery",
+    "bakerAccount": "tz1hgjLqCZWCtarByUMYd81F4FKRY5t1V978"
+  },
+  {
+    "bakerName": "Ateza",
+    "bakerAccount": "tz1ZcTRk5uxD86EFEn1vvNffWWqJy7q5eVhc"
+  },
+  {
+    "bakerName": "YieldWallet.io",
+    "bakerAccount": "tz1Q8QkSBS63ZQnH3fBTiAMPes9R666Rn6Sc"
+  },
+  {
+    "bakerName": "Staking Team",
+    "bakerAccount": "tz1STeamwbp68THcny9zk3LsbG3H36DMvbRK"
+  },
+  {
+    "bakerName": "Morpheus Tezos",
+    "bakerAccount": "tz1MWhSr4oT8W67CKdxduqp4bkVyF32qsERK"
+  },
+  {
+    "bakerName": "Baking Team",
+    "bakerAccount": "tz1fJHFn6sWEd3NnBPngACuw2dggTv6nQZ7g"
+  },
+  {
+    "bakerName": "Everstake",
+    "bakerAccount": "tz1aRoaRhSpRYvFdyvgWLL6TGyRoGF51wDjM"
+  },
+  {
+    "bakerName": "Money Every 3 Days",
+    "bakerAccount": "tz1NEKxGEHsFufk87CVZcrqWu8o22qh46GK6"
+  }
+]

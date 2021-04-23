@@ -2,23 +2,27 @@
 
 #include "os_io_seproxyhal.h"
 
-#include <stdbool.h>
+#include "types.h"
 
 #include "keys.h"
 
-#define PROTOCOL_HASH_BASE58_STRING_SIZE 52 // e.g. "ProtoBetaBetaBetaBetaBetaBetaBetaBetaBet11111a5ug96" plus null byte
-
-typedef bool (*callback_t)(void); // return true to go back to idle screen
+#define BAGL_STATIC_ELEMENT 0
+#define BAGL_SCROLLING_ELEMENT 100 // Arbitrary value chosen to connect data structures with prepro func
 
 void ui_initial_screen(void);
 void ui_init(void);
+void ui_refresh(void);
+
+__attribute__((noreturn)) bool exit_app(void); // Might want to send it arguments to use as callback
+
+// Displays labels (terminated with a NULL pointer) associated with data
+// labels must be completely static string constants while data may be dynamic
+// Assumes we've registered appropriate callbacks to generate the data.
+// All pointers may be unrelocated.
 __attribute__((noreturn))
-bool exit_app(void); // Might want to send it arguments to use as callback
+void ui_prompt(const char *const *labels, ui_callback_t ok_c, ui_callback_t cxl_c);
 
-void ui_display(const bagl_element_t *elems, size_t sz, callback_t ok_c, callback_t cxl_c,
-                uint32_t step_count);
-unsigned char io_event(unsigned char channel);
-void io_seproxyhal_display(const bagl_element_t *element);
-void change_idle_display(uint32_t new);
 
-extern char baking_auth_text[PKH_STRING_SIZE]; // TODO: Is this the right name?
+// This function registers how a value is to be produced
+void register_ui_callback(uint32_t which, string_generation_callback cb, const void *data);
+#define REGISTER_STATIC_UI_VALUE(index, str) register_ui_callback(index, copy_string, STATIC_UI_VALUE(str))

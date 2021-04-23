@@ -8,85 +8,145 @@
 #include "protocol.h"
 
 #include "cx.h"
+#include "types.h"
 
-struct parsed_contract {
+typedef bool (*is_operation_allowed_t)(enum operation_tag);
+
+
+// Wire format that gets parsed into `signature_type`.
+typedef struct {
+    uint8_t v;
+} __attribute__((packed)) raw_tezos_header_signature_type_t;
+
+struct operation_group_header {
+    uint8_t magic_byte;
+    uint8_t hash[32];
+} __attribute__((packed));
+
+struct implicit_contract {
+    raw_tezos_header_signature_type_t signature_type;
+    uint8_t pkh[HASH_SIZE];
+} __attribute__((packed));
+
+struct contract {
     uint8_t originated;
-    uint8_t curve_code; // TEZOS_NO_CURVE in originated case
-                        // An implicit contract with TEZOS_NO_CURVE means not present
+    union {
+        struct implicit_contract implicit;
+        struct {
+            uint8_t pkh[HASH_SIZE];
+            uint8_t padding;
+        } originated;
+    } u;
+} __attribute__((packed));
+
+struct delegation_contents {
+    raw_tezos_header_signature_type_t signature_type;
     uint8_t hash[HASH_SIZE];
+} __attribute__((packed));
+
+struct proposal_contents {
+    int32_t period;
+    size_t num_bytes;
+    uint8_t hash[PROTOCOL_HASH_SIZE];
+} __attribute__((packed));
+
+struct ballot_contents {
+    int32_t period;
+    uint8_t proposal[PROTOCOL_HASH_SIZE];
+    int8_t ballot;
+} __attribute__((packed));
+
+typedef struct {
+    uint8_t v[HASH_SIZE];
+} __attribute__((packed)) hash_t;
+
+struct int_subparser_state {
+	uint32_t lineno; // Has to be in _all_ members of the subparser union.
+	uint64_t value; // Still need to fix this.
+	uint8_t shift;
 };
 
-#define PROTOCOL_HASH_SIZE 32
+struct nexttype_subparser_state {
+  uint32_t lineno;
+  union {
+    raw_tezos_header_signature_type_t sigtype;
 
-struct parsed_proposal {
-    int32_t voting_period;
-    uint8_t protocol_hash[PROTOCOL_HASH_SIZE];
+    struct operation_group_header ogh;
+
+    struct implicit_contract ic;
+    struct contract c;
+
+    struct delegation_contents dc;
+    struct proposal_contents pc;
+    struct ballot_contents bc;
+
+    hash_t ht;
+
+    uint16_t i16;
+    uint32_t i32;
+    uint64_t i64;
+
+    uint8_t raw[1];
+    uint8_t key[64]; // FIXME: check key length for non-tz1.
+    uint8_t text_pkh[HASH_SIZE_B58];
+  } body;
+  uint32_t fill_idx;
 };
 
-enum ballot_vote {
-    BALLOT_VOTE_YEA,
-    BALLOT_VOTE_NAY,
-    BALLOT_VOTE_PASS,
+struct michelson_address_subparser_state {
+  uint32_t lineno;
+  uint8_t address_step;
+  uint8_t micheline_type;
+  uint32_t addr_length;
+  hash_t key_hash;
+  parsed_contract_t result; // Not neccessarily optimal, but easy.
+  struct nexttype_subparser_state subsub_state;
+  raw_tezos_header_signature_type_t signature_type;
+
 };
 
-struct parsed_ballot {
-    int32_t voting_period;
-    uint8_t protocol_hash[PROTOCOL_HASH_SIZE];
-    enum ballot_vote vote;
+union subparser_state {
+	struct int_subparser_state integer;
+	struct nexttype_subparser_state nexttype;
+        struct michelson_address_subparser_state michelson_address;
 };
 
-enum operation_tag {
-    OPERATION_TAG_NONE = -1, // Sentinal value, as 0 is possibly used for something
-    OPERATION_TAG_PROPOSAL = 5,
-    OPERATION_TAG_BALLOT = 6,
-    OPERATION_TAG_REVEAL = 7,
-    OPERATION_TAG_TRANSACTION = 8,
-    OPERATION_TAG_ORIGINATION = 9,
-    OPERATION_TAG_DELEGATION = 10,
+struct parse_state {
+	int16_t op_step;
+	union subparser_state subparser_state;
+	enum operation_tag tag;
+        uint32_t argument_length;
+        uint16_t michelson_op;
+        uint16_t contract_code;
+
+        // Places to stash textual base58-encoded PKHes.
+        char base58_pkh1[HASH_SIZE_B58];
+        char base58_pkh2[HASH_SIZE_B58];
 };
 
-typedef uint32_t allowed_operation_set;
-
-static inline void allow_operation(allowed_operation_set *ops, enum operation_tag tag) {
-    *ops |= (1 << (uint32_t)tag);
-}
-
-static inline bool is_operation_allowed(allowed_operation_set ops, enum operation_tag tag) {
-    return (ops & (1 << (uint32_t)tag)) != 0;
-}
-
-static inline void clear_operation_set(allowed_operation_set *ops) {
-    *ops = 0;
-}
-
-#define ORIGINATION_FLAG_SPENDABLE 1
-#define ORIGINATION_FLAG_DELEGATABLE 2
-
-struct parsed_operation {
-    enum operation_tag tag;
-    struct parsed_contract source;
-    struct parsed_contract destination;
-    struct parsed_contract delegate; // For originations only
-    struct parsed_proposal proposal; // For proposals only
-    struct parsed_ballot ballot; // For ballots only
-    uint64_t amount; // 0 where inappropriate
-    uint32_t flags;  // Interpretation depends on operation type
-};
-
-struct parsed_operation_group {
-    cx_ecfp_public_key_t public_key; // compressed
-    uint64_t total_fee;
-    uint64_t total_storage_limit;
-    bool has_reveal;
-    struct parsed_contract signing;
-    struct parsed_operation operation;
-};
-
-// Throws upon invalid data.
 // Allows arbitrarily many "REVEAL" operations but only one operation of any other type,
 // which is the one it puts into the group.
+bool parse_operations(
+    struct parsed_operation_group *const out,
+    uint8_t const *const data,
+    size_t length,
+    derivation_type_t curve,
+    bip32_path_t const *const bip32_path,
+    is_operation_allowed_t is_operation_allowed
+);
 
-// Returns pointer to static data -- non-reentrant as hell.
-struct parsed_operation_group *
-parse_operations(const void *data, size_t length, cx_curve_t curve, size_t path_length,
-                 uint32_t *bip32_path, allowed_operation_set ops);
+void parse_operations_init(
+    struct parsed_operation_group *const out,
+    derivation_type_t derivation_type,
+    bip32_path_t const *const bip32_path,
+    struct parse_state *const state
+    );
+
+bool parse_operations_final(struct parse_state *const state, struct parsed_operation_group *const out);
+
+bool parse_operations_packet(
+    struct parsed_operation_group *const out,
+    uint8_t const *const data,
+    size_t length,
+    is_operation_allowed_t is_operation_allowed
+);
