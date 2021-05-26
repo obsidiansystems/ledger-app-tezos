@@ -35,5 +35,5 @@ __attribute__((noreturn)) void app_main(void) {
 #else
     global.handlers[APDU_INS(INS_SIGN_UNSAFE)] = handle_apdu_sign;
 #endif
-    main_loop(global.handlers, sizeof(global.handlers));
+    main_loop(global.handlers, NUM_ELEMENTS(global.handlers));
 }
