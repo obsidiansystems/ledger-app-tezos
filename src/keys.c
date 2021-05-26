@@ -114,11 +114,16 @@ int crypto_init_public_key(derivation_type_t const derivation_type,
 int generate_key_pair(key_pair_t *key_pair,
                       derivation_type_t const derivation_type,
                       bip32_path_t const *const bip32_path) {
+    int error;
+
     // derive private key according to BIP32 path
-    crypto_derive_private_key(&key_pair->private_key, derivation_type, bip32_path);
+    error = crypto_derive_private_key(&key_pair->private_key, derivation_type, bip32_path);
+    if (error) {
+        return error;
+    }
     // generate corresponding public key
-    crypto_init_public_key(derivation_type, &key_pair->private_key, &key_pair->public_key);
-    return (0);
+    error = crypto_init_public_key(derivation_type, &key_pair->private_key, &key_pair->public_key);
+    return error;
 }
 
 int generate_public_key(cx_ecfp_public_key_t *public_key,
