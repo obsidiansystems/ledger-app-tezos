@@ -577,11 +577,17 @@ static int perform_signature(bool const on_hash, bool const send_hash) {
     key_pair_t key_pair = {0};
     size_t signature_size = 0;
 
+
+    int error = generate_key_pair(&key_pair,
+                                  global.path_with_curve.derivation_type,
+                                  &global.path_with_curve.bip32_path);
+    if (error) {
+        THROW(EXC_WRONG_VALUES);
+    }
+
+    error = 0;
     BEGIN_TRY {
         TRY {
-            generate_key_pair(&key_pair,
-                              global.path_with_curve.derivation_type,
-                              &global.path_with_curve.bip32_path);
             signature_size = sign(&G_io_apdu_buffer[tx],
                                   MAX_SIGNATURE_SIZE,
                                   global.path_with_curve.derivation_type,
@@ -590,13 +596,17 @@ static int perform_signature(bool const on_hash, bool const send_hash) {
                                   data_length);
         }
         CATCH_OTHER(e) {
-            THROW(e);
+            error = e;
         }
         FINALLY {
             memset(&key_pair, 0, sizeof(key_pair));
         }
     }
     END_TRY
+
+    if (error) {
+        THROW(error);
+    }
 
     tx += signature_size;
 
