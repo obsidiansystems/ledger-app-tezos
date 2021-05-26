@@ -89,7 +89,7 @@ int crypto_derive_private_key(cx_ecfp_private_key_t *private_key,
     }
     END_TRY;
 
-    return 0;
+    return error;
 }
 
 int crypto_init_public_key(derivation_type_t const derivation_type,
