@@ -430,8 +430,8 @@ static size_t handle_apdu(bool const enable_hashing,
                           bool const enable_parsing,
                           uint8_t const instruction) {
     uint8_t *const buff = &G_io_apdu_buffer[OFFSET_CDATA];
-    uint8_t const p1 = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_P1]);
-    uint8_t const buff_size = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]);
+    uint8_t const p1 = G_io_apdu_buffer[OFFSET_P1];
+    uint8_t const buff_size = G_io_apdu_buffer[OFFSET_LC];
     if (buff_size > MAX_APDU_SIZE) THROW(EXC_WRONG_LENGTH_FOR_INS);
 
     bool last = (p1 & P1_LAST_MARKER) != 0;
@@ -439,8 +439,8 @@ static size_t handle_apdu(bool const enable_hashing,
         case P1_FIRST:
             clear_data();
             read_bip32_path(&global.path_with_curve.bip32_path, buff, buff_size);
-            global.path_with_curve.derivation_type = parse_derivation_type(
-                READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
+            global.path_with_curve.derivation_type =
+                parse_derivation_type(G_io_apdu_buffer[OFFSET_CURVE]);
             return finalize_successful_send(0);
 #ifndef BAKING_APP
         case P1_HASH_ONLY_NEXT:
@@ -576,7 +576,6 @@ static int perform_signature(bool const on_hash, bool const send_hash) {
 
     key_pair_t key_pair = {0};
     size_t signature_size = 0;
-
 
     int error = generate_key_pair(&key_pair,
                                   global.path_with_curve.derivation_type,
