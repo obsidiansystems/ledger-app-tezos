@@ -14,10 +14,9 @@ int handle_check_address(const check_address_parameters_t* params) {
     }
 
     bip32_path_t bip32_path = {0};
-    size_t const s = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &params->address_parameters_length);
 
-    read_bip32_path(&bip32_path, params->address_parameters, s);
-    derivation_type_t derivation_type = 3;
+    read_bip32_path(&bip32_path, params->address_parameters, params->address_parameters_length);
+    derivation_type_t derivation_type = DERIVATION_TYPE_ED25519;
     cx_ecfp_public_key_t public_key = {0};
     int error = generate_public_key(&public_key, derivation_type, &bip32_path);
     if (error) {
