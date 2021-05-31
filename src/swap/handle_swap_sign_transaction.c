@@ -11,7 +11,7 @@ bool copy_transaction_parameters(const create_transaction_parameters_t* params) 
     if (strlen(params->destination_address) >= sizeof(stack_data.destination)) {
         return false;
     }
-    strlcpy(stack_data.destination, params->destination_address, sizeof(stack_data.destination));
+    strncpy(stack_data.destination, params->destination_address, sizeof(stack_data.destination));
 
     if (!swap_str_to_u64(params->amount, params->amount_length, &stack_data.amount)) {
         return false;
