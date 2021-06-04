@@ -7,6 +7,9 @@
 #include "globals.h"
 #include "memory.h"
 
+bool called_from_swap;
+swap_values_t swap_values;
+
 __attribute__((noreturn)) void app_main(void) {
     // TODO: Consider using static initialization of a const, instead of this
     for (size_t i = 0; i < NUM_ELEMENTS(global.handlers); i++) {
@@ -32,5 +35,5 @@ __attribute__((noreturn)) void app_main(void) {
 #else
     global.handlers[APDU_INS(INS_SIGN_UNSAFE)] = handle_apdu_sign;
 #endif
-    main_loop(global.handlers, sizeof(global.handlers));
+    main_loop(global.handlers, NUM_ELEMENTS(global.handlers));
 }

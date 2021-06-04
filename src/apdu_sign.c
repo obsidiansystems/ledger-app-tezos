@@ -9,6 +9,7 @@
 #include "protocol.h"
 #include "to_string.h"
 #include "ui.h"
+#include "swap_lib_calls.h"
 
 #include "cx.h"
 
@@ -199,6 +200,22 @@ bool prompt_transaction(struct parsed_operation_group const *const ops,
                         ui_callback_t cxl) {
     check_null(ops);
     check_null(key);
+
+    if (called_from_swap) {
+        if (is_safe_to_swap() == true) {
+            // We're called from swap and we've verified that the data is correct. Sign it.
+            ok();
+            // Clear all data.
+            clear_data();
+            // Exit properly.
+            os_sched_exit(0);
+        } else {
+            // Send the error message back in response.
+            cxl();
+            // Exit with error code.
+            os_sched_exit(1);
+        }
+    }
 
     switch (ops->operation.tag) {
         default:
@@ -413,8 +430,8 @@ static size_t handle_apdu(bool const enable_hashing,
                           bool const enable_parsing,
                           uint8_t const instruction) {
     uint8_t *const buff = &G_io_apdu_buffer[OFFSET_CDATA];
-    uint8_t const p1 = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_P1]);
-    uint8_t const buff_size = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]);
+    uint8_t const p1 = G_io_apdu_buffer[OFFSET_P1];
+    uint8_t const buff_size = G_io_apdu_buffer[OFFSET_LC];
     if (buff_size > MAX_APDU_SIZE) THROW(EXC_WRONG_LENGTH_FOR_INS);
 
     bool last = (p1 & P1_LAST_MARKER) != 0;
@@ -422,8 +439,8 @@ static size_t handle_apdu(bool const enable_hashing,
         case P1_FIRST:
             clear_data();
             read_bip32_path(&global.path_with_curve.bip32_path, buff, buff_size);
-            global.path_with_curve.derivation_type = parse_derivation_type(
-                READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
+            global.path_with_curve.derivation_type =
+                parse_derivation_type(G_io_apdu_buffer[OFFSET_CURVE]);
             return finalize_successful_send(0);
 #ifndef BAKING_APP
         case P1_HASH_ONLY_NEXT:
@@ -462,8 +479,8 @@ static size_t handle_apdu(bool const enable_hashing,
             G.magic_byte = get_magic_byte_or_throw(buff, buff_size);
 
             // If it is an "operation" (starting with the 0x03 magic byte), set up parsing
-            // If it is arbitrary Michelson (starting with 0x05), dont bother parsing and show the
-            // "Sign Hash" prompt
+            // If it is arbitrary Michelson (starting with 0x05), dont bother parsing and show
+            // the "Sign Hash" prompt
             if (G.magic_byte == MAGIC_BYTE_UNSAFE_OP) {
                 parse_operations_init(&G.maybe_ops.v,
                                       global.path_with_curve.derivation_type,
@@ -560,11 +577,16 @@ static int perform_signature(bool const on_hash, bool const send_hash) {
     key_pair_t key_pair = {0};
     size_t signature_size = 0;
 
+    int error = generate_key_pair(&key_pair,
+                                  global.path_with_curve.derivation_type,
+                                  &global.path_with_curve.bip32_path);
+    if (error) {
+        THROW(EXC_WRONG_VALUES);
+    }
+
+    error = 0;
     BEGIN_TRY {
         TRY {
-            generate_key_pair(&key_pair,
-                              global.path_with_curve.derivation_type,
-                              &global.path_with_curve.bip32_path);
             signature_size = sign(&G_io_apdu_buffer[tx],
                                   MAX_SIGNATURE_SIZE,
                                   global.path_with_curve.derivation_type,
@@ -573,13 +595,17 @@ static int perform_signature(bool const on_hash, bool const send_hash) {
                                   data_length);
         }
         CATCH_OTHER(e) {
-            THROW(e);
+            error = e;
         }
         FINALLY {
             memset(&key_pair, 0, sizeof(key_pair));
         }
     }
     END_TRY
+
+    if (error) {
+        THROW(error);
+    }
 
     tx += signature_size;
 

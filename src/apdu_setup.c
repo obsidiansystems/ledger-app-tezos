@@ -53,14 +53,12 @@ __attribute__((noreturn)) static void prompt_setup(ui_callback_t const ok_cb,
 }
 
 __attribute__((noreturn)) size_t handle_apdu_setup(__attribute__((unused)) uint8_t instruction) {
-    if (READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_P1]) != 0)
-        THROW(EXC_WRONG_PARAM);
+    if (G_io_apdu_buffer[OFFSET_P1] != 0) THROW(EXC_WRONG_PARAM);
 
-    uint32_t const buff_size = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]);
+    uint32_t const buff_size = G_io_apdu_buffer[OFFSET_LC];
     if (buff_size < sizeof(struct setup_wire)) THROW(EXC_WRONG_LENGTH_FOR_INS);
 
-    global.path_with_curve.derivation_type =
-        parse_derivation_type(READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
+    global.path_with_curve.derivation_type = parse_derivation_type(G_io_apdu_buffer[OFFSET_CURVE]);
 
     {
         struct setup_wire const *const buff_as_setup =

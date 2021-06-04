@@ -44,6 +44,10 @@ void microtez_to_string_indirect(char *const dest,
                                  size_t const buff_size,
                                  uint64_t const *const number);
 
+int microtez_to_string_indirect_no_throw(char *const dest,
+                                         size_t const buff_size,
+                                         uint64_t const *const number);
+
 // `src` may be unrelocated pointer to rodata.
 void copy_string(char *const dest, size_t const buff_size, char const *const src);
 

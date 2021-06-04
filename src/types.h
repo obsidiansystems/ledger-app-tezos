@@ -75,11 +75,11 @@ typedef struct {
 } key_pair_t;
 
 // Baking Auth
-#define MAX_BIP32_PATH 10
+#define MAX_BIP32_LEN 10
 
 typedef struct {
     uint8_t length;
-    uint32_t components[MAX_BIP32_PATH];
+    uint32_t components[MAX_BIP32_LEN];
 } bip32_path_t;
 
 static inline void copy_bip32_path(bip32_path_t *const out, bip32_path_t volatile const *const in) {
@@ -272,3 +272,12 @@ struct parsed_operation_group {
         __typeof__(b) ____b_ = (b);        \
         ____a_ < ____b_ ? ____a_ : ____b_; \
     })
+
+typedef struct {
+    uint64_t amount;
+    uint64_t fees;
+    char destination[57];
+} swap_values_t;
+
+extern bool called_from_swap;
+extern swap_values_t swap_values;

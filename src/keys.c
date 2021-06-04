@@ -51,6 +51,7 @@ int crypto_derive_private_key(cx_ecfp_private_key_t *private_key,
                               bip32_path_t const *const bip32_path) {
     check_null(bip32_path);
     uint8_t raw_private_key[PRIVATE_KEY_DATA_SIZE] = {0};
+    int error = 0;
 
     cx_curve_t const cx_curve =
         signature_type_to_cx_curve(derivation_type_to_signature_type(derivation_type));
@@ -79,13 +80,16 @@ int crypto_derive_private_key(cx_ecfp_private_key_t *private_key,
             // new private_key from raw
             cx_ecfp_init_private_key(cx_curve, raw_private_key, 32, private_key);
         }
+        CATCH_OTHER(e) {
+            error = 1;
+        }
         FINALLY {
             explicit_bzero(raw_private_key, sizeof(raw_private_key));
         }
     }
     END_TRY;
 
-    return 0;
+    return error;
 }
 
 int crypto_init_public_key(derivation_type_t const derivation_type,
@@ -110,21 +114,30 @@ int crypto_init_public_key(derivation_type_t const derivation_type,
 int generate_key_pair(key_pair_t *key_pair,
                       derivation_type_t const derivation_type,
                       bip32_path_t const *const bip32_path) {
+    int error;
+
     // derive private key according to BIP32 path
-    crypto_derive_private_key(&key_pair->private_key, derivation_type, bip32_path);
+    error = crypto_derive_private_key(&key_pair->private_key, derivation_type, bip32_path);
+    if (error) {
+        return error;
+    }
     // generate corresponding public key
-    crypto_init_public_key(derivation_type, &key_pair->private_key, &key_pair->public_key);
-    return (0);
+    error = crypto_init_public_key(derivation_type, &key_pair->private_key, &key_pair->public_key);
+    return error;
 }
 
 int generate_public_key(cx_ecfp_public_key_t *public_key,
                         derivation_type_t const derivation_type,
                         bip32_path_t const *const bip32_path) {
     cx_ecfp_private_key_t private_key = {0};
+    int error;
 
-    crypto_derive_private_key(&private_key, derivation_type, bip32_path);
-    crypto_init_public_key(derivation_type, &private_key, public_key);
-    return (0);
+    error = crypto_derive_private_key(&private_key, derivation_type, bip32_path);
+    if (error) {
+        return (error);
+    }
+    error = crypto_init_public_key(derivation_type, &private_key, public_key);
+    return (error);
 }
 
 void public_key_hash(uint8_t *const hash_out,

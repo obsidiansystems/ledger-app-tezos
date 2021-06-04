@@ -12,7 +12,8 @@ static inline size_t hmac(uint8_t *const out,
                           size_t const out_size,
                           apdu_hmac_state_t *const state,
                           uint8_t const *const in,
-                          size_t const in_size) {
+                          size_t const in_size,
+                          derivation_type_t derivation_type) {
     check_null(out);
     check_null(state);
     check_null(in);
@@ -31,12 +32,10 @@ static inline size_t hmac(uint8_t *const out,
 
     BEGIN_TRY {
         TRY {
-            generate_key_pair(&key_pair,
-                              global.path_with_curve.derivation_type,
-                              &global.path_with_curve.bip32_path);
+            generate_key_pair(&key_pair, derivation_type, &global.path_with_curve.bip32_path);
             signed_hmac_key_size = sign(state->signed_hmac_key,
                                         sizeof(state->signed_hmac_key),
-                                        global.path_with_curve.derivation_type,
+                                        derivation_type,
                                         &key_pair,
                                         key_sha256,
                                         sizeof(key_sha256));
@@ -65,17 +64,15 @@ static inline size_t hmac(uint8_t *const out,
 }
 
 size_t handle_apdu_hmac(__attribute__((unused)) uint8_t instruction) {
-    if (READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_P1]) != 0)
-        THROW(EXC_WRONG_PARAM);
+    if (G_io_apdu_buffer[OFFSET_P1] != 0) THROW(EXC_WRONG_PARAM);
 
     uint8_t const *const buff = &G_io_apdu_buffer[OFFSET_CDATA];
-    uint8_t const buff_size = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]);
+    uint8_t const buff_size = G_io_apdu_buffer[OFFSET_LC];
     if (buff_size > MAX_APDU_SIZE) THROW(EXC_WRONG_LENGTH_FOR_INS);
 
     memset(&G, 0, sizeof(G));
 
-    global.path_with_curve.derivation_type =
-        parse_derivation_type(READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
+    derivation_type_t derivation_type = parse_derivation_type(G_io_apdu_buffer[OFFSET_CURVE]);
 
     size_t consumed = 0;
     consumed += read_bip32_path(&global.path_with_curve.bip32_path, buff, buff_size);
@@ -83,7 +80,8 @@ size_t handle_apdu_hmac(__attribute__((unused)) uint8_t instruction) {
     uint8_t const *const data_to_hmac = &buff[consumed];
     size_t const data_to_hmac_size = buff_size - consumed;
 
-    size_t const hmac_size = hmac(G.hmac, sizeof(G.hmac), &G, data_to_hmac, data_to_hmac_size);
+    size_t const hmac_size =
+        hmac(G.hmac, sizeof(G.hmac), &G, data_to_hmac, data_to_hmac_size, derivation_type);
 
     size_t tx = 0;
     memcpy(G_io_apdu_buffer, G.hmac, hmac_size);

@@ -72,16 +72,14 @@ __attribute__((noreturn)) static void prompt_address(
 size_t handle_apdu_get_public_key(uint8_t instruction) {
     uint8_t *dataBuffer = G_io_apdu_buffer + OFFSET_CDATA;
 
-    if (READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_P1]) != 0)
-        THROW(EXC_WRONG_PARAM);
+    if (G_io_apdu_buffer[OFFSET_P1] != 0) THROW(EXC_WRONG_PARAM);
 
     // do not expose pks without prompt through U2F (permissionless legacy comm in browser)
     if (instruction == INS_GET_PUBLIC_KEY) require_permissioned_comm();
 
-    global.path_with_curve.derivation_type =
-        parse_derivation_type(READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_CURVE]));
+    global.path_with_curve.derivation_type = parse_derivation_type(G_io_apdu_buffer[OFFSET_CURVE]);
 
-    size_t const cdata_size = READ_UNALIGNED_BIG_ENDIAN(uint8_t, &G_io_apdu_buffer[OFFSET_LC]);
+    size_t const cdata_size = G_io_apdu_buffer[OFFSET_LC];
 
 #ifdef BAKING_APP
     if (cdata_size == 0 && instruction == INS_AUTHORIZE_BAKING) {
