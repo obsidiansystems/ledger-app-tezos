@@ -9,10 +9,7 @@ bool is_safe_to_swap() {
     char tmp_dest[57] = {0};
     parsed_contract_to_string(tmp_dest, sizeof(tmp_dest), &op->operation.destination);
 
-    if (op->has_reveal == false) {
-        PRINTF("Should have reveal set to true\n");
-        return false;
-    } else if (op->signing.originated != 0) {
+    if (op->signing.originated != 0) {
         PRINTF("Should not be originated\n");
         return false;
     } else if (op->operation.tag != OPERATION_TAG_BABYLON_TRANSACTION) {
@@ -21,7 +18,7 @@ bool is_safe_to_swap() {
     } else if (op->signing.signature_type != SIGNATURE_TYPE_ED25519) {
         PRINTF("Signature type is not ED25519\n");
         return false;
-    } else if (op->total_storage_limit != 257) {
+    } else if (op->total_storage_limit >= 257) {
         PRINTF("Storage Limit incorrect\n");
         return false;
     } else if (op->total_fee != swap_values.fees) {
