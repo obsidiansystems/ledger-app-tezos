@@ -15,8 +15,8 @@ bool is_safe_to_swap() {
     } else if (op->operation.tag != OPERATION_TAG_BABYLON_TRANSACTION) {
         PRINTF("Expected a babylon transaction, got %d\n", op->operation.tag);
         return false;
-    } else if (op->signing.signature_type != SIGNATURE_TYPE_ED25519 ||
-               op->signing.signature_type != SIGNATURE_TYPE_SECP256K1 ||
+    } else if (op->signing.signature_type != SIGNATURE_TYPE_ED25519 &&
+               op->signing.signature_type != SIGNATURE_TYPE_SECP256K1 &&
                op->signing.signature_type != SIGNATURE_TYPE_SECP256R1) {
         PRINTF("Expected type ED25519 signature, got %d\n", op->signing.signature_type);
         return false;
