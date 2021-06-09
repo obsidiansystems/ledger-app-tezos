@@ -15,9 +15,6 @@ bool is_safe_to_swap() {
     } else if (op->operation.tag != OPERATION_TAG_BABYLON_TRANSACTION) {
         PRINTF("Expected a babylon transaction, got %d\n", op->operation.tag);
         return false;
-    } else if (op->signing.signature_type != SIGNATURE_TYPE_ED25519) {
-        PRINTF("Expected type ED25519 signature, got %d\n", op->signing.signature_type);
-        return false;
     } else if (op->total_fee != swap_values.fees) {
         PRINTF("Fees differ: expected %d, got %d\n", op->total_fee, swap_values.fees);
         return false;
