@@ -125,7 +125,9 @@ static inline bool bip32_path_with_curve_eq(bip32_path_with_curve_t volatile con
 
 typedef struct {
     level_t highest_level;
+    round_t highest_round;
     bool had_endorsement;
+    bool had_preendorsement;
 } high_watermark_t;
 
 typedef struct {
@@ -172,16 +174,11 @@ typedef struct {
 
 typedef struct {
     chain_id_t chain_id;
-    bool is_endorsement;
-    level_t level;
-} parsed_baking_data_t;
-
-typedef struct {
-    chain_id_t chain_id;
     baking_type_t type;
     level_t level;
     round_t round;
-} parsed_tenderbake_baking_data_t;
+    bool is_tenderbake;
+} parsed_baking_data_t;
 
 typedef struct parsed_contract {
     uint8_t originated;  // a lightweight bool

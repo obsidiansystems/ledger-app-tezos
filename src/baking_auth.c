@@ -25,7 +25,9 @@ void write_high_water_mark(parsed_baking_data_t const *const in) {
         // If the chain matches the main chain *or* the main chain is not set, then use 'main' HWM.
         high_watermark_t volatile *const dest = select_hwm_by_chain(in->chain_id, ram);
         dest->highest_level = CUSTOM_MAX(in->level, dest->highest_level);
-        dest->had_endorsement = in->is_endorsement;
+        dest->highest_round = CUSTOM_MAX(in->round, dest->highest_round);
+        dest->had_endorsement = in->type == BAKING_TYPE_ENDORSEMENT;
+        dest->had_preendorsement = in->type == BAKING_TYPE_PREENDORSEMENT;
     });
 }
 
@@ -47,12 +49,31 @@ static bool is_level_authorized(parsed_baking_data_t const *const baking_info) {
     if (!is_valid_level(baking_info->level)) return false;
     high_watermark_t volatile const *const hwm =
         select_hwm_by_chain(baking_info->chain_id, &N_data);
-    return baking_info->level > hwm->highest_level
 
-           // Levels are tied. In order for this to be OK, this must be an endorsement, and we must
-           // not have previously seen an endorsement.
-           || (baking_info->level == hwm->highest_level && baking_info->is_endorsement &&
-               !hwm->had_endorsement);
+    if (baking_info->is_tenderbake) {
+        return baking_info->level > hwm->highest_level || baking_info->round > hwm->highest_round ||
+
+               // It is ok to sign an endorsement if we have not already signed an endorsement for
+               // the level/round
+               (baking_info->level == hwm->highest_level &&
+                baking_info->round == hwm->highest_round &&
+                baking_info->type == BAKING_TYPE_ENDORSEMENT && !hwm->had_endorsement) ||
+
+               // It is ok to sign a preendorsement if we have not already signed neither an
+               // endorsement or a preendorsement for the level/round
+               (baking_info->level == hwm->highest_level &&
+                baking_info->round == hwm->highest_round &&
+                baking_info->type == BAKING_TYPE_PREENDORSEMENT && !hwm->had_endorsement &&
+                !hwm->had_preendorsement);
+
+    } else {
+        return baking_info->level > hwm->highest_level
+
+               // Levels are tied. In order for this to be OK, this must be an endorsement, and we
+               // must not have previously seen an endorsement.
+               || (baking_info->level == hwm->highest_level &&
+                   baking_info->type == BAKING_TYPE_ENDORSEMENT && !hwm->had_endorsement);
+    }
 }
 
 bool is_path_authorized(derivation_type_t const derivation_type,
@@ -90,18 +111,20 @@ struct endorsement_wire {
 bool parse_baking_data(parsed_baking_data_t *const out,
                        void const *const data,
                        size_t const length) {
+    out->is_tenderbake = false;
+    out->round = 0;
     switch (get_magic_byte(data, length)) {
         case MAGIC_BYTE_BAKING_OP:
             if (length != sizeof(struct endorsement_wire)) return false;
             struct endorsement_wire const *const endorsement = data;
-            out->is_endorsement = true;
+            out->type = BAKING_TYPE_ENDORSEMENT;
             out->chain_id.v = READ_UNALIGNED_BIG_ENDIAN(uint32_t, &endorsement->chain_id);
             out->level = READ_UNALIGNED_BIG_ENDIAN(uint32_t, &endorsement->level);
             return true;
         case MAGIC_BYTE_BLOCK:
             if (length < sizeof(struct block_wire)) return false;
             struct block_wire const *const block = data;
-            out->is_endorsement = false;
+            out->type = BAKING_TYPE_BLOCK;
             out->chain_id.v = READ_UNALIGNED_BIG_ENDIAN(uint32_t, &block->chain_id);
             out->level = READ_UNALIGNED_BIG_ENDIAN(level_t, &block->level);
             return true;
@@ -156,9 +179,10 @@ struct tenderbake_consensus_op_wire {
     uint8_t block_payload_hash[32];
 } __attribute__((packed));
 
-bool parse_tenderbake_baking_data(parsed_tenderbake_baking_data_t *const out,
+bool parse_tenderbake_baking_data(parsed_baking_data_t *const out,
                                   void const *const data,
                                   size_t const length) {
+    out->is_tenderbake = true;
     switch (get_magic_byte(data, length)) {
         case MAGIC_BYTE_BAKING_OP:
             if (length != sizeof(struct tenderbake_consensus_op_wire)) return false;
@@ -179,7 +203,6 @@ bool parse_tenderbake_baking_data(parsed_tenderbake_baking_data_t *const out,
             return true;
         case MAGIC_BYTE_BLOCK:
             if (length < sizeof(struct tenderbake_block_wire)) return false;
-            // TODO test proto version
             struct tenderbake_block_wire const *const block = data;
             out->type = BAKING_TYPE_BLOCK;
             out->chain_id.v = READ_UNALIGNED_BIG_ENDIAN(uint32_t, &block->chain_id);
