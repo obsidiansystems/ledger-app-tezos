@@ -38,10 +38,17 @@ typedef enum {
     SIGNATURE_TYPE_ED25519 = 3
 } signature_type_t;
 
+typedef enum {
+    BAKING_TYPE_BLOCK = 0,
+    BAKING_TYPE_ENDORSEMENT = 1,
+    BAKING_TYPE_PREENDORSEMENT = 2
+} baking_type_t;
+
 // Return number of bytes to transmit (tx)
 typedef size_t (*apdu_handler)(uint8_t instruction);
 
 typedef uint32_t level_t;
+typedef uint32_t round_t;
 
 #define CHAIN_ID_BASE58_STRING_SIZE sizeof("NetXdQprcVkpaWU")
 
@@ -168,6 +175,13 @@ typedef struct {
     bool is_endorsement;
     level_t level;
 } parsed_baking_data_t;
+
+typedef struct {
+    chain_id_t chain_id;
+    baking_type_t type;
+    level_t level;
+    round_t round;
+} parsed_tenderbake_baking_data_t;
 
 typedef struct parsed_contract {
     uint8_t originated;  // a lightweight bool

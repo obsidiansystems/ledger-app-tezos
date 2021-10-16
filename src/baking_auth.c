@@ -111,4 +111,89 @@ bool parse_baking_data(parsed_baking_data_t *const out,
     }
 }
 
+struct tenderbake_locked_round_fitness_wire {
+    int32_t level;
+    uint8_t locked_round_tag;
+    int32_t locked_round;
+    int32_t predecessor_round;
+    int32_t round;
+} __attribute__((packed));
+
+struct tenderbake_no_locked_round_fitness_wire {
+    int32_t level;
+    uint8_t locked_round_tag;
+    int32_t predecessor_round;
+    int32_t round;
+} __attribute__((packed));
+
+struct tenderbake_block_wire {
+    uint8_t magic_byte;
+    uint32_t chain_id;
+    uint32_t level;
+    uint8_t proto;
+    uint8_t predecessor[32];
+    int64_t timestamp;
+    uint8_t validation_pass;
+    uint8_t operations_hash[32];
+    uint32_t fitness_size;
+    int32_t fitness_level;
+    uint8_t locked_round_tag;
+    union {
+        struct tenderbake_locked_round_fitness_wire locked_round;
+        struct tenderbake_no_locked_round_fitness_wire no_locked_round;
+    };
+    // ... beyond this we don't care
+} __attribute__((packed));
+
+struct tenderbake_consensus_op_wire {
+    uint8_t magic_byte;
+    uint32_t chain_id;
+    uint8_t branch[32];
+    uint8_t tag;
+    uint16_t slot;
+    uint32_t level;
+    uint32_t round;
+    uint8_t block_payload_hash[32];
+} __attribute__((packed));
+
+bool parse_tenderbake_baking_data(parsed_tenderbake_baking_data_t *const out,
+                                  void const *const data,
+                                  size_t const length) {
+    switch (get_magic_byte(data, length)) {
+        case MAGIC_BYTE_BAKING_OP:
+            if (length != sizeof(struct tenderbake_consensus_op_wire)) return false;
+            struct tenderbake_consensus_op_wire const *const operation = data;
+            switch (operation->tag) {
+                case 20:
+                    out->type = BAKING_TYPE_PREENDORSEMENT;
+                    break;
+                case 21:
+                    out->type = BAKING_TYPE_ENDORSEMENT;
+                    break;
+                default:
+                    return false;
+            }
+            out->chain_id.v = READ_UNALIGNED_BIG_ENDIAN(uint32_t, &operation->chain_id);
+            out->level = READ_UNALIGNED_BIG_ENDIAN(uint32_t, &operation->level);
+            out->round = READ_UNALIGNED_BIG_ENDIAN(uint32_t, &operation->round);
+            return true;
+        case MAGIC_BYTE_BLOCK:
+            if (length < sizeof(struct tenderbake_block_wire)) return false;
+            // TODO test proto version
+            struct tenderbake_block_wire const *const block = data;
+            out->type = BAKING_TYPE_BLOCK;
+            out->chain_id.v = READ_UNALIGNED_BIG_ENDIAN(uint32_t, &block->chain_id);
+            out->level = READ_UNALIGNED_BIG_ENDIAN(level_t, &block->level);
+            if (block->locked_round_tag == 0) {
+                out->round = READ_UNALIGNED_BIG_ENDIAN(level_t, &block->no_locked_round.round);
+            } else {
+                out->round = READ_UNALIGNED_BIG_ENDIAN(level_t, &block->locked_round.round);
+            }
+            return true;
+        case MAGIC_BYTE_INVALID:
+        default:
+            return false;
+    }
+}
+
 #endif  // #ifdef BAKING_APP

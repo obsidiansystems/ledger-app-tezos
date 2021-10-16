@@ -24,4 +24,8 @@ bool parse_baking_data(parsed_baking_data_t *const out,
                        void const *const data,
                        size_t const length);
 
+bool parse_tenderbake_baking_data(parsed_tenderbake_baking_data_t *const out,
+                                  void const *const data,
+                                  size_t const length);
+
 #endif  // #ifdef BAKING_APP
