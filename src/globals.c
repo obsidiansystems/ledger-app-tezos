@@ -75,17 +75,23 @@ void copy_key(char *out, size_t out_size, void *data) {
 }
 
 void copy_hwm(char *out, size_t out_size, void *data) {
-    level_t *level = (level_t *) data;
+    high_watermark_t *hwm = (high_watermark_t *) data;
     (void) out_size;
 
-    number_to_string(out, *level);
+    if (hwm->migrated_to_tenderbake) {
+        size_t len1 = number_to_string(out, hwm->highest_level);
+        out[len1] = ' ';
+        number_to_string(out + len1 + 1, hwm->highest_round);
+    } else {
+        number_to_string(out, hwm->highest_level);
+    }
 }
 
 void calculate_baking_idle_screens_data(void) {
     push_ui_callback("Tezos Baking", copy_string, VERSION);
     push_ui_callback("Chain", copy_chain, &N_data.main_chain_id);
     push_ui_callback("Public Key Hash", copy_key, &N_data.baking_key);
-    push_ui_callback("High Watermark", copy_hwm, &N_data.hwm.main.highest_level);
+    push_ui_callback("High Watermark", copy_hwm, &N_data.hwm.main);
 }
 
 void update_baking_idle_screens(void) {

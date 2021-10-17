@@ -471,13 +471,7 @@ static size_t handle_apdu(bool const enable_hashing,
                 parse_allowed_operations(&G.maybe_ops.v, buff, buff_size, &global.path_with_curve);
         } else {
             // This should be a baking operation so parse it.
-            if (buff[0] == 0) {
-                if (!parse_baking_data(&G.parsed_baking_data, buff + 1, buff_size - 1))
-                    PARSE_ERROR();
-            } else if (buff[0] == 1) {
-                if (!parse_tenderbake_baking_data(&G.parsed_baking_data, buff + 1, buff_size - 1))
-                    PARSE_ERROR();
-            }
+            if (!parse_baking_data(&G.parsed_baking_data, buff, buff_size)) PARSE_ERROR();
         }
 #else
         if (G.packet_index == 1) {

@@ -128,6 +128,7 @@ typedef struct {
     round_t highest_round;
     bool had_endorsement;
     bool had_preendorsement;
+    bool migrated_to_tenderbake;
 } high_watermark_t;
 
 typedef struct {
