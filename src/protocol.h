@@ -8,12 +8,15 @@
 #include "cx.h"
 #include "types.h"
 
-#define MAGIC_BYTE_INVALID    0x00
-#define MAGIC_BYTE_BLOCK      0x01
-#define MAGIC_BYTE_BAKING_OP  0x02
-#define MAGIC_BYTE_UNSAFE_OP  0x03
-#define MAGIC_BYTE_UNSAFE_OP2 0x04
-#define MAGIC_BYTE_UNSAFE_OP3 0x05
+#define MAGIC_BYTE_INVALID                   0x00
+#define MAGIC_BYTE_BLOCK                     0x01
+#define MAGIC_BYTE_BAKING_OP                 0x02
+#define MAGIC_BYTE_UNSAFE_OP                 0x03
+#define MAGIC_BYTE_UNSAFE_OP2                0x04
+#define MAGIC_BYTE_UNSAFE_OP3                0x05
+#define MAGIC_BYTE_TENDERBAKE_BLOCK          0x11
+#define MAGIC_BYTE_TENDERBAKE_PREENDORSEMENT 0x12
+#define MAGIC_BYTE_TENDERBAKE_ENDORSEMENT    0x13
 
 static inline uint8_t get_magic_byte(uint8_t const *const data, size_t const length) {
     return (data == NULL || length == 0) ? MAGIC_BYTE_INVALID : *data;

@@ -157,6 +157,9 @@ __attribute__((noreturn)) static void prompt_register_delegate(ui_callback_t con
 
 size_t baking_sign_complete(bool const send_hash) {
     switch (G.magic_byte) {
+        case MAGIC_BYTE_TENDERBAKE_BLOCK:
+        case MAGIC_BYTE_TENDERBAKE_PREENDORSEMENT:
+        case MAGIC_BYTE_TENDERBAKE_ENDORSEMENT:
         case MAGIC_BYTE_BLOCK:
         case MAGIC_BYTE_BAKING_OP:
             guard_baking_authorized(&G.parsed_baking_data, &global.path_with_curve);
@@ -411,6 +414,9 @@ static uint8_t get_magic_byte_or_throw(uint8_t const *const buff, size_t const b
     uint8_t const magic_byte = get_magic_byte(buff, buff_size);
     switch (magic_byte) {
 #ifdef BAKING_APP
+        case MAGIC_BYTE_TENDERBAKE_BLOCK:
+        case MAGIC_BYTE_TENDERBAKE_PREENDORSEMENT:
+        case MAGIC_BYTE_TENDERBAKE_ENDORSEMENT:
         case MAGIC_BYTE_BLOCK:
         case MAGIC_BYTE_BAKING_OP:
         case MAGIC_BYTE_UNSAFE_OP:  // Only for self-delegations

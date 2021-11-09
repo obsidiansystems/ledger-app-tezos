@@ -30,8 +30,8 @@ void write_high_water_mark(parsed_baking_data_t const *const in) {
         };
         dest->highest_level = CUSTOM_MAX(in->level, dest->highest_level);
         dest->highest_round = in->round;
-        dest->had_endorsement |= in->type == BAKING_TYPE_ENDORSEMENT;
-        dest->had_preendorsement |= in->type == BAKING_TYPE_PREENDORSEMENT;
+        dest->had_endorsement |= (in->type == BAKING_TYPE_ENDORSEMENT || in->type == BAKING_TYPE_TENDERBAKE_ENDORSEMENT);
+        dest->had_preendorsement |= in->type == BAKING_TYPE_TENDERBAKE_PREENDORSEMENT;
         dest->migrated_to_tenderbake |= in->is_tenderbake;
     });
 }
@@ -65,14 +65,14 @@ static bool is_level_authorized(parsed_baking_data_t const *const baking_info) {
                // the level/round
                (baking_info->level == hwm->highest_level &&
                 baking_info->round == hwm->highest_round &&
-                baking_info->type == BAKING_TYPE_ENDORSEMENT && !hwm->had_endorsement) ||
+                baking_info->type == BAKING_TYPE_TENDERBAKE_ENDORSEMENT && !hwm->had_endorsement) ||
 
                // It is ok to sign a preendorsement if we have not already signed neither an
                // endorsement nor a preendorsement for the level/round
                (baking_info->level == hwm->highest_level &&
                 baking_info->round == hwm->highest_round &&
-                baking_info->type == BAKING_TYPE_PREENDORSEMENT && !hwm->had_endorsement &&
-                !hwm->had_preendorsement);
+                baking_info->type == BAKING_TYPE_TENDERBAKE_PREENDORSEMENT &&
+                !hwm->had_endorsement && !hwm->had_preendorsement);
 
     } else {
         if (hwm->migrated_to_tenderbake) return false;
@@ -150,7 +150,6 @@ uint32_t get_round(void const *const fitness, uint32_t fitness_size) {
 bool parse_block(parsed_baking_data_t *const out, void const *const data, size_t const length) {
     if (length < sizeof(struct block_wire) + EMMY_FITNESS_SIZE) return false;
     struct block_wire const *const block = data;
-    out->type = BAKING_TYPE_BLOCK;
     out->chain_id.v = READ_UNALIGNED_BIG_ENDIAN(uint32_t, &block->chain_id);
     out->level = READ_UNALIGNED_BIG_ENDIAN(level_t, &block->level);
 
@@ -159,10 +158,12 @@ bool parse_block(parsed_baking_data_t *const out, void const *const data, size_t
     switch (proto_version) {
         case 0:  // Emmy 0 to 4
         case 1:  // Emmy 5 to 11
+            out->type = BAKING_TYPE_BLOCK;
             out->is_tenderbake = false;
             out->round = 0;  // irrelevant
             return true;
         case 2:  // Tenderbake
+            out->type = BAKING_TYPE_TENDERBAKE_BLOCK;
             out->is_tenderbake = true;
             uint32_t fitness_size = READ_UNALIGNED_BIG_ENDIAN(uint32_t, &block->fitness_size);
             out->round = get_round(fitness, fitness_size);
@@ -195,9 +196,9 @@ bool parse_consensus_operation(parsed_baking_data_t *const out,
             out->level = READ_UNALIGNED_BIG_ENDIAN(uint32_t, &op->level);
             out->round = READ_UNALIGNED_BIG_ENDIAN(uint32_t, &op->round);
             if (op->tag == 20) {
-                out->type = BAKING_TYPE_PREENDORSEMENT;
+                out->type = BAKING_TYPE_TENDERBAKE_PREENDORSEMENT;
             } else {
-                out->type = BAKING_TYPE_ENDORSEMENT;
+                out->type = BAKING_TYPE_TENDERBAKE_ENDORSEMENT;
             }
             return true;
         default:
@@ -210,8 +211,11 @@ bool parse_baking_data(parsed_baking_data_t *const out,
                        size_t const length) {
     switch (get_magic_byte(data, length)) {
         case MAGIC_BYTE_BAKING_OP:
+        case MAGIC_BYTE_TENDERBAKE_PREENDORSEMENT:
+        case MAGIC_BYTE_TENDERBAKE_ENDORSEMENT:
             return parse_consensus_operation(out, data, length);
         case MAGIC_BYTE_BLOCK:
+        case MAGIC_BYTE_TENDERBAKE_BLOCK:
             return parse_block(out, data, length);
         case MAGIC_BYTE_INVALID:
         default:
