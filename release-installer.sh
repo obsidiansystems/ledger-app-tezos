@@ -32,7 +32,7 @@ for arg in "$@"; do
     --tlv \
     --curve ed25519 \
     --curve secp256k1 \
-    --curve prime256r1 \
+    --curve secp256r1 \
     --targetId "${target_id:?manifest file is missing field}" \
     --delete \
     --path "44'/1729'" \
