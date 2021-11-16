@@ -26,6 +26,7 @@ void push_ui_callback(char *title, string_generation_callback cb, void *data) {
     fmt->callback_fn = cb;
     fmt->data = data;
     global.dynamic_display.formatter_index++;
+    global.dynamic_display.screen_stack_size++;
 }
 
 void init_screen_stack() {
