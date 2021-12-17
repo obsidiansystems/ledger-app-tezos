@@ -59,7 +59,7 @@ __attribute__((noreturn)) static void prompt_address(
     } else {
 #endif
         push_ui_callback("Provide", copy_string, "Public Key");
-        push_ui_callback("Publick Key Hash",
+        push_ui_callback("Public Key Hash",
                          bip32_path_with_curve_to_pkh_string,
                          &global.path_with_curve);
 #ifdef BAKING_APP
