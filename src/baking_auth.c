@@ -30,7 +30,8 @@ void write_high_water_mark(parsed_baking_data_t const *const in) {
         };
         dest->highest_level = CUSTOM_MAX(in->level, dest->highest_level);
         dest->highest_round = in->round;
-        dest->had_endorsement |= (in->type == BAKING_TYPE_ENDORSEMENT || in->type == BAKING_TYPE_TENDERBAKE_ENDORSEMENT);
+        dest->had_endorsement |=
+            (in->type == BAKING_TYPE_ENDORSEMENT || in->type == BAKING_TYPE_TENDERBAKE_ENDORSEMENT);
         dest->had_preendorsement |= in->type == BAKING_TYPE_TENDERBAKE_PREENDORSEMENT;
         dest->migrated_to_tenderbake |= in->is_tenderbake;
     });

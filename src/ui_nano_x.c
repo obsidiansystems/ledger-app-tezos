@@ -150,9 +150,9 @@ void clear_data() {
 void set_screen_data() {
     struct screen_data *fmt = &G_display.screen_stack[G_display.formatter_index];
     if (fmt->title == NULL) {
-      // Avoid seg faulting for bad reasons...
-      G_display.formatter_index = 0;
-      fmt = &G_display.screen_stack[0];
+        // Avoid seg faulting for bad reasons...
+        G_display.formatter_index = 0;
+        fmt = &G_display.screen_stack[0];
     }
     clear_data();
     copy_string((char *) G_display.screen_title, sizeof(G_display.screen_title), fmt->title);

@@ -66,13 +66,10 @@ size_t handle_apdu_all_hwm(__attribute__((unused)) uint8_t instruction) {
     size_t tx = 0;
     tx = send_word_big_endian(tx, N_data.hwm.main.highest_level);
     int has_a_chain_migrated =
-      N_data.hwm.main.migrated_to_tenderbake
-      || N_data.hwm.test.migrated_to_tenderbake;
-    if (has_a_chain_migrated)
-      tx = send_word_big_endian(tx, N_data.hwm.main.highest_round);
+        N_data.hwm.main.migrated_to_tenderbake || N_data.hwm.test.migrated_to_tenderbake;
+    if (has_a_chain_migrated) tx = send_word_big_endian(tx, N_data.hwm.main.highest_round);
     tx = send_word_big_endian(tx, N_data.hwm.test.highest_level);
-    if (has_a_chain_migrated)
-      tx = send_word_big_endian(tx, N_data.hwm.test.highest_round);
+    if (has_a_chain_migrated) tx = send_word_big_endian(tx, N_data.hwm.test.highest_round);
     tx = send_word_big_endian(tx, N_data.main_chain_id.v);
     return finalize_successful_send(tx);
 }
@@ -81,7 +78,7 @@ size_t handle_apdu_main_hwm(__attribute__((unused)) uint8_t instruction) {
     size_t tx = 0;
     tx = send_word_big_endian(tx, N_data.hwm.main.highest_level);
     if (N_data.hwm.main.migrated_to_tenderbake)
-      tx = send_word_big_endian(tx, N_data.hwm.main.highest_round);
+        tx = send_word_big_endian(tx, N_data.hwm.main.highest_round);
     return finalize_successful_send(tx);
 }
 
