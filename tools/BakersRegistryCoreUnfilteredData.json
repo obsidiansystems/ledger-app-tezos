@@ -494,5 +494,9 @@
   {
     "bakerName": "Money Every 3 Days",
     "bakerAccount": "tz1NEKxGEHsFufk87CVZcrqWu8o22qh46GK6"
+  },
+  {
+    "bakerName": "Eco Tez",
+    "bakerAccount": "tz3e7LbZvUtoXhpUD1yb6wuFodZpfYRb9nWJ"
   }
 ]
