@@ -9,7 +9,7 @@
 #include "protocol.h"
 #include "to_string.h"
 #include "ui.h"
-#include "swap_lib_calls.h"
+#include "swap/swap_lib_calls.h"
 
 #include "cx.h"
 

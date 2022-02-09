@@ -637,7 +637,7 @@ static inline bool parse_byte(uint8_t byte,
                             }
 
                             OP_STEP {
-                                char has_params = NEXT_BYTE;
+                                unsigned char has_params = NEXT_BYTE;
 
                                 if (has_params == MICHELSON_PARAMS_NONE) {
                                     JMP_TO_TOP;
