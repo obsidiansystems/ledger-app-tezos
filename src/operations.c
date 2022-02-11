@@ -107,8 +107,9 @@ static inline bool parse_z(uint8_t current_byte,
         state->shift = 0;
     }
     // Fails when the resulting shifted value overflows 64 bits
-    if (state->shift > 63 || (state->shift == 63 && current_byte != 1))
-      PARSE_ERROR();
+    if (state->shift > 63 || (state->shift == 63 && current_byte != 1)) {
+        PARSE_ERROR();
+    }
     state->value |= ((uint64_t) current_byte & 0x7F) << state->shift;
     state->shift += 7;
     return current_byte & 0x80;  // Return true if we need more bytes.

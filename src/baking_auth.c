@@ -136,7 +136,7 @@ struct tenderbake_consensus_op_wire {
 } __attribute__((packed));
 
 #define EMMY_FITNESS_SIZE               17
-#define MAXIMUM_TENDERBAKE_FITNESS_SIZE 37 // When 'locked_round' != none
+#define MAXIMUM_TENDERBAKE_FITNESS_SIZE 37  // When 'locked_round' != none
 
 #define TENDERBAKE_PROTO_FITNESS_VERSION 2
 
@@ -163,10 +163,10 @@ bool parse_block(parsed_baking_data_t *const out, void const *const data, size_t
             out->type = BAKING_TYPE_TENDERBAKE_BLOCK;
             out->is_tenderbake = true;
             uint32_t fitness_size = READ_UNALIGNED_BIG_ENDIAN(uint32_t, &block->fitness_size);
-            if (fitness_size < (4 + sizeof(uint32_t)) ||
-                fitness + fitness_size > data + length ||
-                fitness_size > MAXIMUM_TENDERBAKE_FITNESS_SIZE)
-              return false;
+            if (fitness_size < (4 + sizeof(uint32_t)) || fitness + fitness_size > data + length ||
+                fitness_size > MAXIMUM_TENDERBAKE_FITNESS_SIZE) {
+                return false;
+            }
             out->round = READ_UNALIGNED_BIG_ENDIAN(uint32_t, (fitness + fitness_size - 4));
             return true;
         default:
