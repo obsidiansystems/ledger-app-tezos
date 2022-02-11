@@ -48,7 +48,7 @@ typedef struct {
     } maybe_ops;
 
     uint8_t message_data[TEZOS_BUFSIZE];
-    uint32_t message_data_length;
+    size_t message_data_length;
     buffer_t message_data_as_buffer;
 
     blake2b_hash_state_t hash_state;
