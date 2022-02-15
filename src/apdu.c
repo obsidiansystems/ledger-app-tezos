@@ -11,6 +11,11 @@ size_t provide_pubkey(uint8_t *const io_buffer, cx_ecfp_public_key_t const *cons
     check_null(io_buffer);
     check_null(pubkey);
     size_t tx = 0;
+    // Application could be PIN-locked, and pubkey->W_len would then be 0,
+    // so throwing an error rather than returning an empty key
+    if (os_global_pin_is_validated() != BOLOS_UX_OK) {
+        THROW(EXC_SECURITY);
+    }
     io_buffer[tx++] = pubkey->W_len;
     memmove(io_buffer + tx, pubkey->W, pubkey->W_len);
     tx += pubkey->W_len;
