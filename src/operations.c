@@ -96,6 +96,7 @@ static inline void parse_contract(parsed_contract_t *const out, struct contract 
 
 #define NEXT_BYTE (byte)
 
+// TODO: this function cannot parse z values than would not fit in a uint64
 static inline bool parse_z(uint8_t current_byte,
                            struct int_subparser_state *state,
                            uint32_t lineno) {
@@ -104,6 +105,10 @@ static inline bool parse_z(uint8_t current_byte,
         state->lineno = lineno;
         state->value = 0;
         state->shift = 0;
+    }
+    // Fails when the resulting shifted value overflows 64 bits
+    if (state->shift > 63 || (state->shift == 63 && current_byte != 1)) {
+        PARSE_ERROR();
     }
     state->value |= ((uint64_t) current_byte & 0x7F) << state->shift;
     state->shift += 7;
@@ -633,7 +638,7 @@ static inline bool parse_byte(uint8_t byte,
                             }
 
                             OP_STEP {
-                                char has_params = NEXT_BYTE;
+                                unsigned char has_params = NEXT_BYTE;
 
                                 if (has_params == MICHELSON_PARAMS_NONE) {
                                     JMP_TO_TOP;

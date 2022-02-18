@@ -27,9 +27,15 @@ static bool ok(void) {
         copy_bip32_path_with_curve(&ram->baking_key, &global.path_with_curve);
         ram->main_chain_id = G.main_chain_id;
         ram->hwm.main.highest_level = G.hwm.main;
+        ram->hwm.main.highest_round = 0;
         ram->hwm.main.had_endorsement = false;
+        ram->hwm.main.had_preendorsement = false;
+        ram->hwm.main.migrated_to_tenderbake = false;
         ram->hwm.test.highest_level = G.hwm.test;
+        ram->hwm.test.highest_round = 0;
         ram->hwm.test.had_endorsement = false;
+        ram->hwm.test.had_preendorsement = false;
+        ram->hwm.test.migrated_to_tenderbake = false;
     });
 
     cx_ecfp_public_key_t pubkey = {0};

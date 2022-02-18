@@ -38,10 +38,19 @@ typedef enum {
     SIGNATURE_TYPE_ED25519 = 3
 } signature_type_t;
 
+typedef enum {
+    BAKING_TYPE_BLOCK = 0,
+    BAKING_TYPE_ENDORSEMENT = 1,
+    BAKING_TYPE_TENDERBAKE_BLOCK = 2,
+    BAKING_TYPE_TENDERBAKE_ENDORSEMENT = 3,
+    BAKING_TYPE_TENDERBAKE_PREENDORSEMENT = 4
+} baking_type_t;
+
 // Return number of bytes to transmit (tx)
 typedef size_t (*apdu_handler)(uint8_t instruction);
 
 typedef uint32_t level_t;
+typedef uint32_t round_t;
 
 #define CHAIN_ID_BASE58_STRING_SIZE sizeof("NetXdQprcVkpaWU")
 
@@ -118,7 +127,10 @@ static inline bool bip32_path_with_curve_eq(bip32_path_with_curve_t volatile con
 
 typedef struct {
     level_t highest_level;
+    round_t highest_round;
     bool had_endorsement;
+    bool had_preendorsement;
+    bool migrated_to_tenderbake;
 } high_watermark_t;
 
 typedef struct {
@@ -165,8 +177,10 @@ typedef struct {
 
 typedef struct {
     chain_id_t chain_id;
-    bool is_endorsement;
+    baking_type_t type;
     level_t level;
+    round_t round;
+    bool is_tenderbake;
 } parsed_baking_data_t;
 
 typedef struct parsed_contract {
