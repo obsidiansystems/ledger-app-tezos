@@ -26,7 +26,7 @@ VERSION_TAG ?= $(shell echo "$(GIT_DESCRIBE)" | cut -f1 -d-)
 APPVERSION_M=2
 APPVERSION_N=2
 APPVERSION_P=15
-APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)-rc2
+APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 
 # Only warn about version tags if specified/inferred
 ifeq ($(VERSION_TAG),)
