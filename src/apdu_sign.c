@@ -607,7 +607,7 @@ static int perform_signature(bool const on_hash, bool const send_hash) {
             memset(&key_pair, 0, sizeof(key_pair));
         }
     }
-    END_TRY
+    END_TRY;
 
     if (error) {
         THROW(error);
