@@ -47,7 +47,7 @@ static inline size_t hmac(uint8_t *const out,
             memset(&key_pair, 0, sizeof(key_pair));
         }
     }
-    END_TRY
+    END_TRY;
 
     // Hash the signed value with SHA512 to get a 64-byte key for HMAC.
     cx_hash_sha512(state->signed_hmac_key,
