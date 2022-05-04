@@ -13,7 +13,7 @@ void clear_apdu_globals(void);
 // Zeros out all application-specific globals and SDK-specific UI/exchange buffers.
 void init_globals(void);
 
-#define MAX_APDU_SIZE 230  // Maximum number of bytes in a single APDU
+#define MAX_APDU_SIZE 235  // Maximum number of bytes in a single APDU
 
 // Our buffer must accommodate any remainder from hashing and the next message at once.
 #define TEZOS_BUFSIZE (BLAKE2B_BLOCKBYTES + MAX_APDU_SIZE)

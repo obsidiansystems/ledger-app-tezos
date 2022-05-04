@@ -27,6 +27,7 @@ bool copy_transaction_parameters(const create_transaction_parameters_t* params) 
 }
 
 void handle_swap_sign_transaction(void) {
+    init_globals();
     called_from_swap = true;
     io_seproxyhal_init();
     USB_power(0);
